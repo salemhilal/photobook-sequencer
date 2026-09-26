@@ -104,10 +104,22 @@ button {
 .warn {
   color: var(--warn);
 }
+/*
+ * Type rule:
+ *   Inter Tight — words: buttons, menu items, options, descriptions, hints.
+ *   IBM Plex Mono — data and labels: numbers, units, measurements, counts,
+ *   page numbers, shortcuts, file names, and field and section labels.
+ * Mono sizes: 10.5px uppercase section labels (.caps), 11px data (.data),
+ * 12px in input fields and shortcut badges, 13px page numbers in headings.
+ */
 .mono {
   font-family: var(--mono);
 }
-/* Small monospace caps, for section labels and counts. */
+.data {
+  font-family: var(--mono);
+  font-size: 11px;
+}
+/* Small monospace caps, for section labels. */
 .caps {
   font-family: var(--mono);
   font-size: 10.5px;
@@ -518,13 +530,9 @@ button {
   font-size: 12px;
 }
 .spread-label {
-  font-family: var(--mono);
-  font-weight: 500;
-  font-size: 11px;
+  font: 500 11px var(--mono);
 }
-.spread-row-head .mono {
-  font-size: 10.5px;
-}
+
 .grip {
   display: inline-flex;
   color: var(--muted);
@@ -592,7 +600,7 @@ button {
   background: var(--panel);
   color: var(--accent-ink);
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 12px;
   padding: 1px 10px;
   cursor: pointer;
   opacity: 0;
@@ -764,7 +772,7 @@ button {
   margin: 0;
 }
 .inspector-name {
-  font-weight: 500;
+  font: 500 11px var(--mono);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -788,7 +796,7 @@ button {
 }
 .num-label {
   color: var(--muted);
-  font-family: var(--mono);
+  font: 11px var(--mono);
   min-width: 12px;
 }
 .num-field input {
@@ -807,6 +815,7 @@ button {
 }
 .num-suffix {
   color: var(--muted);
+  font: 11px var(--mono);
 }
 .check {
   display: flex;

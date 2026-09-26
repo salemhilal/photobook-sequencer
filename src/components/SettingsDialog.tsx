@@ -112,7 +112,7 @@ export function SettingsDialog() {
                 value={s.pageW}
                 onCommit={(n) => setPageSize('pageW', n)}
               />
-              <span className="muted">×</span>
+              <span className="muted data">×</span>
               <NumberField
                 label="Height"
                 {...pageSizeField}

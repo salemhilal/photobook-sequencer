@@ -176,7 +176,7 @@ function SpreadRow({ spread, index, total, settings, dragging, onHeaderDown }: R
         <span className="spread-label">
           {label}
         </span>
-        <span className="muted mono">{spread.items.length ? `${spread.items.length} photo${spread.items.length === 1 ? '' : 's'}` : ''}</span>
+        <span className="muted data">{spread.items.length ? `${spread.items.length} photo${spread.items.length === 1 ? '' : 's'}` : ''}</span>
         {middle && (
           <button
             className="row-delete"

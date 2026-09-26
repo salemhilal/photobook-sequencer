@@ -214,7 +214,7 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
           </button>
           <div className="modal-title">
             <span className="folio">{label}</span>
-            <span className="muted mono small">
+            <span className="muted data">
               {fmt(settings.pageW)} × {fmt(settings.pageH)} in
             </span>
           </div>
@@ -325,7 +325,8 @@ function Inspector({ doc, item, onChange, onToPile }: InspectorProps) {
       </label>
       {ppi !== null && (
         <div className={`small ${ppi < 200 ? 'warn' : 'muted'}`}>
-          {ppi} pixels per inch{ppi < 200 ? ' · may print soft' : ''}
+          <span className="data">{ppi} ppi</span>
+          {ppi < 200 ? ' · may print soft' : ''}
         </div>
       )}
       <div className="inspector-actions">

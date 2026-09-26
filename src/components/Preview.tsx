@@ -56,7 +56,7 @@ export function Preview() {
     <div className="preview" data-modal>
       <header className="preview-head">
         <span className="folio">{label}</span>
-        <span className="muted mono small">
+        <span className="muted data">
           {index + 1} / {spreads.length}
         </span>
         <span className="spacer" />
