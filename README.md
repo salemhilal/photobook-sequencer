@@ -1,19 +1,29 @@
 # Photo Sequencer
 
-A browser tool for mocking up photo book sequences. Photos sit in a loose pile on a desk; drag them onto page spreads in the sidebar, then open a spread to fine-tune layout with snapping guides. All measurements are in inches.
+Lay out photos on book spreads, in inches.
 
-## Run
+## Run locally
 
 ```bash
+nvm use        # Node 24 (needs ≥ 20.19)
 npm install
-npm run dev
+npm run dev    # → http://localhost:5173
 ```
 
-Work is saved automatically in the browser (IndexedDB).
+## Build
 
-## Controls
+```bash
+npm run build  # → dist/
+```
 
-- **Desk:** scroll to pan, pinch or ⌘-scroll to zoom, Space-drag to pan. Drag on empty space to select; Shift/⌘-click to add. Drag corners to resize (Shift for free aspect). Delete removes selected photos from the project.
-- **Sidebar:** drop photos on a page to place them (centered, fit to the largest border guide). Hover between spreads to add one; drag ⠿ to reorder; × deletes a spread and returns its photos to the desk. First and last pages are fixed.
-- **Spread editor:** click a spread. Photos snap to page edges, the gutter, center lines, and border guides (Alt disables). Arrow keys nudge 1/16" (Shift: 1/2"). Drag photos to or from the strip at the bottom.
-- **Everywhere:** ⌘Z / ⇧⌘Z undo and redo.
+## Shortcuts
+
+| Action       | Mac   | Windows |
+| ------------ | ----- | ------- |
+| Add photos   | ⌘O    | Ctrl+O  |
+| Preview      | ⌘P    | Ctrl+P  |
+| Settings     | ⌘,    | Ctrl+,  |
+| Undo         | ⌘Z    | Ctrl+Z  |
+| Redo         | ⇧⌘Z   | Ctrl+Y  |
+
+Hold ⌘ / Ctrl to see them on screen.

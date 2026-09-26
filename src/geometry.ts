@@ -204,3 +204,66 @@ export function intersects(a: Rect, b: Rect): boolean {
 export function fmt(n: number): string {
   return (Math.round(n * 100) / 100).toString();
 }
+
+type Knots = [old: number, next: number][];
+
+/**
+ * Guide positions along one axis for a run of pages, paired old → new:
+ * page edges, border guides, and the page center.
+ */
+function axisKnots(pages: number[], oldSize: number, newSize: number, borders: number[]): Knots {
+  const limit = Math.min(oldSize, newSize) / 2;
+  const knots: Knots = [];
+  for (const p of pages) {
+    const o0 = p * oldSize;
+    const n0 = p * newSize;
+    knots.push([o0, n0], [o0 + oldSize / 2, n0 + newSize / 2], [o0 + oldSize, n0 + newSize]);
+    for (const b of borders) {
+      if (b <= 0 || b >= limit) continue;
+      knots.push([o0 + b, n0 + b], [o0 + oldSize - b, n0 + newSize - b]);
+    }
+  }
+  knots.sort((a, b) => a[0] - b[0]);
+  return knots.filter((k, i) => i === 0 || k[0] - (knots[i - 1]?.[0] ?? -Infinity) > 1e-9);
+}
+
+/**
+ * Piecewise-linear map through the knots. Guides land on guides; space between
+ * them stretches proportionally. Beyond the outer page edges, offsets are kept.
+ */
+function mapAxis(v: number, knots: Knots): number {
+  const first = knots[0];
+  const last = knots[knots.length - 1];
+  if (!first || !last) return v;
+  if (v <= first[0]) return first[1] + (v - first[0]);
+  if (v >= last[0]) return last[1] + (v - last[0]);
+  for (let i = 1; i < knots.length; i++) {
+    const a = knots[i - 1];
+    const b = knots[i];
+    if (!a || !b || v > b[0]) continue;
+    const t = (v - a[0]) / (b[0] - a[0]);
+    return a[1] + t * (b[1] - a[1]);
+  }
+  return v;
+}
+
+/**
+ * Move a spread item (gutter-relative coordinates) so it keeps its relationship to the
+ * page's guides after a page-size change. Its edges are mapped through the guides, and
+ * the photo is refit into that box, keeping its proportions, around the box's center.
+ */
+export function relayoutRect(r: Rect, from: Settings, to: Settings): Rect {
+  const borders = from.borders;
+  const xs = axisKnots([-1, 0], from.pageW, to.pageW, borders);
+  const ys = axisKnots([0], from.pageH, to.pageH, borders);
+  const x1 = mapAxis(r.x, xs);
+  const x2 = mapAxis(r.x + r.w, xs);
+  const y1 = mapAxis(r.y, ys);
+  const y2 = mapAxis(r.y + r.h, ys);
+  const boxW = Math.max(0.1, x2 - x1);
+  const boxH = Math.max(0.1, y2 - y1);
+  const aspect = r.w / r.h;
+  const w = Math.min(boxW, boxH * aspect);
+  const h = w / aspect;
+  return { x: (x1 + x2) / 2 - w / 2, y: (y1 + y2) / 2 - h / 2, w, h };
+}

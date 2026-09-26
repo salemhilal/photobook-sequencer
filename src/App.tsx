@@ -10,9 +10,15 @@ import { deleteImage, imageIds, loadDoc, saveDoc } from './db';
 import { forgetUrl } from './images';
 import { docStore, emptyDoc, useDoc } from './store';
 import type { Doc } from './types';
-import { isTyping, ui } from './ui';
+import { hasMod, isMac, isTyping, MOD_LABEL, ui } from './ui';
 
 const SAVE_DELAY = 400;
+/** How long the modifier must be held before shortcut hints appear. */
+const HINT_DELAY = 250;
+
+const SHORTCUTS = { addPhotos: 'O', preview: 'P', settings: ',' } as const;
+const UNDO_LABEL = `${MOD_LABEL}Z`;
+const REDO_LABEL = isMac ? '⇧⌘Z' : 'Ctrl+Y';
 
 export default function App() {
   const { doc, canUndo, canRedo } = useDoc();
@@ -25,6 +31,9 @@ export default function App() {
   const loaded = usePersistence();
 
   useGlobalKeys();
+  useShortcuts(() => {
+    if (!ui.get().importing) fileRef.current?.click();
+  });
 
   useEffect(() => {
     if (!notice) return;
@@ -40,8 +49,14 @@ export default function App() {
   return (
     <div className="app">
       <header className="toolbar">
-        <button className="btn primary" onClick={openFiles} disabled={importing !== null}>
+        <button
+          className="btn primary has-hint"
+          onClick={openFiles}
+          disabled={importing !== null}
+          title={`Add photos (${MOD_LABEL}${SHORTCUTS.addPhotos})`}
+        >
           Add photos
+          <ShortcutHint k={SHORTCUTS.addPhotos} />
         </button>
         <input
           ref={fileRef}
@@ -56,11 +71,25 @@ export default function App() {
           }}
         />
         <div className="btn-group">
-          <button className="btn icon" aria-label="Undo" title="Undo (⌘Z)" disabled={!canUndo} onClick={() => docStore.undo()}>
+          <button
+            className="btn icon has-hint"
+            aria-label="Undo"
+            title={`Undo (${UNDO_LABEL})`}
+            disabled={!canUndo}
+            onClick={() => docStore.undo()}
+          >
             ↶
+            <ShortcutHint label={UNDO_LABEL} below />
           </button>
-          <button className="btn icon" aria-label="Redo" title="Redo (⇧⌘Z)" disabled={!canRedo} onClick={() => docStore.redo()}>
+          <button
+            className="btn icon has-hint"
+            aria-label="Redo"
+            title={`Redo (${REDO_LABEL})`}
+            disabled={!canRedo}
+            onClick={() => docStore.redo()}
+          >
             ↷
+            <ShortcutHint label={REDO_LABEL} below />
           </button>
         </div>
         <span className="status">
@@ -69,11 +98,21 @@ export default function App() {
             : `${doc.pile.length} on desk · ${placed} placed`}
         </span>
         <span className="spacer" />
-        <button className="btn" onClick={() => ui.set({ previewOpen: true })}>
+        <button
+          className="btn has-hint"
+          onClick={() => ui.set({ previewOpen: true, settingsOpen: false })}
+          title={`Preview book (${MOD_LABEL}${SHORTCUTS.preview})`}
+        >
           Preview book
+          <ShortcutHint k={SHORTCUTS.preview} />
         </button>
-        <button className="btn" onClick={() => ui.set({ settingsOpen: true })}>
+        <button
+          className="btn has-hint"
+          onClick={() => ui.set({ settingsOpen: true, previewOpen: false })}
+          title={`Settings (${MOD_LABEL}${SHORTCUTS.settings})`}
+        >
           Settings
+          <ShortcutHint k={SHORTCUTS.settings} />
         </button>
       </header>
       <main className="main">
@@ -94,6 +133,73 @@ export default function App() {
       )}
     </div>
   );
+}
+
+/** `k` is a key pressed with the modifier; `label` is a full custom label. */
+function ShortcutHint({ k, label, below }: { k?: string; label?: string; below?: boolean }) {
+  const show = ui.use((s) => s.hints);
+  if (!show) return null;
+  return (
+    <kbd className={`shortcut-hint${below ? ' below' : ''}`} aria-hidden="true">
+      {label ?? `${MOD_LABEL}${k ?? ''}`}
+    </kbd>
+  );
+}
+
+/**
+ * App-level shortcuts, plus hints: holding the modifier alone for a moment
+ * reveals each shortcut's key over its button.
+ */
+function useShortcuts(addPhotos: () => void): void {
+  const addRef = useRef(addPhotos);
+  useEffect(() => {
+    addRef.current = addPhotos;
+  });
+
+  useEffect(() => {
+    const modKey = isMac ? 'Meta' : 'Control';
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const hide = () => {
+      clearTimeout(timer);
+      if (ui.get().hints) ui.set({ hints: false });
+    };
+
+    const onDown = (e: KeyboardEvent) => {
+      if (e.key === modKey) {
+        if (!e.repeat) {
+          clearTimeout(timer);
+          timer = setTimeout(() => ui.set({ hints: true }), HINT_DELAY);
+        }
+        return;
+      }
+      hide();
+      if (!hasMod(e) || e.shiftKey || e.altKey) return;
+      const key = e.key.toUpperCase();
+      if (key === SHORTCUTS.addPhotos) {
+        e.preventDefault();
+        addRef.current();
+      } else if (key === SHORTCUTS.preview) {
+        e.preventDefault();
+        ui.set((s) => ({ previewOpen: !s.previewOpen, settingsOpen: false }));
+      } else if (key === SHORTCUTS.settings) {
+        e.preventDefault();
+        ui.set((s) => ({ settingsOpen: !s.settingsOpen, previewOpen: false }));
+      }
+    };
+    const onUp = (e: KeyboardEvent) => {
+      if (e.key === modKey) hide();
+    };
+
+    window.addEventListener('keydown', onDown, true);
+    window.addEventListener('keyup', onUp, true);
+    window.addEventListener('blur', hide);
+    return () => {
+      hide();
+      window.removeEventListener('keydown', onDown, true);
+      window.removeEventListener('keyup', onUp, true);
+      window.removeEventListener('blur', hide);
+    };
+  }, []);
 }
 
 function DragGhost() {

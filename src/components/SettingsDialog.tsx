@@ -1,5 +1,15 @@
 import { useEffect } from 'react';
+import { current } from 'immer';
+import { relayoutRect } from '../geometry';
 import { docStore, useDoc } from '../store';
+import type { Doc, Spread } from '../types';
+
+/**
+ * The layout that a run of page-size edits is computed from. Relaying out from
+ * this fixed starting point (rather than from the previous size) keeps edits order-independent
+ * and exactly reversible. It resets when anything else changes the spreads.
+ */
+let resizeSession: { base: Doc; out: Spread[] } | null = null;
 import { ui } from '../ui';
 import { NumberField } from './NumberField';
 
@@ -13,6 +23,34 @@ export function SettingsDialog() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+
+  // Each field edit is one undo step (a gesture from focus to blur), and every
+  // value typed is computed from the session base, so intermediate values don't distort photos.
+  const setPageSize = (dim: 'pageW' | 'pageH', n: number) => {
+    const start = docStore.gestureStart;
+    if (!resizeSession || (start.spreads !== resizeSession.out && start.spreads !== resizeSession.base.spreads)) {
+      resizeSession = { base: start, out: start.spreads };
+    }
+    const base = resizeSession.base;
+    docStore.preview((d) => {
+      d.settings[dim] = n;
+      if (!d.settings.keepRelative) return;
+      const to = current(d.settings);
+      for (const spread of d.spreads) {
+        const baseItems = base.spreads.find((s) => s.id === spread.id)?.items;
+        for (const item of spread.items) {
+          const from = baseItems?.find((i) => i.photoId === item.photoId);
+          if (from) Object.assign(item, relayoutRect(from, base.settings, to));
+        }
+      }
+    });
+    resizeSession.out = docStore.doc.spreads;
+  };
+  const pageSizeField = {
+    min: 1,
+    onBegin: () => docStore.begin(),
+    onEnd: () => docStore.end(),
+  };
 
   const maxBorder = Math.min(s.pageW, s.pageH) / 2 - 0.1;
 
@@ -29,22 +67,35 @@ export function SettingsDialog() {
         <div className="settings-body">
           <section>
             <h3>Page size</h3>
-            <p className="muted small">Each page, in inches. Photos keep their position relative to the gutter.</p>
+            <p className="muted small">Each page, in inches.</p>
             <div className="row">
               <NumberField
                 label="Width"
-                min={1}
+                {...pageSizeField}
                 value={s.pageW}
-                onCommit={(n) => docStore.apply((d) => void (d.settings.pageW = n), { coalesce: 'pageW' })}
+                onCommit={(n) => setPageSize('pageW', n)}
               />
               <span className="muted">×</span>
               <NumberField
                 label="Height"
-                min={1}
+                {...pageSizeField}
                 value={s.pageH}
-                onCommit={(n) => docStore.apply((d) => void (d.settings.pageH = n), { coalesce: 'pageH' })}
+                onCommit={(n) => setPageSize('pageH', n)}
               />
             </div>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={s.keepRelative}
+                onChange={(e) => docStore.apply((d) => void (d.settings.keepRelative = e.target.checked))}
+              />{' '}
+              Keep photos relative to guides when resizing
+            </label>
+            <p className="muted small check-help">
+              {s.keepRelative
+                ? 'Photos move with the page edges, guides, and center, and scale toward the page center.'
+                : 'Photos keep their exact size and distance from the gutter.'}
+            </p>
           </section>
           <section>
             <h3>Center lines</h3>

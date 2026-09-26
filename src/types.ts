@@ -38,6 +38,8 @@ export interface Settings {
   pageH: number;
   centerV: boolean;
   centerH: boolean;
+  /** When the page size changes, move photos with the guides instead of keeping absolute positions. */
+  keepRelative: boolean;
   /** Border guide insets, in inches from each page's outside edges. */
   borders: number[];
 }

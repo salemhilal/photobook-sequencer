@@ -43,6 +43,11 @@ class DocStore {
     return this.present;
   }
 
+  /** The doc a gesture started from (or the present, outside a gesture). */
+  get gestureStart(): Doc {
+    return this.gestureBase ?? this.present;
+  }
+
   /** Every doc still reachable through undo/redo. */
   allDocs(): Doc[] {
     return [...this.past, this.present, ...this.future, ...(this.gestureBase ? [this.gestureBase] : [])];
@@ -154,7 +159,7 @@ export function emptyDoc(): Doc {
       { id: newId(), kind: 'middle', items: [] },
       { id: newId(), kind: 'last', items: [] },
     ],
-    settings: { pageW: 10, pageH: 8, centerV: true, centerH: true, borders: [0.5, 1.25] },
+    settings: { pageW: 10, pageH: 8, centerV: true, centerH: true, keepRelative: true, borders: [0.5, 1.25] },
     nextZ: 1,
   };
 }

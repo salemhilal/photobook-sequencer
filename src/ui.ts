@@ -34,6 +34,8 @@ export interface UiState {
   hoverKey: string | null;
   importing: { done: number; total: number } | null;
   notice: string | null;
+  /** True while the shortcut modifier is held, to reveal shortcut hints. */
+  hints: boolean;
 }
 
 export const ui = createStore<UiState>({
@@ -46,6 +48,7 @@ export const ui = createStore<UiState>({
   hoverKey: null,
   importing: null,
   notice: null,
+  hints: false,
 });
 
 /** Screen pixels per inch on the desk at zoom 1. */
@@ -85,3 +88,12 @@ export function isTyping(e: Event): boolean {
   const t = e.target;
   return t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement;
 }
+
+export const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+
+/** The platform's shortcut modifier: Cmd on macOS, Ctrl elsewhere. */
+export function hasMod(e: KeyboardEvent): boolean {
+  return isMac ? e.metaKey : e.ctrlKey;
+}
+
+export const MOD_LABEL = isMac ? '⌘' : 'Ctrl+';
