@@ -303,9 +303,22 @@ button {
   top: calc(100% + 6px);
   transform: translateX(-50%);
 }
-.btn-group {
-  display: flex;
-  gap: 16px;
+/* Joined buttons (undo/redo): one pill with a hairline between. */
+.btn-joined {
+  position: relative;
+  display: inline-flex;
+  border-radius: var(--radius);
+  background: var(--fill);
+}
+.btn-joined .btn {
+  border-radius: 0;
+}
+.btn-joined .btn:first-of-type {
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+.btn-joined .btn:last-of-type {
+  border-radius: 0 var(--radius) var(--radius) 0;
+  box-shadow: inset 1px 0 0 var(--border-strong);
 }
 
 /* Layout */
@@ -329,14 +342,18 @@ button {
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.08em;
-  padding: 0 8px 0 4px;
+  padding: 4px 8px 3px;
+  margin-right: 6px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--on-accent);
   user-select: none;
 }
 .status {
   color: var(--muted);
   font-family: var(--mono);
   font-size: 11px;
-  margin-left: 6px;
+  margin-right: 10px;
 }
 .main {
   position: relative;

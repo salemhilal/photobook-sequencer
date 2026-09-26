@@ -117,28 +117,28 @@ export default function App() {
             if (files.length) void importPhotos(files);
           }}
         />
-        <div className="btn-group">
+        <div className="btn-joined has-hint">
           <button
-            className="btn ghost icon has-hint"
+            className="btn ghost icon"
             aria-label="Undo"
             title={`Undo (${UNDO_LABEL})`}
             disabled={!canUndo}
             onClick={() => docStore.undo()}
           >
             <Undo2 />
-            <ShortcutHint label={UNDO_LABEL} below />
           </button>
           <button
-            className="btn ghost icon has-hint"
+            className="btn ghost icon"
             aria-label="Redo"
             title={`Redo (${REDO_LABEL})`}
             disabled={!canRedo}
             onClick={() => docStore.redo()}
           >
             <Redo2 />
-            <ShortcutHint label={REDO_LABEL} below />
           </button>
+          <ShortcutHint label={`${UNDO_LABEL} · ${REDO_LABEL}`} below />
         </div>
+        <span className="spacer" />
         <span className="status">
           {importing?.total
             ? `Importing ${importing.done} of ${importing.total}…`
@@ -148,7 +148,6 @@ export default function App() {
                 ? 'Importing…'
             : `${doc.pile.length} on desk · ${placed} placed`}
         </span>
-        <span className="spacer" />
         <input
           ref={projectRef}
           type="file"
