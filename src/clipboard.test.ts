@@ -15,7 +15,10 @@ vi.mock('./images', async (orig) => ({
 let written: Record<string, Blob> = {};
 let failWrites = false;
 class FakeClipboardItem {
-  constructor(public items: Record<string, Blob | Promise<Blob>>) {}
+  items: Record<string, Blob | Promise<Blob>>;
+  constructor(items: Record<string, Blob | Promise<Blob>>) {
+    this.items = items;
+  }
 }
 vi.stubGlobal('ClipboardItem', FakeClipboardItem);
 vi.stubGlobal('navigator', {
