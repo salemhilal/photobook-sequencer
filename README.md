@@ -10,11 +10,20 @@ npm install
 npm run dev    # → http://localhost:5173
 ```
 
+## Test
+
+```bash
+npm test             # run once
+npm run test:watch   # re-run on save
+```
+
 ## Build
 
 ```bash
 npm run build  # → dist/
 ```
+
+Netlify runs `npm test && npm run build` for production, pull-request previews, and branch deploys (see `netlify.toml`).
 
 ## Shortcuts
 

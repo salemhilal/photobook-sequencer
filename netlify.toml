@@ -1,5 +1,7 @@
+# Production (main), deploy previews (pull requests), and branch deploys all use
+# these settings. Tests run first; a failing test stops the deploy.
 [build]
-  command = "npm run build"
+  command = "npm test && npm run build"
   publish = "dist"
 
 [build.environment]

@@ -1,0 +1,125 @@
+// @vitest-environment happy-dom
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+// Stand in for IndexedDB: keep stored images in memory, as real Blobs.
+vi.mock('./db', () => {
+  const images = new Map<string, unknown>();
+  return {
+    putImage: async (id: string, img: unknown) => void images.set(id, img),
+    getImage: async (id: string) => images.get(id),
+    deleteImage: async (id: string) => void images.delete(id),
+  };
+});
+
+import { putOnPage } from './actions';
+import { deleteImage, getImage, putImage } from './db';
+import { exportProject, importProject, ProjectFileError } from './project';
+import { docStore, emptyDoc } from './store';
+import type { Doc } from './types';
+import { createZip } from './zip';
+
+function sampleDoc(): Doc {
+  const doc = emptyDoc();
+  doc.photos = {
+    a: { id: 'a', name: 'beach.jpg', pxW: 1200, pxH: 900 },
+    b: { id: 'b', name: 'beach.jpg', pxW: 900, pxH: 1200 },
+  };
+  doc.pile = [{ photoId: 'a', x: 1, y: 1, w: 2, h: 1.5, z: 1 }];
+  doc.nextZ = 2;
+  return doc;
+}
+
+/** Run `fn`, capturing the file it downloads. */
+async function captureDownload(fn: () => Promise<void>): Promise<{ blob: Blob; name: string }> {
+  let blob: Blob | undefined;
+  let name = '';
+  const create = vi.spyOn(URL, 'createObjectURL').mockImplementation((b) => {
+    blob = b as Blob;
+    return 'blob:test';
+  });
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+    name = this.download;
+  });
+  await fn();
+  create.mockRestore();
+  click.mockRestore();
+  if (!blob) throw new Error('nothing was downloaded');
+  return { blob, name };
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  docStore.reset(emptyDoc());
+});
+
+describe('project files', () => {
+  it('exports and re-imports a project with its layout and images', async () => {
+    const doc = sampleDoc();
+    docStore.reset(doc);
+    docStore.apply((d) => putOnPage(d, ['b'], d.spreads[1]!.id, 'right'));
+    const before = docStore.doc;
+    await putImage('a', { full: new Blob(['full-a'], { type: 'image/jpeg' }), thumb: new Blob(['thumb-a']) });
+    await putImage('b', { full: new Blob(['full-b'], { type: 'image/jpeg' }), thumb: new Blob(['thumb-b']) });
+
+    const { blob, name } = await captureDownload(exportProject);
+    expect(name).toMatch(/^photo-book-\d{4}-\d{2}-\d{2}\.zip$/);
+
+    // Simulate opening the file on a fresh machine.
+    await deleteImage('a');
+    await deleteImage('b');
+    docStore.reset(emptyDoc());
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:thumb');
+    await importProject(new File([blob], name));
+
+    expect(docStore.doc).toEqual(before);
+    expect(await (await getImage('b'))!.full.text()).toBe('full-b');
+    expect(await (await getImage('a'))!.thumb.text()).toBe('thumb-a');
+
+    docStore.undo();
+    expect(Object.keys(docStore.doc.photos)).toHaveLength(0);
+  });
+
+  it('gives duplicate filenames distinct names inside the zip', async () => {
+    docStore.reset(sampleDoc());
+    await putImage('a', { full: new Blob(['a']), thumb: new Blob(['a']) });
+    await putImage('b', { full: new Blob(['b']), thumb: new Blob(['b']) });
+    const { blob } = await captureDownload(exportProject);
+    const { readZip } = await import('./zip');
+    const names = [...(await readZip(blob)).keys()].filter((n) => n.startsWith('images/'));
+    expect(names.sort()).toEqual(['images/beach (2).jpg', 'images/beach.jpg']);
+  });
+
+  it('drops photos whose images are missing from the file', async () => {
+    const doc = sampleDoc();
+    const manifest = {
+      format: 'photo-sequencer-project',
+      version: 1,
+      exportedAt: '',
+      doc,
+      files: { a: { image: 'images/a.jpg' }, b: { image: 'images/missing.jpg' } },
+    };
+    const zip = await createZip([
+      { name: 'project.json', data: new Blob([JSON.stringify(manifest)]) },
+      { name: 'images/a.jpg', data: new Blob(['a']) },
+    ]);
+    // With no thumbnail in the file, one is generated from the original.
+    const images = await import('./images');
+    vi.spyOn(images, 'thumbFromBlob').mockResolvedValue(new Blob(['generated']));
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:thumb');
+
+    await importProject(new File([zip], 'partial.zip'));
+    expect(Object.keys(docStore.doc.photos)).toEqual(['a']);
+  });
+
+  it('rejects files that are not projects', async () => {
+    const zip = await createZip([{ name: 'notes.txt', data: new Blob(['hi']) }]);
+    await expect(importProject(new File([zip], 'notes.zip'))).rejects.toBeInstanceOf(ProjectFileError);
+    await expect(importProject(new File(['junk'], 'junk.zip'))).rejects.toBeInstanceOf(ProjectFileError);
+  });
+
+  it('refuses projects from a newer version', async () => {
+    const manifest = { format: 'photo-sequencer-project', version: 99, exportedAt: '', doc: sampleDoc(), files: {} };
+    const zip = await createZip([{ name: 'project.json', data: new Blob([JSON.stringify(manifest)]) }]);
+    await expect(importProject(new File([zip], 'future.zip'))).rejects.toThrow(/newer version/);
+  });
+});
