@@ -471,27 +471,27 @@ button {
     0 0 0 var(--print-border) var(--print),
     var(--shadow);
 }
-/* Selection: amber crop marks just outside the photo (and its print border). */
+/*
+ * Selection: amber crop marks just outside the photo (and its print border).
+ * Drawn as a thin rounded outline, masked so only the four corners show.
+ */
 .item.selected::after {
   /* Sit just outside the print border (which scales with zoom); the marks themselves don't. */
-  --gap: calc(var(--print-border, 0px) + 6px * var(--inv, 1));
-  --len: calc(16px * var(--inv, 1));
-  --w: calc(3px * var(--inv, 1));
+  --gap: calc(var(--print-border, 0px) + 5px * var(--inv, 1));
+  --len: calc(12px * var(--inv, 1));
   content: '';
   position: absolute;
   inset: calc(var(--gap) * -1);
   pointer-events: none;
-  filter: drop-shadow(0 0 calc(1px * var(--inv, 1)) rgba(0, 0, 0, 0.9));
-  background:
-    linear-gradient(var(--accent), var(--accent)) top left / var(--len) var(--w),
-    linear-gradient(var(--accent), var(--accent)) top left / var(--w) var(--len),
-    linear-gradient(var(--accent), var(--accent)) top right / var(--len) var(--w),
-    linear-gradient(var(--accent), var(--accent)) top right / var(--w) var(--len),
-    linear-gradient(var(--accent), var(--accent)) bottom left / var(--len) var(--w),
-    linear-gradient(var(--accent), var(--accent)) bottom left / var(--w) var(--len),
-    linear-gradient(var(--accent), var(--accent)) bottom right / var(--len) var(--w),
-    linear-gradient(var(--accent), var(--accent)) bottom right / var(--w) var(--len);
-  background-repeat: no-repeat;
+  border: calc(2px * var(--inv, 1)) solid var(--accent);
+  border-radius: calc(3px * var(--inv, 1));
+  filter: drop-shadow(0 0 calc(0.75px * var(--inv, 1)) rgba(0, 0, 0, 0.6));
+  --corner: linear-gradient(#000 0 0);
+  mask:
+    var(--corner) top left / var(--len) var(--len) no-repeat,
+    var(--corner) top right / var(--len) var(--len) no-repeat,
+    var(--corner) bottom left / var(--len) var(--len) no-repeat,
+    var(--corner) bottom right / var(--len) var(--len) no-repeat;
 }
 .desk .item {
   --print-border: 4px;
