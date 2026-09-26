@@ -13,6 +13,8 @@ const CORNERS: Corner[] = ['nw', 'ne', 'sw', 'se'];
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 5;
 const GHOST_MAX = 140;
+/** When moving photos on the desk, the drop border fades in within this distance of its edge. */
+const EDGE_FADE_PX = 120;
 
 export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
   const { doc } = useDoc();
@@ -127,11 +129,22 @@ export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
     const k = DESK_PPI * ui.get().view.zoom;
     const ghostW = Math.min(GHOST_MAX, p.w * k);
     const ghost = { photoId: p.photoId, count: ids.length, w: ghostW, h: (ghostW * p.h) / p.w };
+    // The desk is where these photos already are, so its drop border only
+    // appears near the edge, as a hint that you're about to leave it.
+    const deskEl = ref.current;
+    const setEdge = (ev: PointerEvent | null) => {
+      if (!deskEl) return;
+      if (!ev) return deskEl.style.removeProperty('--edge');
+      const r = deskEl.getBoundingClientRect();
+      const d = Math.min(ev.clientX - r.left, r.right - ev.clientX, ev.clientY - r.top, r.bottom - ev.clientY);
+      deskEl.style.setProperty('--edge', String(Math.min(1, Math.max(0, 1 - d / EDGE_FADE_PX))));
+    };
 
     startDrag(e, {
       onStart: () => docStore.begin(),
       onMove: ({ e: ev, dx, dy }) => {
         const target = trackGhost(ev, null);
+        setEdge(ev);
         ui.set({ ghost: target?.kind === 'desk' ? null : { ...ghost, clientX: ev.clientX, clientY: ev.clientY } });
         const set = new Set(ids);
         const ordered = [...docStore.doc.pile].sort((a, b) => a.z - b.z);
@@ -148,6 +161,7 @@ export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
       },
       onEnd: ({ e: ev }, moved) => {
         clearGhost();
+        setEdge(null);
         if (!moved) {
           if (toggle && wasSelected) ui.set({ selection: current.filter((id) => id !== p.photoId) });
           else if (!toggle) ui.set({ selection: [p.photoId] });
@@ -175,6 +189,7 @@ export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
       },
       onCancel: () => {
         clearGhost();
+        setEdge(null);
         docStore.cancel();
       },
     });
