@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
-import { X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { current } from 'immer';
 import { relayoutRect } from '../geometry';
 import { docStore, useDoc } from '../store';
 import { applyTheme, saveTheme, type ThemePref } from '../theme';
 import type { Doc, Spread } from '../types';
+import { ui } from '../ui';
+import { NumberField } from './NumberField';
 
 /**
  * The layout that a run of page-size edits is computed from. Relaying out from
@@ -12,8 +14,6 @@ import type { Doc, Spread } from '../types';
  * and exactly reversible. It resets when anything else changes the spreads.
  */
 let resizeSession: { base: Doc; out: Spread[] } | null = null;
-import { ui } from '../ui';
-import { NumberField } from './NumberField';
 
 const THEMES: { value: ThemePref; label: string }[] = [
   { value: 'system', label: 'System' },
@@ -86,6 +86,7 @@ export function SettingsDialog() {
   };
 
   const maxBorder = Math.min(s.pageW, s.pageH) / 2 - 0.1;
+  const dropGuide = Math.min(...s.borders);
 
   return (
     <div className="modal-backdrop" data-modal onPointerDown={(e) => e.target === e.currentTarget && close()}>
@@ -98,99 +99,103 @@ export function SettingsDialog() {
           </button>
         </header>
         <div className="settings-body">
-          <section>
-            <h3 id="appearance-label">Appearance</h3>
-            <ThemePicker />
-          </section>
-          <section>
+          <section className="setting">
             <h3>Page size</h3>
-            <p className="muted small">Each page, in inches.</p>
-            <div className="row">
-              <NumberField
-                label="Width"
-                {...pageSizeField}
-                value={s.pageW}
-                onCommit={(n) => setPageSize('pageW', n)}
-              />
-              <span className="muted data">×</span>
-              <NumberField
-                label="Height"
-                {...pageSizeField}
-                value={s.pageH}
-                onCommit={(n) => setPageSize('pageH', n)}
-              />
-            </div>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={s.keepRelative}
-                onChange={(e) => docStore.apply((d) => void (d.settings.keepRelative = e.target.checked))}
-              />{' '}
-              Keep photos relative to guides when resizing
-            </label>
-            <p className="muted small check-help">
-              {s.keepRelative
-                ? 'Photos move with the page edges, guides, and center, and scale toward the page center.'
-                : 'Photos keep their exact size and distance from the gutter.'}
-            </p>
-          </section>
-          <section>
-            <h3>Center lines</h3>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={s.centerV}
-                onChange={(e) => docStore.apply((d) => void (d.settings.centerV = e.target.checked))}
-              />{' '}
-              Vertical
-            </label>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={s.centerH}
-                onChange={(e) => docStore.apply((d) => void (d.settings.centerH = e.target.checked))}
-              />{' '}
-              Horizontal
-            </label>
-          </section>
-          <section>
-            <h3>Border guides</h3>
-            <p className="muted small">
-              Inches in from each page's outside edges. New photos fit inside the largest box (smallest inset).
-            </p>
-            {s.borders.map((b, i) => (
-              <div className="row" key={i}>
-                <NumberField
-                  value={b}
-                  min={0}
-                  onCommit={(n) =>
-                    docStore.apply((d) => void (d.settings.borders[i] = Math.min(n, maxBorder)), {
-                      coalesce: `border:${i}`,
-                    })
-                  }
-                />
-                {b === Math.min(...s.borders) && <span className="muted small">largest · used on drop</span>}
-                <span className="spacer" />
-                <button
-                  className="btn icon"
-                  aria-label={`Remove ${b} in guide`}
-                  onClick={() => docStore.apply((d) => void d.settings.borders.splice(i, 1))}
-                >
-                  <X />
-                </button>
+            <div className="setting-controls">
+              <div className="inline">
+                <NumberField label="W" suffix="" {...pageSizeField} value={s.pageW} onCommit={(n) => setPageSize('pageW', n)} />
+                <NumberField label="H" suffix="" {...pageSizeField} value={s.pageH} onCommit={(n) => setPageSize('pageH', n)} />
+                <span className="muted data">in</span>
               </div>
-            ))}
-            <button
-              className="btn"
-              onClick={() =>
-                docStore.apply((d) => {
-                  const last = d.settings.borders.at(-1) ?? 0.25;
-                  d.settings.borders.push(Math.min(maxBorder, last + 0.25));
-                })
-              }
-            >
-              + Add guide
-            </button>
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={s.keepRelative}
+                  onChange={(e) => docStore.apply((d) => void (d.settings.keepRelative = e.target.checked))}
+                />
+                Keep photos relative to guides
+              </label>
+              <p className="help">
+                {s.keepRelative
+                  ? 'When the size changes, photos move and scale with the guides.'
+                  : 'When the size changes, photos keep their exact position.'}
+              </p>
+            </div>
+          </section>
+
+          <section className="setting">
+            <h3>Center lines</h3>
+            <div className="setting-controls">
+              <div className="inline">
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={s.centerV}
+                    onChange={(e) => docStore.apply((d) => void (d.settings.centerV = e.target.checked))}
+                  />
+                  Vertical
+                </label>
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={s.centerH}
+                    onChange={(e) => docStore.apply((d) => void (d.settings.centerH = e.target.checked))}
+                  />
+                  Horizontal
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section className="setting">
+            <h3>Border guides</h3>
+            <div className="setting-controls">
+              {s.borders.map((b, i) => (
+                <div className="inline guide-row" key={i}>
+                  <NumberField
+                    value={b}
+                    min={0}
+                    onCommit={(n) =>
+                      docStore.apply((d) => void (d.settings.borders[i] = Math.min(n, maxBorder)), {
+                        coalesce: `border:${i}`,
+                      })
+                    }
+                  />
+                  <button
+                    className="btn ghost icon small"
+                    aria-label={`Remove ${b} in guide`}
+                    onClick={() => docStore.apply((d) => void d.settings.borders.splice(i, 1))}
+                  >
+                    <X />
+                  </button>
+                  {b === dropGuide && (
+                    <span className="tag" title="New photos fit inside this guide">
+                      on drop
+                    </span>
+                  )}
+                </div>
+              ))}
+              <button
+                className="btn ghost add-guide"
+                onClick={() =>
+                  docStore.apply((d) => {
+                    const last = d.settings.borders.at(-1) ?? 0.25;
+                    d.settings.borders.push(Math.min(maxBorder, last + 0.25));
+                  })
+                }
+              >
+                <Plus />
+                Add guide
+              </button>
+              <p className="help">Measured in from each page's outside edges.</p>
+            </div>
+          </section>
+
+          <section className="setting app-setting">
+            <h3 id="appearance-label">Appearance</h3>
+            <div className="setting-controls">
+              <ThemePicker />
+            </div>
           </section>
         </div>
       </div>
