@@ -48,11 +48,17 @@ export interface UiState {
   hints: boolean;
   theme: ThemePref;
   sidebarOpen: boolean;
+  /** Preferred sidebar width in px (clamped to the window when shown). */
+  sidebarWidth: number;
   deskColor: string;
   contextMenu: ContextMenuState | null;
 }
 
+// Declared before the store below, which reads them while initializing.
 const SIDEBAR_KEY = 'photobook-sidebar';
+export const SIDEBAR_DEFAULT_WIDTH = 284;
+export const SIDEBAR_MIN_WIDTH = 240;
+const SIDEBAR_WIDTH_KEY = 'photobook-sidebar-width';
 
 export const ui = createStore<UiState>({
   selection: [],
@@ -68,6 +74,7 @@ export const ui = createStore<UiState>({
   hints: false,
   theme: loadTheme(),
   sidebarOpen: loadSidebarOpen(),
+  sidebarWidth: loadSidebarWidth(),
   deskColor: loadDeskColor(),
   contextMenu: null,
 });
@@ -91,6 +98,29 @@ function loadSidebarOpen(): boolean {
     return localStorage.getItem(SIDEBAR_KEY) !== 'closed';
   } catch {
     return true;
+  }
+}
+
+
+function loadSidebarWidth(): number {
+  try {
+    const n = Number(localStorage.getItem(SIDEBAR_WIDTH_KEY));
+    if (Number.isFinite(n) && n >= SIDEBAR_MIN_WIDTH) return n;
+  } catch {
+    // Fall through to the default.
+  }
+  return SIDEBAR_DEFAULT_WIDTH;
+}
+
+/** Set the sidebar width; `persist` saves it (at the end of a resize drag). */
+export function setSidebarWidth(width: number, persist: boolean): void {
+  ui.set({ sidebarWidth: width });
+  if (!persist) return;
+  try {
+    if (width === SIDEBAR_DEFAULT_WIDTH) localStorage.removeItem(SIDEBAR_WIDTH_KEY);
+    else localStorage.setItem(SIDEBAR_WIDTH_KEY, String(Math.round(width)));
+  } catch {
+    // Not persisted; still applies for this session.
   }
 }
 

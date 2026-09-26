@@ -1,21 +1,80 @@
-import { useRef, useState, type CSSProperties } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { GripVertical, Plus, X } from 'lucide-react';
 import { deleteSpread, folioLabel, insertSpread, moveSpread, putInPile, putOnNewSpread, putOnPage } from '../actions';
 import { clearGhost, startDrag, trackGhost } from '../drag';
 import { docStore, useDoc } from '../store';
 import type { Placement, Settings, Spread } from '../types';
-import { DESK_PPI, deskGeometry, openPhotoMenu, ui } from '../ui';
+import {
+  DESK_PPI,
+  deskGeometry,
+  openPhotoMenu,
+  setSidebarWidth,
+  SIDEBAR_DEFAULT_WIDTH,
+  SIDEBAR_MIN_WIDTH,
+  ui,
+} from '../ui';
 import { PhotoImg } from './PhotoImg';
 import { SpreadCanvas } from './SpreadCanvas';
 
-const THUMB_W = 244;
 const GHOST_MAX = 140;
+/** Narrowest a spread can be before the list falls back to one column. */
+const GRID_MIN_CELL = 280;
+/** Space between grid columns; the vertical insert gaps live here. */
+const GRID_GAP_X = 20;
+/** Horizontal padding inside each spread row. */
+const ROW_PAD_X = 8;
+/** The desk keeps at least this much room when the sidebar is widened. */
+const MIN_DESK_WIDTH = 160;
+
+/** One column until two spreads fit side by side, then as many columns as fit. */
+function listLayout(contentWidth: number): { cols: number; thumbW: number } {
+  const cols = Math.max(1, Math.floor((contentWidth + GRID_GAP_X) / (GRID_MIN_CELL + GRID_GAP_X)));
+  const cellW = (contentWidth - GRID_GAP_X * (cols - 1)) / cols;
+  return { cols, thumbW: Math.max(120, cellW - ROW_PAD_X) };
+}
 
 export function Sidebar() {
   const { doc } = useDoc();
   const listRef = useRef<HTMLDivElement>(null);
   const [reorder, setReorder] = useState<{ id: string; dropIndex: number } | null>(null);
   const { spreads, settings } = doc;
+  const preferredWidth = ui.use((s) => s.sidebarWidth);
+  const width = Math.max(SIDEBAR_MIN_WIDTH, Math.min(preferredWidth, window.innerWidth - MIN_DESK_WIDTH));
+  const [contentWidth, setContentWidth] = useState(width - 32);
+  const { cols, thumbW } = listLayout(contentWidth);
+  const grid = cols > 1;
+
+  useLayoutEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setContentWidth(el.clientWidth - parseFloat(getComputedStyle(el).paddingLeft) - parseFloat(getComputedStyle(el).paddingRight)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const onResizeDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const start = width;
+    const clamp = (w: number) => Math.max(SIDEBAR_MIN_WIDTH, Math.min(w, window.innerWidth - MIN_DESK_WIDTH));
+    let last = start;
+    document.body.classList.add('col-resizing');
+    const done = () => document.body.classList.remove('col-resizing');
+    startDrag(e, {
+      onMove: ({ dx }) => {
+        last = clamp(start - dx);
+        setSidebarWidth(last, false);
+      },
+      onEnd: (_, moved) => {
+        done();
+        if (moved) setSidebarWidth(last, true);
+      },
+      onCancel: () => {
+        done();
+        setSidebarWidth(start, false);
+      },
+    });
+  };
 
   /** Dragging a middle spread's header reorders it; clicking it opens the spread. */
   const onHeaderDown = (e: React.PointerEvent, spread: Spread) => {
@@ -25,16 +84,26 @@ export function Sidebar() {
     let dropIndex = from;
     startDrag(e, {
       onMove: ({ e: ev }) => {
+        // Nearest spread to the pointer; drop before or after it depending on which
+        // half the pointer is in (left/right in a grid, top/bottom in a column).
         const rows = [...(listRef.current?.querySelectorAll<HTMLElement>('[data-row-index]') ?? [])];
-        let idx = rows.length - 1;
+        let best: { idx: number; r: DOMRect } | null = null;
+        let bestDist = Infinity;
         for (const row of rows) {
           const r = row.getBoundingClientRect();
-          if (ev.clientY < r.top + r.height / 2) {
-            idx = Number(row.dataset.rowIndex);
-            break;
+          const dx = Math.max(r.left - ev.clientX, 0, ev.clientX - r.right);
+          const dy = Math.max(r.top - ev.clientY, 0, ev.clientY - r.bottom);
+          const dist = Math.hypot(dx, dy);
+          if (dist < bestDist) {
+            bestDist = dist;
+            best = { idx: Number(row.dataset.rowIndex), r };
           }
         }
-        dropIndex = Math.min(Math.max(1, idx), spreads.length - 1);
+        if (!best) return;
+        const before = grid
+          ? ev.clientX < best.r.left + best.r.width / 2
+          : ev.clientY < best.r.top + best.r.height / 2;
+        dropIndex = Math.min(Math.max(1, before ? best.idx : best.idx + 1), spreads.length - 1);
         setReorder({ id: spread.id, dropIndex });
       },
       onEnd: (_, moved) => {
@@ -48,7 +117,13 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" style={{ width }}>
+      <div
+        className="sidebar-resize"
+        title="Drag to resize · double-click to reset"
+        onPointerDown={onResizeDown}
+        onDoubleClick={() => setSidebarWidth(SIDEBAR_DEFAULT_WIDTH, true)}
+      />
       <div className="sidebar-head">
         <span className="caps">Spreads</span>
         <button
@@ -62,15 +137,20 @@ export function Sidebar() {
         <span className="spacer" />
         <span className="caps muted">{spreads.length * 2 - 2} pages</span>
       </div>
-      <div className="sidebar-list" ref={listRef}>
+      <div
+        className={`sidebar-list${grid ? ' grid' : ''}`}
+        ref={listRef}
+        style={grid ? { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` } : undefined}
+      >
         {spreads.map((spread, i) => (
-          <div key={spread.id}>
-            {i > 0 && <InsertGap index={i} active={reorder?.dropIndex === i} />}
+          <div key={spread.id} className="spread-cell">
+            {i > 0 && <InsertGap index={i} active={reorder?.dropIndex === i} vertical={grid} />}
             <SpreadRow
               spread={spread}
               index={i}
               total={spreads.length}
               settings={settings}
+              thumbW={thumbW}
               dragging={reorder?.id === spread.id}
               onHeaderDown={onHeaderDown}
             />
@@ -85,20 +165,25 @@ export function Sidebar() {
  * The gap between two spreads: hover to add a spread there, or drop photos on it
  * to add a spread holding them.
  */
-function InsertGap({ index, active }: { index: number; active: boolean }) {
+function InsertGap({ index, active, vertical }: { index: number; active: boolean; vertical: boolean }) {
   const dropHover = ui.use((s) => s.hoverKey === `insert:${index}`);
   const photoDrag = ui.use((s) => s.ghost !== null);
   return (
     <div
-      className={`insert-gap${active ? ' active' : ''}${dropHover ? ' drop-hover' : ''}${photoDrag ? ' photo-drag' : ''}`}
+      className={`insert-gap${vertical ? ' vertical' : ''}${active ? ' active' : ''}${dropHover ? ' drop-hover' : ''}${photoDrag ? ' photo-drag' : ''}`}
       data-drop="insert"
       data-index={index}
     >
+      {/* In the grid, gaps are narrow vertical gutters, so the button is just "+". */}
       {dropHover ? (
-        <span className="insert-btn">Drop to add a spread</span>
+        <span className="insert-btn">{vertical ? '+' : 'Drop to add a spread'}</span>
       ) : (
-        <button className="insert-btn" onClick={() => insertSpread(index)}>
-          + Add spread
+        <button
+          className="insert-btn"
+          title={vertical ? 'Add a spread here' : undefined}
+          onClick={() => insertSpread(index)}
+        >
+          {vertical ? '+' : '+ Add spread'}
         </button>
       )}
     </div>
@@ -110,13 +195,14 @@ interface RowProps {
   index: number;
   total: number;
   settings: Settings;
+  thumbW: number;
   dragging: boolean;
   onHeaderDown: (e: React.PointerEvent, s: Spread) => void;
 }
 
-function SpreadRow({ spread, index, total, settings, dragging, onHeaderDown }: RowProps) {
+function SpreadRow({ spread, index, total, settings, thumbW, dragging, onHeaderDown }: RowProps) {
   const editing = ui.use((s) => s.editingSpreadId === spread.id);
-  const scale = THUMB_W / (2 * settings.pageW);
+  const scale = thumbW / (2 * settings.pageW);
   const middle = spread.kind === 'middle';
   const label = folioLabel(index, total);
 

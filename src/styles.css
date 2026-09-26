@@ -644,12 +644,43 @@ button {
 
 /* Sidebar */
 .sidebar {
-  width: 284px;
+  position: relative;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   border-left: 1px solid var(--border);
   background: var(--panel);
+  user-select: none;
+}
+/* Drag handle on the sidebar's left edge. */
+.sidebar-resize {
+  position: absolute;
+  left: -3px;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  z-index: 5;
+  cursor: col-resize;
+  touch-action: none;
+}
+.sidebar-resize::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 120ms;
+}
+.sidebar-resize:hover::after,
+body.col-resizing .sidebar-resize::after {
+  opacity: 1;
+}
+body.col-resizing,
+body.col-resizing * {
+  cursor: col-resize !important;
   user-select: none;
 }
 .sidebar-head {
@@ -662,6 +693,47 @@ button {
   flex: 1;
   overflow-y: auto;
   padding: 4px 16px 24px;
+}
+/* Wide sidebar: spreads in a grid. Insert gaps sit in the gutters between columns. */
+.sidebar-list.grid {
+  display: grid;
+  align-content: start;
+  column-gap: 20px;
+  row-gap: 14px;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+.spread-cell {
+  position: relative;
+  min-width: 0;
+}
+.insert-gap.vertical {
+  position: absolute;
+  left: -20px;
+  top: 0;
+  bottom: 0;
+  width: 20px;
+  height: auto;
+}
+.insert-gap.vertical::before {
+  left: 50%;
+  right: auto;
+  top: 6px;
+  bottom: 0;
+  border-top: 0;
+  border-left: 2px solid var(--accent);
+  transform: translateX(-1px);
+}
+.insert-gap.vertical::after {
+  inset: 0 -3px;
+}
+.insert-gap.vertical .insert-btn {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 14px;
+  line-height: 1;
 }
 .spread-row {
   padding: 6px 4px 8px;
