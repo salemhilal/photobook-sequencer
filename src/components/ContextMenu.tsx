@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { Copy, LayoutGrid } from 'lucide-react';
-import { tidyPile } from '../actions';
+import { Copy, CopyPlus, LayoutGrid, Trash2, Undo2 } from 'lucide-react';
+import { deleteFromProject, duplicatePhoto, putInPile, tidyPile } from '../actions';
 import { copyPhotoToClipboard } from '../images';
-import { useDoc } from '../store';
+import { docStore, useDoc } from '../store';
 import { ui, type ContextMenuState } from '../ui';
 import { DeskColorPicker } from './DeskColorPicker';
 
@@ -97,6 +97,7 @@ function DeskItems({ onClose }: { onClose: () => void }) {
 function PhotoItems({ menu, onClose }: { menu: Extract<ContextMenuState, { kind: 'photo' }>; onClose: () => void }) {
   const { doc } = useDoc();
   const name = doc.photos[menu.photoId]?.name ?? 'Photo';
+  const onPage = !doc.pile.some((p) => p.photoId === menu.photoId);
   return (
     <>
       <div className="menu-caption data muted" title={name}>
@@ -116,6 +117,45 @@ function PhotoItems({ menu, onClose }: { menu: Extract<ContextMenuState, { kind:
       >
         <Copy />
         <span className="menu-label">Copy image</span>
+      </button>
+      <button
+        className="menu-item"
+        role="menuitem"
+        onClick={() => {
+          void duplicatePhoto(menu.photoId).then((id) => {
+            if (id && !onPage) ui.set({ selection: [id] });
+          });
+          onClose();
+        }}
+      >
+        <CopyPlus />
+        <span className="menu-label">Duplicate</span>
+      </button>
+      {onPage && (
+        <button
+          className="menu-item"
+          role="menuitem"
+          onClick={() => {
+            docStore.apply((d) => putInPile(d, menu.photoId));
+            onClose();
+          }}
+        >
+          <Undo2 />
+          <span className="menu-label">Return to desk</span>
+        </button>
+      )}
+      <div className="menu-separator" />
+      <button
+        className="menu-item danger"
+        role="menuitem"
+        onClick={() => {
+          deleteFromProject([menu.photoId]);
+          ui.set({ notice: `Deleted ${name}. Undo to bring it back.` });
+          onClose();
+        }}
+      >
+        <Trash2 />
+        <span className="menu-label">Delete</span>
       </button>
     </>
   );

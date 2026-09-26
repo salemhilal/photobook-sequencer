@@ -1,5 +1,6 @@
 import type { Draft } from 'immer';
-import { importFiles } from './images';
+import { getImage, putImage } from './db';
+import { importFiles, setUrl } from './images';
 import { docStore, newId } from './store';
 import { fitCentered, inset, largestBorder, pageRect, pileSize, PILE_PHOTO_SIZE } from './geometry';
 import type { Doc, PageSide, PhotoMeta, Placement } from './types';
@@ -144,6 +145,46 @@ export function tidyPile(photoIds?: string[]): void {
       p.y = top + at.row * cell + (cell - TIDY_GAP - p.h) / 2;
     }
   });
+}
+
+/** "IMG_2103.jpg" → "IMG_2103 copy.jpg". */
+export function copyName(name: string): string {
+  const dot = name.lastIndexOf('.');
+  return dot > 0 ? `${name.slice(0, dot)} copy${name.slice(dot)}` : `${name} copy`;
+}
+
+const DUPLICATE_OFFSET = 0.25;
+
+/**
+ * Duplicate a photo as a new, independent photo (with its own copy of the image data),
+ * placed slightly offset from the original: on the desk, or on the same spread.
+ */
+export async function duplicatePhoto(photoId: string): Promise<string | null> {
+  const img = await getImage(photoId);
+  const meta = docStore.doc.photos[photoId];
+  if (!img || !meta) return null;
+  const id = newId();
+  setUrl(id, img.thumb);
+  // Reference the new photo before storing its image, so a background cleanup
+  // of unreferenced images can't remove it in between.
+  docStore.apply((d) => {
+    d.photos[id] = { ...meta, id, name: copyName(meta.name) };
+    const onDesk = d.pile.find((p) => p.photoId === photoId);
+    if (onDesk) {
+      d.pile.push({ ...onDesk, photoId: id, x: onDesk.x + DUPLICATE_OFFSET, y: onDesk.y + DUPLICATE_OFFSET, z: d.nextZ++ });
+      return;
+    }
+    for (const s of d.spreads) {
+      const onPage = s.items.find((p) => p.photoId === photoId);
+      if (onPage) {
+        s.items.push({ ...onPage, photoId: id, x: onPage.x + DUPLICATE_OFFSET, y: onPage.y + DUPLICATE_OFFSET, z: d.nextZ++ });
+        return;
+      }
+    }
+    putInPile(d, id);
+  });
+  await putImage(id, img);
+  return id;
 }
 
 export function deleteFromProject(photoIds: string[]): void {

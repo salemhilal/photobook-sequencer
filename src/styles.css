@@ -24,6 +24,7 @@
   --page-edge: rgba(0, 0, 0, 0.28);
   --print: #ffffff;
   --warn: #a8620a;
+  --danger: #c2412d;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 3px 10px rgba(0, 0, 0, 0.12);
   --radius: 5px;
   --font: 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
@@ -54,6 +55,7 @@
   --page: #efede8;
   --print: #efede8;
   --warn: #f0a44b;
+  --danger: #f07a62;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 3px 10px rgba(0, 0, 0, 0.2);
   color-scheme: dark;
 }
@@ -72,6 +74,7 @@
     --page: #efede8;
     --print: #efede8;
     --warn: #f0a44b;
+  --danger: #f07a62;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 3px 10px rgba(0, 0, 0, 0.2);
     color-scheme: dark;
   }
@@ -258,6 +261,10 @@ button {
 .menu-item:focus-visible {
   background: var(--accent-soft);
   outline: none;
+}
+.menu-item.danger,
+.menu-item.danger .lucide {
+  color: var(--danger);
 }
 .menu-item:disabled {
   opacity: 0.4;

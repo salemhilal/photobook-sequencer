@@ -50,6 +50,7 @@ export default function App() {
   const loaded = usePersistence();
 
   useGlobalKeys();
+  usePasteImages();
   useShortcuts({
     addPhotos: () => {
       if (!ui.get().importing) fileRef.current?.click();
@@ -361,6 +362,29 @@ async function collectGarbage(): Promise<void> {
       forgetUrl(id);
     }
   }
+}
+
+/** Pasting images (⌘V / Ctrl+V) adds them to the desk. */
+function usePasteImages(): void {
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      if (isTyping(e) || ui.get().importing) return;
+      const images = [...(e.clipboardData?.files ?? [])].filter((f) => f.type.startsWith('image/'));
+      if (!images.length) return;
+      e.preventDefault();
+      const time = new Date().toTimeString().slice(0, 5).replace(':', '.');
+      const named = images.map((f, i) => {
+        // Clipboard images usually arrive as a generic "image.png".
+        if (!/^image\.\w+$/i.test(f.name)) return f;
+        const ext = f.type.split('/')[1]?.replace('jpeg', 'jpg') ?? 'png';
+        const suffix = images.length > 1 ? ` ${i + 1}` : '';
+        return new File([f], `Pasted image ${time}${suffix}.${ext}`, { type: f.type });
+      });
+      void importPhotos(named);
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, []);
 }
 
 function useGlobalKeys(): void {
