@@ -1,5 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { Download, FileText, FolderOpen, ImagePlus, Redo2, Settings, Undo2, X } from 'lucide-react';
+import {
+  Download,
+  FileText,
+  FolderOpen,
+  ImagePlus,
+  PanelRightClose,
+  PanelRightOpen,
+  Redo2,
+  Settings,
+  Undo2,
+  X,
+} from 'lucide-react';
 import { deleteFromProject, importPhotos } from './actions';
 import { savePdf } from './pdf';
 import { openProjectFile, saveProjectFile } from './project';
@@ -13,13 +24,13 @@ import { SpreadEditor } from './components/SpreadEditor';
 import { deleteImage, imageIds, loadDoc, saveDoc } from './db';
 import { forgetUrl } from './images';
 import { docStore, emptyDoc, migrateDoc, useDoc } from './store';
-import { hasMod, isMac, isTyping, MOD_LABEL, ui } from './ui';
+import { hasMod, isMac, isTyping, MOD_LABEL, toggleSidebar, ui } from './ui';
 
 const SAVE_DELAY = 400;
 /** How long the modifier must be held before shortcut hints appear. */
 const HINT_DELAY = 250;
 
-const SHORTCUTS = { addPhotos: 'O', preview: 'P', settings: ',', export: 'S', import: 'I' } as const;
+const SHORTCUTS = { addPhotos: 'O', preview: 'P', settings: ',', export: 'S', import: 'I', sidebar: 'B' } as const;
 const UNDO_LABEL = `${MOD_LABEL}Z`;
 const REDO_LABEL = isMac ? '⇧⌘Z' : 'Ctrl+Y';
 const PDF_LABEL = isMac ? '⇧⌘P' : 'Ctrl+Shift+P';
@@ -32,6 +43,7 @@ export default function App() {
   const importing = ui.use((s) => s.importing);
   const notice = ui.use((s) => s.notice);
   const busy = ui.use((s) => s.busy);
+  const sidebarOpen = ui.use((s) => s.sidebarOpen);
   const fileRef = useRef<HTMLInputElement>(null);
   const projectRef = useRef<HTMLInputElement>(null);
   const loaded = usePersistence();
@@ -156,6 +168,16 @@ export default function App() {
           <ShortcutHint k={SHORTCUTS.preview} />
         </button>
         <button
+          className={`btn icon has-hint${sidebarOpen ? '' : ' active'}`}
+          aria-label={sidebarOpen ? 'Hide spreads' : 'Show spreads'}
+          aria-pressed={!sidebarOpen}
+          onClick={toggleSidebar}
+          title={`${sidebarOpen ? 'Hide' : 'Show'} spreads (${MOD_LABEL}${SHORTCUTS.sidebar})`}
+        >
+          {sidebarOpen ? <PanelRightClose /> : <PanelRightOpen />}
+          <ShortcutHint k={SHORTCUTS.sidebar} />
+        </button>
+        <button
           className="btn icon has-hint"
           aria-label="Settings"
           onClick={() => ui.set({ settingsOpen: true, previewOpen: false })}
@@ -167,7 +189,7 @@ export default function App() {
       </header>
       <main className="main">
         <Desk onAddPhotos={openFiles} />
-        <Sidebar />
+        {sidebarOpen && <Sidebar />}
         {editing && <SpreadEditor spreadId={editing} />}
       </main>
       {settingsOpen && <SettingsDialog />}
@@ -236,6 +258,9 @@ function useShortcuts(actions: { addPhotos: () => void; importProject: () => voi
       } else if (key === SHORTCUTS.import) {
         e.preventDefault();
         actionsRef.current.importProject();
+      } else if (key === SHORTCUTS.sidebar) {
+        e.preventDefault();
+        toggleSidebar();
       } else if (key === SHORTCUTS.export) {
         e.preventDefault();
         void saveProjectFile();

@@ -40,7 +40,10 @@ export interface UiState {
   /** True while the shortcut modifier is held, to reveal shortcut hints. */
   hints: boolean;
   theme: ThemePref;
+  sidebarOpen: boolean;
 }
+
+const SIDEBAR_KEY = 'photobook-sidebar';
 
 export const ui = createStore<UiState>({
   selection: [],
@@ -55,7 +58,28 @@ export const ui = createStore<UiState>({
   notice: null,
   hints: false,
   theme: loadTheme(),
+  sidebarOpen: loadSidebarOpen(),
 });
+
+
+function loadSidebarOpen(): boolean {
+  try {
+    return localStorage.getItem(SIDEBAR_KEY) !== 'closed';
+  } catch {
+    return true;
+  }
+}
+
+export function toggleSidebar(): void {
+  const open = !ui.get().sidebarOpen;
+  ui.set({ sidebarOpen: open });
+  try {
+    if (open) localStorage.removeItem(SIDEBAR_KEY);
+    else localStorage.setItem(SIDEBAR_KEY, 'closed');
+  } catch {
+    // Not persisted; still applies for this session.
+  }
+}
 
 /** Screen pixels per inch on the desk at zoom 1. */
 export const DESK_PPI = 48;

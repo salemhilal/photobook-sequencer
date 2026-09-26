@@ -37,6 +37,7 @@ Netlify runs `npm test && npm run build` for production, pull-request previews, 
 | Import       | ⌘I    | Ctrl+I  |
 | Export       | ⌘S    | Ctrl+S  |
 | Save PDF     | ⇧⌘P   | Ctrl+Shift+P |
+| Show/hide spreads | ⌘B | Ctrl+B |
 | Undo         | ⌘Z    | Ctrl+Z  |
 | Redo         | ⇧⌘Z   | Ctrl+Y  |
 
