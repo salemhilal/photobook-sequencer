@@ -60,7 +60,7 @@ export function Sidebar() {
           <Plus />
         </button>
         <span className="spacer" />
-        <span className="caps muted">{spreads.length * 2 - 2} pp</span>
+        <span className="caps muted">{spreads.length * 2 - 2} pages</span>
       </div>
       <div className="sidebar-list" ref={listRef}>
         {spreads.map((spread, i) => (
