@@ -282,6 +282,13 @@ button {
   left: auto;
   z-index: 60;
 }
+.menu-caption {
+  max-width: 240px;
+  padding: 4px 8px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .menu-separator {
   height: 1px;
   margin: 4px 0;

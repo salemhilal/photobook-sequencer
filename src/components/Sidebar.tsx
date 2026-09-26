@@ -4,7 +4,7 @@ import { deleteSpread, folioLabel, insertSpread, moveSpread, putInPile, putOnNew
 import { clearGhost, startDrag, trackGhost } from '../drag';
 import { docStore, useDoc } from '../store';
 import type { Placement, Settings, Spread } from '../types';
-import { DESK_PPI, deskGeometry, ui } from '../ui';
+import { DESK_PPI, deskGeometry, openPhotoMenu, ui } from '../ui';
 import { PhotoImg } from './PhotoImg';
 import { SpreadCanvas } from './SpreadCanvas';
 
@@ -155,7 +155,13 @@ function SpreadRow({ spread, index, total, settings, dragging, onHeaderDown }: R
   };
 
   const renderItem = (p: Placement, style: CSSProperties) => (
-    <div key={p.photoId} className="item" style={style} onPointerDown={(e) => onItemDown(e, p)}>
+    <div
+      key={p.photoId}
+      className="item"
+      style={style}
+      onPointerDown={(e) => onItemDown(e, p)}
+      onContextMenu={(e) => openPhotoMenu(e, p.photoId)}
+    >
       <PhotoImg id={p.photoId} />
     </div>
   );

@@ -17,7 +17,7 @@ import {
 } from '../geometry';
 import { docStore, useDoc } from '../store';
 import type { Doc, Placement, Spread } from '../types';
-import { isTyping, ui } from '../ui';
+import { isTyping, openPhotoMenu, ui } from '../ui';
 import { NumberField } from './NumberField';
 import { PhotoImg } from './PhotoImg';
 import { SpreadCanvas } from './SpreadCanvas';
@@ -194,6 +194,7 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
       className={`item${p.photoId === selected ? ' selected' : ''}`}
       style={style}
       onPointerDown={(e) => onItemDown(e, p)}
+      onContextMenu={(e) => openPhotoMenu(e, p.photoId)}
     >
       <PhotoImg id={p.photoId} />
       {p.photoId === selected &&
@@ -399,6 +400,7 @@ function PileStrip({ spreadId }: { spreadId: string }) {
               className="strip-item"
               style={{ width: (56 * p.w) / p.h }}
               onPointerDown={(e) => onDown(e, p)}
+              onContextMenu={(e) => openPhotoMenu(e, p.photoId)}
               title="Drag onto a page, or click to add"
             >
               <PhotoImg id={p.photoId} />

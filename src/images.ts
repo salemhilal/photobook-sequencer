@@ -49,6 +49,29 @@ export function forgetUrl(id: string): void {
   urls.delete(id);
 }
 
+/**
+ * Copy a photo's original file to the clipboard as PNG (the image type browsers
+ * can reliably write), upright per its EXIF orientation. Falls back to the display
+ * copy if the original can't be decoded. Must be called from a user gesture.
+ */
+export function copyPhotoToClipboard(id: string): Promise<void> {
+  const png = (async () => {
+    const img = await getImage(id);
+    if (!img) throw new Error('Image not found');
+    let bitmap: ImageBitmap;
+    try {
+      bitmap = await createImageBitmap(img.full, { imageOrientation: 'from-image' });
+    } catch {
+      bitmap = await createImageBitmap(img.thumb);
+    }
+    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+    canvas.getContext('2d')?.drawImage(bitmap, 0, 0);
+    bitmap.close();
+    return canvas.convertToBlob({ type: 'image/png' });
+  })();
+  return navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]);
+}
+
 /** Decode an image file (applying EXIF orientation) and make its display-size copy. */
 export async function thumbFromBlob(blob: Blob): Promise<Blob> {
   const bitmap = await createImageBitmap(blob, { imageOrientation: 'from-image' });

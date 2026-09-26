@@ -27,6 +27,10 @@ export type DropTarget =
   | { kind: 'insert'; index: number }
   | null;
 
+export type ContextMenuState =
+  | { kind: 'desk'; x: number; y: number }
+  | { kind: 'photo'; x: number; y: number; photoId: string };
+
 export interface UiState {
   selection: string[];
   editingSpreadId: string | null;
@@ -45,6 +49,7 @@ export interface UiState {
   theme: ThemePref;
   sidebarOpen: boolean;
   deskColor: string;
+  contextMenu: ContextMenuState | null;
 }
 
 const SIDEBAR_KEY = 'photobook-sidebar';
@@ -64,7 +69,15 @@ export const ui = createStore<UiState>({
   theme: loadTheme(),
   sidebarOpen: loadSidebarOpen(),
   deskColor: loadDeskColor(),
+  contextMenu: null,
 });
+
+/** Right-click handler for a photo, wherever it's shown. */
+export function openPhotoMenu(e: { preventDefault(): void; stopPropagation(): void; clientX: number; clientY: number }, photoId: string): void {
+  e.preventDefault();
+  e.stopPropagation();
+  ui.set({ contextMenu: { kind: 'photo', x: e.clientX, y: e.clientY, photoId } });
+}
 
 export function setDeskColor(color: string): void {
   ui.set({ deskColor: color });

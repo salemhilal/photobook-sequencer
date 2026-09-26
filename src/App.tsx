@@ -14,6 +14,7 @@ import {
 import { deleteFromProject, importPhotos } from './actions';
 import { savePdf } from './pdf';
 import { openProjectFile, saveProjectFile } from './project';
+import { ContextMenus } from './components/ContextMenu';
 import { Desk } from './components/Desk';
 import { FileMenu } from './components/FileMenu';
 import { PhotoImg } from './components/PhotoImg';
@@ -194,6 +195,7 @@ export default function App() {
       </main>
       {settingsOpen && <SettingsDialog />}
       {previewOpen && <Preview />}
+      <ContextMenus />
       <DragGhost />
       {notice && (
         <div className="notice" role="status">
