@@ -40,12 +40,13 @@ export interface ConfirmRequest {
   resolve: (value: string | null) => void;
 }
 
+export type Modal = 'settings' | 'about' | 'preview';
+
 export interface UiState {
   selection: string[];
   editingSpreadId: string | null;
-  previewOpen: boolean;
-  settingsOpen: boolean;
-  aboutOpen: boolean;
+  /** The open full-window dialog, if any. (The spread editor is tracked by editingSpreadId.) */
+  modal: Modal | null;
   view: DeskView;
   ghost: Ghost | null;
   /** The drop target under the pointer during a drag (see targetKey), for highlighting. */
@@ -68,9 +69,7 @@ export interface UiState {
 export const ui = createStore<UiState>({
   selection: [],
   editingSpreadId: null,
-  previewOpen: false,
-  settingsOpen: false,
-  aboutOpen: false,
+  modal: null,
   view: { panX: 40, panY: 40, zoom: 1 },
   ghost: null,
   hoverKey: null,
@@ -85,6 +84,24 @@ export const ui = createStore<UiState>({
   contextMenu: null,
   confirm: null,
 });
+
+export function openModal(modal: Modal): void {
+  ui.set({ modal });
+}
+
+export function closeModal(): void {
+  ui.set({ modal: null });
+}
+
+export function toggleModal(modal: Modal): void {
+  ui.set((s) => ({ modal: s.modal === modal ? null : modal }));
+}
+
+/** Whether something covers the desk (a dialog or the spread editor), pausing desk shortcuts. */
+export function deskCovered(): boolean {
+  const s = ui.get();
+  return s.modal !== null || s.editingSpreadId !== null;
+}
 
 /** Ask the user to choose; resolves to the chosen action's value, or null if dismissed. */
 export function ask(request: Omit<ConfirmRequest, 'resolve'>): Promise<string | null> {

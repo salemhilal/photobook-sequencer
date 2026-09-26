@@ -30,7 +30,7 @@ import { deleteImage, imageIds, loadDoc, saveDoc } from './db';
 import { forgetUrl } from './images';
 import { docStore, emptyDoc, migrateDoc, useDoc } from './store';
 import { hasMod, isMac, isTyping, MOD_LABEL } from './platform';
-import { toggleSidebar, ui } from './ui';
+import { toggleSidebar, deskCovered, openModal, toggleModal, ui } from './ui';
 
 const SAVE_DELAY = 400;
 /** How long the modifier must be held before shortcut hints appear. */
@@ -44,9 +44,7 @@ const PDF_LABEL = isMac ? '⇧⌘P' : 'Ctrl+Shift+P';
 export default function App() {
   const { doc, canUndo, canRedo } = useDoc();
   const editing = ui.use((s) => s.editingSpreadId);
-  const previewOpen = ui.use((s) => s.previewOpen);
-  const settingsOpen = ui.use((s) => s.settingsOpen);
-  const aboutOpen = ui.use((s) => s.aboutOpen);
+  const modal = ui.use((s) => s.modal);
   const importing = ui.use((s) => s.importing);
   const notice = ui.use((s) => s.notice);
   const busy = ui.use((s) => s.busy);
@@ -114,7 +112,7 @@ export default function App() {
             {
               label: 'About…',
               icon: <Info />,
-              onSelect: () => ui.set({ aboutOpen: true, settingsOpen: false, previewOpen: false }),
+              onSelect: () => openModal('about'),
               separatorBefore: true,
             },
           ]}
@@ -175,7 +173,7 @@ export default function App() {
         />
         <button
           className="btn accent has-hint"
-          onClick={() => ui.set({ previewOpen: true, settingsOpen: false })}
+          onClick={() => openModal('preview')}
           title={`Preview book (${MOD_LABEL}${SHORTCUTS.preview})`}
         >
           Preview book
@@ -194,7 +192,7 @@ export default function App() {
         <button
           className="btn ghost icon has-hint"
           aria-label="Settings"
-          onClick={() => ui.set({ settingsOpen: true, previewOpen: false })}
+          onClick={() => openModal('settings')}
           title={`Settings (${MOD_LABEL}${SHORTCUTS.settings})`}
         >
           <Settings />
@@ -206,9 +204,9 @@ export default function App() {
         {sidebarOpen && <Sidebar />}
         {editing && <SpreadEditor spreadId={editing} />}
       </main>
-      {settingsOpen && <SettingsDialog />}
-      {aboutOpen && <AboutDialog />}
-      {previewOpen && <Preview />}
+      {modal === 'settings' && <SettingsDialog />}
+      {modal === 'about' && <AboutDialog />}
+      {modal === 'preview' && <Preview />}
       <ConfirmDialog />
       <ContextMenus />
       <DragGhost />
@@ -283,10 +281,10 @@ function useShortcuts(actions: { addPhotos: () => void; importProject: () => voi
         void saveProjectFile();
       } else if (key === SHORTCUTS.preview) {
         e.preventDefault();
-        ui.set((s) => ({ previewOpen: !s.previewOpen, settingsOpen: false }));
+        toggleModal('preview');
       } else if (key === SHORTCUTS.settings) {
         e.preventDefault();
-        ui.set((s) => ({ settingsOpen: !s.settingsOpen, previewOpen: false }));
+        toggleModal('settings');
       }
     };
     const onUp = (e: KeyboardEvent) => {
@@ -385,9 +383,7 @@ async function collectGarbage(): Promise<void> {
 function usePasteImages(): void {
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
-      if (isTyping(e) || ui.get().importing) return;
-      const s = ui.get();
-      if (s.editingSpreadId || s.previewOpen || s.settingsOpen || s.aboutOpen) return;
+      if (isTyping(e) || ui.get().importing || deskCovered()) return;
       if (isInternalPaste(e.clipboardData)) {
         e.preventDefault();
         void pasteCopied();
@@ -431,7 +427,7 @@ function useGlobalKeys(): void {
 
       // Desk shortcuts only apply when no modal is open.
       const s = ui.get();
-      if (s.editingSpreadId || s.previewOpen || s.settingsOpen || s.aboutOpen) return;
+      if (deskCovered()) return;
       if (mod && key === 'a') {
         e.preventDefault();
         ui.set({ selection: docStore.doc.pile.map((p) => p.photoId) });

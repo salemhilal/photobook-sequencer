@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { folioLabel } from '../actions';
 import { savePdf } from '../pdf';
 import { useDoc } from '../store';
-import { ui } from '../ui';
+import { closeModal, ui } from '../ui';
 import { SpreadCanvas } from './SpreadCanvas';
 
 export function Preview() {
@@ -22,7 +22,7 @@ export function Preview() {
   const { spreads, settings } = doc;
   const spread = spreads[Math.min(index, spreads.length - 1)];
 
-  const close = () => ui.set({ previewOpen: false });
+  const close = closeModal;
   const go = (d: number) => {
     setDir(d > 0 ? 'next' : 'prev');
     setIndex((i) => Math.min(spreads.length - 1, Math.max(0, i + d)));
