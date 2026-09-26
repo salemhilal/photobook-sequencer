@@ -386,21 +386,27 @@ function PileStrip({ spreadId }: { spreadId: string }) {
 
   return (
     <div className={`strip${hover ? ' drop-hover' : ''}`} data-drop="strip">
-      {pile.length === 0 ? (
-        <span className="muted small">The desk is empty. Drag a photo here to send it back.</span>
-      ) : (
-        pile.map((p) => (
-          <div
-            key={p.photoId}
-            className="strip-item"
-            style={{ width: (56 * p.w) / p.h }}
-            onPointerDown={(e) => onDown(e, p)}
-            title="Drag onto a page, or click to add"
-          >
-            <PhotoImg id={p.photoId} />
-          </div>
-        ))
-      )}
+      <div className="strip-label">
+        <span>Desk</span>
+        <span className="muted">{pile.length}</span>
+      </div>
+      <div className="strip-items">
+        {pile.length === 0 ? (
+          <span className="muted small">Empty. Drag a photo here to send it back to the desk.</span>
+        ) : (
+          pile.map((p) => (
+            <div
+              key={p.photoId}
+              className="strip-item"
+              style={{ width: (56 * p.w) / p.h }}
+              onPointerDown={(e) => onDown(e, p)}
+              title="Drag onto a page, or click to add"
+            >
+              <PhotoImg id={p.photoId} />
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
