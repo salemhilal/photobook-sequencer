@@ -1,6 +1,7 @@
 import { getImage, putImage } from './db';
 import { setUrl, thumbFromBlob } from './images';
-import { docStore, migrateDoc } from './store';
+import { migrateDoc, NewerProjectError } from './schema';
+import { docStore } from './store';
 import type { Doc } from './types';
 import { MOD_LABEL } from './platform';
 import { ask, ui } from './ui';
@@ -56,7 +57,11 @@ export async function exportProject(): Promise<void> {
     const zip = await createZip(entries, (done) =>
       setBusy(`Exporting ${Math.min(photoCount, Math.floor(done / 2))} of ${photoCount}…`),
     );
-    download(zip, `photo-book-${new Date().toISOString().slice(0, 10)}.zip`);
+    // A .photo-sequence file is a ZIP; the octet-stream type keeps browsers from renaming it to .zip.
+    download(
+      new Blob([zip], { type: 'application/octet-stream' }),
+      `photo-book-${new Date().toISOString().slice(0, 10)}${PROJECT_EXTENSION}`,
+    );
   } finally {
     setBusy(null);
   }
@@ -73,11 +78,17 @@ export async function importProject(file: File): Promise<void> {
     const manifestEntry = zip.get(MANIFEST);
     if (!manifestEntry) throw new ProjectFileError(`“${file.name}” isn't a Photo Sequencer project.`);
     const manifest = parseManifest(await (await manifestEntry.blob()).text());
-    if (manifest.version > VERSION) {
-      throw new ProjectFileError('This project was made by a newer version of Photo Sequencer.');
+    const newer = new ProjectFileError(
+      'This project was made by a newer version of Photobook Sequencer. Reload to update, then try again.',
+    );
+    // `version` is the file's layout; the project inside has its own schema version.
+    if (manifest.version > VERSION) throw newer;
+    let doc;
+    try {
+      doc = migrateDoc(manifest.doc);
+    } catch (e) {
+      throw e instanceof NewerProjectError ? newer : e;
     }
-
-    const doc = migrateDoc(manifest.doc);
     const ids = Object.keys(doc.photos);
     const missing = new Set<string>();
     let done = 0;
@@ -117,8 +128,16 @@ export async function importProject(file: File): Promise<void> {
   }
 }
 
+/** Project files are saved as .photo-sequence (a ZIP inside); plain .zip files are accepted too. */
+export const PROJECT_EXTENSION = '.photo-sequence';
+export const PROJECT_ACCEPT = `${PROJECT_EXTENSION},.zip,application/zip`;
+
 export function isProjectFile(file: File): boolean {
-  return /\.zip$/i.test(file.name) || file.type === 'application/zip' || file.type === 'application/x-zip-compressed';
+  return (
+    /\.(photo-sequence|zip)$/i.test(file.name) ||
+    file.type === 'application/zip' ||
+    file.type === 'application/x-zip-compressed'
+  );
 }
 
 function parseManifest(text: string): Manifest {

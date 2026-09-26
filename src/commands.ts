@@ -3,7 +3,7 @@ import { deleteFromProject, importPhotos } from './actions';
 import { copyPhotos, duplicateAndSelect } from './clipboard';
 import { savePdf } from './pdf';
 import { hasMod, isMac, isTyping, MOD_LABEL } from './platform';
-import { openProjectFile, saveProjectFile } from './project';
+import { openProjectFile, PROJECT_ACCEPT, saveProjectFile } from './project';
 import { docStore } from './store';
 import { deskCovered, openModal, toggleModal, toggleSidebar, ui } from './ui';
 
@@ -62,7 +62,7 @@ export function addPhotos(): void {
 
 export function importProject(): void {
   if (ui.get().importing) return;
-  pickFiles('.zip,application/zip', false, ([file]) => file && void openProjectFile(file));
+  pickFiles(PROJECT_ACCEPT, false, ([file]) => file && void openProjectFile(file));
 }
 
 const NUDGE = 1 / 8;

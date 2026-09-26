@@ -44,7 +44,15 @@ export interface Settings {
   borders: number[];
 }
 
+/**
+ * The version of the saved project's shape. Bump it (and add a migration and a
+ * test sample in schema.ts / schema.test.ts) whenever what gets saved changes.
+ */
+export const CURRENT_SCHEMA = 1;
+
 export interface Doc {
+  /** Which shape this project was saved in; see CURRENT_SCHEMA. */
+  schemaVersion: number;
   photos: Record<string, PhotoMeta>;
   /** Photos on the desktop; x/y are desk coordinates. */
   pile: Placement[];

@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { produce, type Draft } from 'immer';
-import type { Doc } from './types';
+import { CURRENT_SCHEMA, type Doc } from './types';
 
 const HISTORY_LIMIT = 200;
 const COALESCE_MS = 1000;
@@ -160,6 +160,7 @@ export function newId(): string {
 
 export function emptyDoc(): Doc {
   return {
+    schemaVersion: CURRENT_SCHEMA,
     photos: {},
     pile: [],
     spreads: [
@@ -171,12 +172,6 @@ export function emptyDoc(): Doc {
     settings: { pageW: 10, pageH: 8, centerV: true, centerH: true, keepRelative: true, borders: [0.5, 1.25] },
     nextZ: 1,
   };
-}
-
-/** Fill in fields that older saved or exported docs may lack. */
-export function migrateDoc(stored: Doc): Doc {
-  const base = emptyDoc();
-  return { ...base, ...stored, settings: { ...base.settings, ...stored.settings } };
 }
 
 export const docStore = new DocStore(emptyDoc());

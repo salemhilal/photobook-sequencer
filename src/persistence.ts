@@ -1,10 +1,27 @@
 import { useEffect, useState } from 'react';
 import { deleteImage, imageIds, loadDoc, saveDoc } from './db';
 import { forgetUrl } from './images';
-import { docStore, emptyDoc, migrateDoc } from './store';
+import { migrateDoc, NewerProjectError, schemaVersionOf } from './schema';
+import { docStore, emptyDoc } from './store';
+import { CURRENT_SCHEMA, type Doc } from './types';
 import { ui } from './ui';
 
 const SAVE_DELAY = 400;
+
+/**
+ * Save the project unless the stored one was saved by a newer version of the app
+ * (say, in another tab after a deploy). Overwriting it would lose data this code
+ * doesn't understand, so this tab stops instead and asks for a reload.
+ */
+export async function saveUnlessNewer(doc: Doc): Promise<'saved' | 'newer'> {
+  const stored = await loadDoc();
+  if (stored && schemaVersionOf(stored) > CURRENT_SCHEMA) {
+    ui.set({ outdated: true });
+    return 'newer';
+  }
+  await saveDoc(doc);
+  return 'saved';
+}
 
 /**
  * Loads the saved project on startup, then saves it (debounced) whenever it changes,
@@ -19,14 +36,20 @@ export function usePersistence(): boolean {
     let unsubscribe = () => {};
 
     const save = async () => {
-      await saveDoc(docStore.doc);
+      if (ui.get().outdated) return;
+      if ((await saveUnlessNewer(docStore.doc)) === 'newer') return unsubscribe();
       await collectGarbage();
     };
 
     void loadDoc()
       .then((stored) => {
         if (cancelled) return;
-        docStore.reset(stored ? migrateDoc(stored) : emptyDoc());
+        try {
+          docStore.reset(stored ? migrateDoc(stored) : emptyDoc());
+        } catch (e) {
+          if (e instanceof NewerProjectError) return ui.set({ outdated: true });
+          throw e;
+        }
         setLoaded(true);
         void collectGarbage();
         let last = docStore.doc;
@@ -43,7 +66,10 @@ export function usePersistence(): boolean {
         setLoaded(true);
       });
 
-    const flush = () => void saveDoc(docStore.doc);
+    // Best effort when leaving; the version check still applies.
+    const flush = () => {
+      if (timer !== undefined && !ui.get().outdated) void saveUnlessNewer(docStore.doc);
+    };
     window.addEventListener('pagehide', flush);
     return () => {
       cancelled = true;

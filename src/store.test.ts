@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { docStore, emptyDoc, migrateDoc } from './store';
-import type { Doc } from './types';
+import { docStore, emptyDoc } from './store';
 
 const pageW = () => docStore.doc.settings.pageW;
 const setPageW = (n: number, coalesce?: string) =>
@@ -79,14 +78,5 @@ describe('replace and silent', () => {
     docStore.silent((d) => void (d.nextZ = 5));
     expect(docStore.doc.nextZ).toBe(5);
     expect(docStore.getSnapshot().canUndo).toBe(false);
-  });
-});
-
-describe('migrateDoc', () => {
-  it('fills in settings missing from older docs', () => {
-    const old = emptyDoc() as Partial<Doc> & Doc;
-    const { keepRelative: _, ...settings } = old.settings;
-    const migrated = migrateDoc({ ...old, settings: settings as Doc['settings'] });
-    expect(migrated.settings.keepRelative).toBe(true);
   });
 });

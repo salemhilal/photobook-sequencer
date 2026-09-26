@@ -38,6 +38,7 @@ export default function App() {
   const notice = ui.use((s) => s.notice);
   const busy = ui.use((s) => s.busy);
   const sidebarOpen = ui.use((s) => s.sidebarOpen);
+  const outdated = ui.use((s) => s.outdated);
   const loaded = usePersistence();
 
   useCommandShortcuts();
@@ -49,6 +50,7 @@ export default function App() {
     return () => clearTimeout(t);
   }, [notice]);
 
+  if (outdated) return <OutdatedScreen />;
   if (!loaded) return <div className="loading">Opening your book…</div>;
 
   const working = importing !== null || busy !== null;
@@ -160,6 +162,20 @@ function ShortcutHint({ label, below }: { label: string; below?: boolean }) {
     <kbd className={`shortcut-hint${below ? ' below' : ''}`} aria-hidden="true">
       {label}
     </kbd>
+  );
+}
+
+/** Shown instead of the app when the saved project is from a newer version of the app. */
+function OutdatedScreen() {
+  return (
+    <div className="outdated" role="alert">
+      <span className="wordmark">SEQUENCER</span>
+      <h1>This project was saved by a newer version of Photobook Sequencer.</h1>
+      <p>Reload to update. Your saved project hasn't been changed.</p>
+      <button className="btn primary" onClick={() => location.reload()}>
+        Reload
+      </button>
+    </div>
   );
 }
 

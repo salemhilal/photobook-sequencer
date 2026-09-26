@@ -64,6 +64,8 @@ export interface UiState {
   deskColor: string;
   contextMenu: ContextMenuState | null;
   confirm: ConfirmRequest | null;
+  /** The saved project is from a newer version of the app; nothing is shown or saved until a reload. */
+  outdated: boolean;
 }
 
 export const ui = createStore<UiState>({
@@ -83,6 +85,7 @@ export const ui = createStore<UiState>({
   deskColor: deskColorPref.load(),
   contextMenu: null,
   confirm: null,
+  outdated: false,
 });
 
 export function openModal(modal: Modal): void {

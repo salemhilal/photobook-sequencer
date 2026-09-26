@@ -49,13 +49,13 @@ Right-click the desk to tidy photos into a grid or change the desk color.
 
 ## Project files
 
-Export saves a `.zip` you can import anywhere:
+Export saves a `.photo-sequence` file (a ZIP inside) you can import anywhere:
 
 ```
-photo-book-2026-09-26.zip
+photo-book-2026-09-26.photo-sequence
 ├── project.json   # layout + settings
 ├── images/        # your original files
 └── thumbs/        # display copies
 ```
 
-Drop a project `.zip` on the desk to open it.
+Drop a project on the desk to open it. Plain `.zip` files with the same contents work too.

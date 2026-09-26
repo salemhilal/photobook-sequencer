@@ -13,7 +13,7 @@ vi.mock('./db', () => {
 
 import { putOnPage } from './actions';
 import { deleteImage, getImage, putImage } from './db';
-import { exportProject, importProject, ProjectFileError } from './project';
+import { exportProject, importProject, isProjectFile, ProjectFileError } from './project';
 import { docStore, emptyDoc } from './store';
 import type { Doc } from './types';
 import { createZip } from './zip';
@@ -62,7 +62,7 @@ describe('project files', () => {
     await putImage('b', { full: new Blob(['full-b'], { type: 'image/jpeg' }), thumb: new Blob(['thumb-b']) });
 
     const { blob, name } = await captureDownload(exportProject);
-    expect(name).toMatch(/^photo-book-\d{4}-\d{2}-\d{2}\.zip$/);
+    expect(name).toMatch(/^photo-book-\d{4}-\d{2}-\d{2}\.photo-sequence$/);
 
     // Simulate opening the file on a fresh machine.
     await deleteImage('a');
@@ -115,6 +115,19 @@ describe('project files', () => {
     const zip = await createZip([{ name: 'notes.txt', data: new Blob(['hi']) }]);
     await expect(importProject(new File([zip], 'notes.zip'))).rejects.toBeInstanceOf(ProjectFileError);
     await expect(importProject(new File(['junk'], 'junk.zip'))).rejects.toBeInstanceOf(ProjectFileError);
+  });
+
+  it('refuses projects whose contents are from a newer version', async () => {
+    const doc = { ...sampleDoc(), schemaVersion: 99 };
+    const manifest = { format: 'photo-sequencer-project', version: 1, exportedAt: '', doc, files: {} };
+    const zip = await createZip([{ name: 'project.json', data: new Blob([JSON.stringify(manifest)]) }]);
+    await expect(importProject(new File([zip], 'future.photo-sequence'))).rejects.toThrow(/newer version/);
+  });
+
+  it('recognizes .photo-sequence files, and still accepts .zip', () => {
+    expect(isProjectFile(new File([], 'book.photo-sequence'))).toBe(true);
+    expect(isProjectFile(new File([], 'book.zip'))).toBe(true);
+    expect(isProjectFile(new File([], 'photo.jpg', { type: 'image/jpeg' }))).toBe(false);
   });
 
   it('refuses projects from a newer version', async () => {

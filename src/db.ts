@@ -41,8 +41,9 @@ async function store(name: string, mode: IDBTransactionMode): Promise<IDBObjectS
   return db.transaction(name, mode).objectStore(name);
 }
 
-export async function loadDoc(): Promise<Doc | undefined> {
-  return wrap((await store(STATE, 'readonly')).get(DOC_KEY) as IDBRequest<Doc | undefined>);
+/** The saved project as stored; it may be from an older (or newer) version, so run it through migrateDoc. */
+export async function loadDoc(): Promise<unknown> {
+  return wrap((await store(STATE, 'readonly')).get(DOC_KEY) as IDBRequest<unknown>);
 }
 
 export async function saveDoc(doc: Doc): Promise<void> {

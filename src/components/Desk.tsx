@@ -247,9 +247,10 @@ export function Desk() {
   const onDragEnter = (e: React.DragEvent) => {
     if (!isFileDrag(e)) return;
     fileDragDepth.current += 1;
-    // Only MIME types are visible before the drop, not file names.
+    // Only MIME types are visible before the drop, not file names. Photos are image/*;
+    // .photo-sequence files have no registered type, so they arrive with an empty one.
     const types = [...e.dataTransfer.items].map((i) => i.type);
-    const project = types.some((t) => t === 'application/zip' || t === 'application/x-zip-compressed');
+    const project = types.some((t) => t === '' || t === 'application/zip' || t === 'application/x-zip-compressed');
     setFileDrop(project ? 'project' : 'photos');
   };
 
