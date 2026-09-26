@@ -114,9 +114,6 @@ button {
  * 12px input fields, shortcut badges, and settings titles; 13px page numbers
  * in headings.
  */
-.mono {
-  font-family: var(--mono);
-}
 .data {
   font-family: var(--mono);
   font-size: 11px;
@@ -340,11 +337,6 @@ button {
   inset: 0;
   opacity: 0;
   cursor: pointer;
-}
-.toolbar-divider {
-  width: 1px;
-  height: 20px;
-  background: var(--border);
 }
 .btn.has-hint {
   position: relative;

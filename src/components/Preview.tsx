@@ -1,6 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { folioLabel } from '../actions';
+import { useWindowEvent } from '../hooks';
 import { savePdf } from '../pdf';
 import { useDoc } from '../store';
 import { closeModal, ui } from '../ui';
@@ -36,8 +37,9 @@ export function Preview() {
     return () => ro.disconnect();
   }, []);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
+  useWindowEvent(
+    'keydown',
+    (e) => {
       if (e.key === 'Escape') close();
       else if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') go(1);
       else if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(-1);
@@ -46,10 +48,9 @@ export function Preview() {
       else return;
       e.preventDefault();
       e.stopPropagation();
-    };
-    window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
-  });
+    },
+    true,
+  );
 
   if (!spread) return null;
   const scale = Math.min((stage.w - 40) / (2 * settings.pageW), (stage.h - 40) / settings.pageH);

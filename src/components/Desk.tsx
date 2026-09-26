@@ -25,7 +25,7 @@ export function Desk() {
   const { doc } = useDoc();
   const view = ui.use((s) => s.view);
   const selection = ui.use((s) => s.selection);
-  const hover = ui.use((s) => s.hoverKey === 'desk');
+  const dropHover = ui.use((s) => s.hoverKey === 'desk');
   const ref = useRef<HTMLDivElement>(null);
   const spaceHeld = useRef(false);
   const [marquee, setMarquee] = useState<Rect | null>(null);
@@ -275,7 +275,7 @@ export function Desk() {
   return (
     <div
       ref={ref}
-      className={`desk${panning ? ' panning' : ''}${hover ? ' drop-hover' : ''}`}
+      className={`desk${panning ? ' panning' : ''}${dropHover ? ' drop-hover' : ''}`}
       data-drop="desk"
       onPointerDown={onBackgroundDown}
       onContextMenu={(e) => {

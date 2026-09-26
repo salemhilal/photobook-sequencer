@@ -4,7 +4,8 @@ import { docStore, migrateDoc } from './store';
 import type { Doc } from './types';
 import { MOD_LABEL } from './platform';
 import { ask, ui } from './ui';
-import { createZip, readZip, type ZipInput } from './zip';
+import { createZip, readZip, ZipTooLargeError, type ZipInput } from './zip';
+import { download } from './download';
 
 /**
  * Project files are ZIP archives:
@@ -173,17 +174,6 @@ function mimeFor(path: string): string {
   return types[ext] ?? '';
 }
 
-export function download(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.append(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
-}
-
 /** Import with confirmation and user-facing errors. */
 export async function openProjectFile(file: File): Promise<void> {
   const photoCount = Object.keys(docStore.doc.photos).length;
@@ -224,7 +214,7 @@ export async function saveProjectFile(): Promise<boolean> {
     await exportProject();
     return true;
   } catch (e) {
-    ui.set({ notice: e instanceof Error && e.name === 'Error' ? e.message : "Couldn't export the project." });
+    ui.set({ notice: e instanceof ZipTooLargeError ? e.message : "Couldn't export the project." });
     return false;
   }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { bump, dropPhotos, folioLabel, putInPile, putOnPage } from '../actions';
 import { clearGhost, startDrag, trackGhost } from '../drag';
@@ -16,9 +16,10 @@ import {
   type SnapFeedback,
 } from '../geometry';
 import { docStore, useDoc } from '../store';
-import type { Doc, Placement, Spread } from '../types';
+import type { Doc, Placement } from '../types';
 import { isTyping } from '../platform';
 import { openPhotoMenu, ui } from '../ui';
+import { useWindowEvent } from '../hooks';
 import { NumberField } from './NumberField';
 import { PhotoImg } from './PhotoImg';
 import { SpreadCanvas } from './SpreadCanvas';
@@ -76,33 +77,30 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
     setSelected(null);
   };
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (isTyping(e) || e.metaKey || e.ctrlKey) return;
-      if (ui.get().modal) return;
-      const d = docStore.doc;
-      const item = selected ? findItem(d, spreadId, selected) : null;
-      if (e.key === 'Escape') {
-        if (selected) setSelected(null);
-        else close();
-      } else if ((e.key === 'Delete' || e.key === 'Backspace') && item) {
-        e.preventDefault();
-        toPile(item.photoId);
-      } else if (e.key.startsWith('Arrow')) {
-        e.preventDefault();
-        if (!item) {
-          if (e.key === 'ArrowLeft') go(-1);
-          if (e.key === 'ArrowRight') go(1);
-          return;
-        }
-        const n = e.shiftKey ? NUDGE_BIG : NUDGE;
-        const dx = e.key === 'ArrowLeft' ? -n : e.key === 'ArrowRight' ? n : 0;
-        const dy = e.key === 'ArrowUp' ? -n : e.key === 'ArrowDown' ? n : 0;
-        updateItem(item.photoId, { x: item.x + dx, y: item.y + dy }, `nudge:${item.photoId}`);
+  // The editor's own keys; the desk's shortcuts are paused while it's open.
+  useWindowEvent('keydown', (e) => {
+    if (isTyping(e) || e.metaKey || e.ctrlKey) return;
+    if (ui.get().modal) return;
+    const d = docStore.doc;
+    const item = selected ? findItem(d, spreadId, selected) : null;
+    if (e.key === 'Escape') {
+      if (selected) setSelected(null);
+      else close();
+    } else if ((e.key === 'Delete' || e.key === 'Backspace') && item) {
+      e.preventDefault();
+      toPile(item.photoId);
+    } else if (e.key.startsWith('Arrow')) {
+      e.preventDefault();
+      if (!item) {
+        if (e.key === 'ArrowLeft') go(-1);
+        if (e.key === 'ArrowRight') go(1);
+        return;
       }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+      const n = e.shiftKey ? NUDGE_BIG : NUDGE;
+      const dx = e.key === 'ArrowLeft' ? -n : e.key === 'ArrowRight' ? n : 0;
+      const dy = e.key === 'ArrowUp' ? -n : e.key === 'ArrowDown' ? n : 0;
+      updateItem(item.photoId, { x: item.x + dx, y: item.y + dy }, `nudge:${item.photoId}`);
+    }
   });
 
   if (!spread) return null;
@@ -250,7 +248,6 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
           </div>
           <Inspector
             doc={doc}
-            spread={spread}
             item={selectedItem}
             onChange={(patch, key) => selectedItem && updateItem(selectedItem.photoId, patch, key)}
             onToPile={() => selectedItem && toPile(selectedItem.photoId)}
@@ -268,7 +265,6 @@ function findItem(d: Doc, spreadId: string, photoId: string): Placement | undefi
 
 interface InspectorProps {
   doc: Doc;
-  spread: Spread;
   item: Placement | null;
   onChange: (patch: Partial<Placement>, coalesce?: string) => void;
   onToPile: () => void;

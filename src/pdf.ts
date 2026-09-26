@@ -1,6 +1,6 @@
 import { getImage } from './db';
 import { pageSides } from './geometry';
-import { download } from './project';
+import { download } from './download';
 import { docStore } from './store';
 import { ui } from './ui';
 
