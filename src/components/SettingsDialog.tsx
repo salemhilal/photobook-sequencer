@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { current } from 'immer';
 import { relayoutRect } from '../geometry';
 import { docStore, useDoc } from '../store';
+import { applyTheme, saveTheme, type ThemePref } from '../theme';
 import type { Doc, Spread } from '../types';
 
 /**
@@ -12,6 +13,37 @@ import type { Doc, Spread } from '../types';
 let resizeSession: { base: Doc; out: Spread[] } | null = null;
 import { ui } from '../ui';
 import { NumberField } from './NumberField';
+
+const THEMES: { value: ThemePref; label: string }[] = [
+  { value: 'system', label: 'System' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+];
+
+function ThemePicker() {
+  const theme = ui.use((s) => s.theme);
+  const choose = (t: ThemePref) => {
+    ui.set({ theme: t });
+    applyTheme(t);
+    saveTheme(t);
+  };
+  return (
+    <div className="segmented" role="radiogroup" aria-labelledby="appearance-label">
+      {THEMES.map((t) => (
+        <label key={t.value} className={theme === t.value ? 'on' : ''}>
+          <input
+            type="radio"
+            name="theme"
+            value={t.value}
+            checked={theme === t.value}
+            onChange={() => choose(t.value)}
+          />
+          {t.label}
+        </label>
+      ))}
+    </div>
+  );
+}
 
 export function SettingsDialog() {
   const { doc } = useDoc();
@@ -56,15 +88,19 @@ export function SettingsDialog() {
 
   return (
     <div className="modal-backdrop" data-modal onPointerDown={(e) => e.target === e.currentTarget && close()}>
-      <div className="modal settings" data-modal role="dialog" aria-label="Book settings">
+      <div className="modal settings" data-modal role="dialog" aria-label="Settings">
         <header className="modal-head">
-          <div className="modal-title">Book settings</div>
+          <div className="modal-title">Settings</div>
           <span className="spacer" />
           <button className="btn icon" aria-label="Close" onClick={close}>
             ×
           </button>
         </header>
         <div className="settings-body">
+          <section>
+            <h3 id="appearance-label">Appearance</h3>
+            <ThemePicker />
+          </section>
           <section>
             <h3>Page size</h3>
             <p className="muted small">Each page, in inches.</p>

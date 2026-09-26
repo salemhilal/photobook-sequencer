@@ -1,4 +1,5 @@
 import { createStore } from './store';
+import { loadTheme, type ThemePref } from './theme';
 import type { PageSide } from './types';
 
 export interface DeskView {
@@ -38,6 +39,7 @@ export interface UiState {
   notice: string | null;
   /** True while the shortcut modifier is held, to reveal shortcut hints. */
   hints: boolean;
+  theme: ThemePref;
 }
 
 export const ui = createStore<UiState>({
@@ -52,6 +54,7 @@ export const ui = createStore<UiState>({
   busy: null,
   notice: null,
   hints: false,
+  theme: loadTheme(),
 });
 
 /** Screen pixels per inch on the desk at zoom 1. */
