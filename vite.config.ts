@@ -2,17 +2,50 @@
 import react from '@vitejs/plugin-react';
 import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
 
-const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string };
+const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
+  version: string;
+};
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
-  // Inlined at build time; see src/env.d.ts.
-  define: { __APP_VERSION__: JSON.stringify(version) },
+  plugins: [
+    react(),
+    // Works offline: a service worker (production builds only) caches the whole app,
+    // including lazily loaded chunks like the PDF library. Updates wait for the user
+    // to reload (see src/update.ts), so a new version never interrupts work.
+    VitePWA({
+      registerType: 'prompt',
+      injectRegister: false,
+      // The glob below already caches the icons.
+      includeManifestIcons: false,
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,svg,png,woff,woff2}'],
+        // Don't cache old builds' leftovers.
+        cleanupOutdatedCaches: true,
+      },
+      manifest: {
+        name: 'Photobook Sequencer',
+        short_name: 'Sequencer',
+        description: 'A tool for prototyping photo sequences',
+        start_url: '/',
+        scope: '/',
+        display: 'standalone',
+        background_color: '#151514',
+        theme_color: '#151514',
+        icons: [
+          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
+      },
+    }),
+  ],
   // Pre-bundle lucide-react with React up front; discovering it mid-session
   // can load it against a second copy of React ("Invalid hook call").
   optimizeDeps: { include: ['lucide-react'] },
+  // Inlined at build time; see src/env.d.ts.
+  define: { __APP_VERSION__: JSON.stringify(version) },
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],

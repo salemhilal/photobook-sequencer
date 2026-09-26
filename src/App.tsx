@@ -27,6 +27,7 @@ import { SpreadEditor } from './components/SpreadEditor';
 import { usePersistence } from './persistence';
 import { docStore, useDoc } from './store';
 import { openModal, toggleSidebar, ui } from './ui';
+import { checkForUpdate, reloadToUpdate } from './update';
 
 const NOTICE_MS = 6000;
 
@@ -39,6 +40,7 @@ export default function App() {
   const busy = ui.use((s) => s.busy);
   const sidebarOpen = ui.use((s) => s.sidebarOpen);
   const outdated = ui.use((s) => s.outdated);
+  const updateReady = ui.use((s) => s.updateReady);
   const loaded = usePersistence();
 
   useCommandShortcuts();
@@ -142,6 +144,14 @@ export default function App() {
       <ConfirmDialog />
       <ContextMenus />
       <DragGhost />
+      {updateReady && (
+        <div className="update-bar" role="status">
+          A new version is available.
+          <button className="btn primary" onClick={reloadToUpdate}>
+            Reload
+          </button>
+        </div>
+      )}
       {notice && (
         <div className="notice" role="status">
           {notice}
@@ -167,12 +177,14 @@ function ShortcutHint({ label, below }: { label: string; below?: boolean }) {
 
 /** Shown instead of the app when the saved project is from a newer version of the app. */
 function OutdatedScreen() {
+  // The newer version may not have downloaded yet; look for it now.
+  useEffect(checkForUpdate, []);
   return (
     <div className="outdated" role="alert">
       <span className="wordmark">SEQUENCER</span>
       <h1>This project was saved by a newer version of Photobook Sequencer.</h1>
       <p>Reload to update. Your saved project hasn't been changed.</p>
-      <button className="btn primary" onClick={() => location.reload()}>
+      <button className="btn primary" onClick={reloadToUpdate}>
         Reload
       </button>
     </div>

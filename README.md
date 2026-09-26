@@ -47,6 +47,17 @@ Hold ⌘ / Ctrl to see them on screen.
 
 Right-click the desk to tidy photos into a grid or change the desk color.
 
+## Offline and install
+
+The deployed app works offline once it has loaded: a service worker keeps a copy of
+the whole app, and your work stays in the browser. To use it like a desktop app,
+install it from the browser (Chrome/Edge: install icon in the address bar; Safari:
+File → Add to Dock). Installing also makes the browser less likely to clear stored
+work; Settings → Storage shows whether it's protected. Export to keep a backup.
+
+New versions download in the background; the app shows "A new version is available"
+and switches when you reload.
+
 ## Project files
 
 Export saves a `.photo-sequence` file (a ZIP inside) you can import anywhere:

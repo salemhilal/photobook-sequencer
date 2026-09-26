@@ -1410,6 +1410,20 @@ body.col-resizing * {
   display: grid;
   place-items: center;
 }
+.update-bar {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 8px 8px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
 .notice {
   position: fixed;
   left: 50%;

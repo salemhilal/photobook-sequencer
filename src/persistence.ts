@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { deleteImage, imageIds, loadDoc, saveDoc } from './db';
 import { forgetUrl } from './images';
 import { migrateDoc, NewerProjectError, schemaVersionOf } from './schema';
+import { requestPersistence } from './storage';
 import { docStore, emptyDoc } from './store';
 import { CURRENT_SCHEMA, type Doc } from './types';
 import { ui } from './ui';
@@ -39,6 +40,7 @@ export function usePersistence(): boolean {
       if (ui.get().outdated) return;
       if ((await saveUnlessNewer(docStore.doc)) === 'newer') return unsubscribe();
       await collectGarbage();
+      keepStorage();
     };
 
     void loadDoc()
@@ -52,6 +54,7 @@ export function usePersistence(): boolean {
         }
         setLoaded(true);
         void collectGarbage();
+        keepStorage();
         let last = docStore.doc;
         unsubscribe = docStore.subscribe(() => {
           if (docStore.doc === last) return;
@@ -80,6 +83,15 @@ export function usePersistence(): boolean {
   }, []);
 
   return loaded;
+}
+
+let askedToKeep = false;
+
+/** Once the project has photos, ask (once per session) for the browser not to clear storage. */
+function keepStorage(): void {
+  if (askedToKeep || !Object.keys(docStore.doc.photos).length) return;
+  askedToKeep = true;
+  void requestPersistence();
 }
 
 /**

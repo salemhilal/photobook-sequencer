@@ -8,8 +8,10 @@ import './styles.css';
 import App from './App.tsx';
 import { applyDeskColor } from './deskColor';
 import { ui } from './ui';
+import { startOfflineSupport } from './update';
 
 applyDeskColor(ui.get().deskColor);
+startOfflineSupport();
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root');

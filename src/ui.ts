@@ -66,6 +66,8 @@ export interface UiState {
   confirm: ConfirmRequest | null;
   /** The saved project is from a newer version of the app; nothing is shown or saved until a reload. */
   outdated: boolean;
+  /** A new version of the app has downloaded and is waiting for a reload. */
+  updateReady: boolean;
 }
 
 export const ui = createStore<UiState>({
@@ -86,6 +88,7 @@ export const ui = createStore<UiState>({
   contextMenu: null,
   confirm: null,
   outdated: false,
+  updateReady: false,
 });
 
 export function openModal(modal: Modal): void {

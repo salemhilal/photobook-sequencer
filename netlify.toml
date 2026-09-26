@@ -6,3 +6,14 @@
 
 [build.environment]
   NODE_VERSION = "24"
+
+# The service worker and app manifest must always be fetched fresh, so updates are noticed.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "no-cache"
