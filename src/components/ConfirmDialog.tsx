@@ -20,7 +20,13 @@ export function ConfirmDialog() {
   if (!req) return null;
   return (
     <div className="modal-backdrop" data-modal onPointerDown={(e) => e.target === e.currentTarget && req.resolve(null)}>
-      <div className="modal confirm" data-modal role="alertdialog" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+      <div
+        className="modal confirm"
+        data-modal
+        role="alertdialog"
+        aria-labelledby="confirm-title"
+        aria-describedby="confirm-message"
+      >
         <div className="confirm-body">
           <h2 id="confirm-title">{req.title}</h2>
           <p id="confirm-message">{req.message}</p>

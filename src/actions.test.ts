@@ -131,7 +131,11 @@ describe('spreads', () => {
     docStore.apply((d) => putOnPage(d, ['sq', 'land'], middle().id, 'right'));
     deleteSpread(middle().id);
     expect(doc().spreads).toHaveLength(3);
-    expect(doc().pile.map((p) => p.photoId).sort()).toEqual(['land', 'port', 'sq']);
+    expect(
+      doc()
+        .pile.map((p) => p.photoId)
+        .sort(),
+    ).toEqual(['land', 'port', 'sq']);
   });
 
   it('reorders middle spreads but keeps first and last in place', () => {

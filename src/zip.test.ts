@@ -4,7 +4,8 @@ import { createZip, NotAZipError, readZip } from './zip';
 const text = async (b: Blob) => b.text();
 
 /** d.txt, compressed with deflate by macOS `zip -9`. */
-const DEFLATED_ZIP = 'UEsDBBQAAgAIAGWHOl3RQ+bAEQAAACMAAAAFAAAAZC50eHRLzs8tKEotLlbITVVIxs4GAFBLAQIeAxQAAgAIAGWHOl3RQ+bAEQAAACMAAAAFAAAAAAAAAAEAAACkgQAAAABkLnR4dFBLBQYAAAAAAQABADMAAAA0AAAAAAA=';
+const DEFLATED_ZIP =
+  'UEsDBBQAAgAIAGWHOl3RQ+bAEQAAACMAAAAFAAAAZC50eHRLzs8tKEotLlbITVVIxs4GAFBLAQIeAxQAAgAIAGWHOl3RQ+bAEQAAACMAAAAFAAAAAAAAAAEAAACkgQAAAABkLnR4dFBLBQYAAAAAAQABADMAAAA0AAAAAAA=';
 
 describe('zip', () => {
   it('round-trips entries, including non-ASCII names', async () => {

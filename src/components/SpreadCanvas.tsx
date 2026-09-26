@@ -58,11 +58,7 @@ export function SpreadCanvas({
   const items = [...spread.items].sort((a, b) => a.z - b.z);
 
   return (
-    <div
-      className={`spread-canvas ${className ?? ''}`}
-      style={{ width, height }}
-      onPointerDown={onPointerDown}
-    >
+    <div className={`spread-canvas ${className ?? ''}`} style={{ width, height }} onPointerDown={onPointerDown}>
       {sides.map((side) => {
         const r = pageRect(side, settings);
         const hover = hoverKey === `page:${spread.id}:${side}`;
@@ -81,9 +77,7 @@ export function SpreadCanvas({
       <div
         className="spread-items"
         style={
-          clip
-            ? { ...box(pagesX, 0, pagesW, settings.pageH), overflow: 'hidden' }
-            : { left: 0, top: 0, width, height }
+          clip ? { ...box(pagesX, 0, pagesW, settings.pageH), overflow: 'hidden' } : { left: 0, top: 0, width, height }
         }
       >
         {items.map((p) => {

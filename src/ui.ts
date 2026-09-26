@@ -28,8 +28,7 @@ export type DropTarget =
   | null;
 
 export type ContextMenuState =
-  | { kind: 'desk'; x: number; y: number }
-  | { kind: 'photo'; x: number; y: number; photoId: string };
+  { kind: 'desk'; x: number; y: number } | { kind: 'photo'; x: number; y: number; photoId: string };
 
 export interface ConfirmAction {
   label: string;
@@ -114,7 +113,10 @@ export function ask(request: Omit<ConfirmRequest, 'resolve'>): Promise<string | 
 }
 
 /** Right-click handler for a photo, wherever it's shown. */
-export function openPhotoMenu(e: { preventDefault(): void; stopPropagation(): void; clientX: number; clientY: number }, photoId: string): void {
+export function openPhotoMenu(
+  e: { preventDefault(): void; stopPropagation(): void; clientX: number; clientY: number },
+  photoId: string,
+): void {
   e.preventDefault();
   e.stopPropagation();
   ui.set({ contextMenu: { kind: 'photo', x: e.clientX, y: e.clientY, photoId } });
@@ -126,7 +128,6 @@ export function setDeskColor(color: string): void {
   saveDeskColor(color);
 }
 
-
 function loadSidebarOpen(): boolean {
   try {
     return localStorage.getItem(SIDEBAR_KEY) !== 'closed';
@@ -134,7 +135,6 @@ function loadSidebarOpen(): boolean {
     return true;
   }
 }
-
 
 function loadSidebarWidth(): number {
   try {

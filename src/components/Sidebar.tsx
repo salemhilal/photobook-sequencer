@@ -47,7 +47,11 @@ export function Sidebar() {
   useLayoutEffect(() => {
     const el = listRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setContentWidth(el.clientWidth - parseFloat(getComputedStyle(el).paddingLeft) - parseFloat(getComputedStyle(el).paddingRight)));
+    const ro = new ResizeObserver(() =>
+      setContentWidth(
+        el.clientWidth - parseFloat(getComputedStyle(el).paddingLeft) - parseFloat(getComputedStyle(el).paddingRight),
+      ),
+    );
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -100,9 +104,7 @@ export function Sidebar() {
           }
         }
         if (!best) return;
-        const before = grid
-          ? ev.clientX < best.r.left + best.r.width / 2
-          : ev.clientY < best.r.top + best.r.height / 2;
+        const before = grid ? ev.clientX < best.r.left + best.r.width / 2 : ev.clientY < best.r.top + best.r.height / 2;
         dropIndex = Math.min(Math.max(1, before ? best.idx : best.idx + 1), spreads.length - 1);
         setReorder({ id: spread.id, dropIndex });
       },
@@ -253,10 +255,7 @@ function SpreadRow({ spread, index, total, settings, thumbW, dragging, onHeaderD
   );
 
   return (
-    <div
-      className={`spread-row${editing ? ' editing' : ''}${dragging ? ' dragging' : ''}`}
-      data-row-index={index}
-    >
+    <div className={`spread-row${editing ? ' editing' : ''}${dragging ? ' dragging' : ''}`} data-row-index={index}>
       <div
         className={`spread-row-head${middle ? ' draggable' : ''}`}
         title={middle ? 'Drag to reorder' : 'The first and last pages stay in place'}
@@ -265,10 +264,10 @@ function SpreadRow({ spread, index, total, settings, thumbW, dragging, onHeaderD
         <span className={`grip${middle ? '' : ' locked'}`} aria-hidden="true">
           <GripVertical />
         </span>
-        <span className="spread-label">
-          {label}
+        <span className="spread-label">{label}</span>
+        <span className="muted data">
+          {spread.items.length ? `${spread.items.length} photo${spread.items.length === 1 ? '' : 's'}` : ''}
         </span>
-        <span className="muted data">{spread.items.length ? `${spread.items.length} photo${spread.items.length === 1 ? '' : 's'}` : ''}</span>
         {middle && (
           <button
             className="row-delete"

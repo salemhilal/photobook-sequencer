@@ -26,7 +26,12 @@ export function DeskColorPicker() {
         title="Custom color"
       >
         {isPreset && <Pipette />}
-        <input type="color" value={color} onChange={(e) => setDeskColor(e.target.value)} aria-label="Custom desk color" />
+        <input
+          type="color"
+          value={color}
+          onChange={(e) => setDeskColor(e.target.value)}
+          aria-label="Custom desk color"
+        />
       </label>
     </div>
   );

@@ -1,9 +1,9 @@
 /// <reference types="vitest/config" />
-import react from '@vitejs/plugin-react'
-import { readFileSync } from 'node:fs'
-import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react';
+import { readFileSync } from 'node:fs';
+import { defineConfig } from 'vite';
 
-const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string }
+const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string };
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -17,4 +17,4 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.ts'],
   },
-})
+});

@@ -104,8 +104,20 @@ export function SettingsDialog() {
             <h3>Page size</h3>
             <div className="setting-controls">
               <div className="inline">
-                <NumberField label="W" suffix="" {...pageSizeField} value={s.pageW} onCommit={(n) => setPageSize('pageW', n)} />
-                <NumberField label="H" suffix="" {...pageSizeField} value={s.pageH} onCommit={(n) => setPageSize('pageH', n)} />
+                <NumberField
+                  label="W"
+                  suffix=""
+                  {...pageSizeField}
+                  value={s.pageW}
+                  onCommit={(n) => setPageSize('pageW', n)}
+                />
+                <NumberField
+                  label="H"
+                  suffix=""
+                  {...pageSizeField}
+                  value={s.pageH}
+                  onCommit={(n) => setPageSize('pageH', n)}
+                />
                 <span className="muted data">in</span>
               </div>
               <label className="check">

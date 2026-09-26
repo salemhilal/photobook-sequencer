@@ -48,10 +48,7 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
     return () => ro.disconnect();
   }, []);
 
-  const scale = Math.max(
-    4,
-    Math.min(stage.w / (2 * settings.pageW + 2 * PAD), stage.h / (settings.pageH + 2 * PAD)),
-  );
+  const scale = Math.max(4, Math.min(stage.w / (2 * settings.pageW + 2 * PAD), stage.h / (settings.pageH + 2 * PAD)));
 
   const selectedItem = spread?.items.find((i) => i.photoId === selected) ?? null;
 
@@ -236,17 +233,17 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
         <div className="editor-body">
           <div className="editor-stage" ref={stageRef}>
             <div className="stage-center">
-            <SpreadCanvas
-              spread={spread}
-              settings={settings}
-              scale={scale}
-              pad={PAD}
-              guides
-              droppable
-              snapHit={snapHit}
-              renderItem={renderItem}
-              onPointerDown={() => setSelected(null)}
-            />
+              <SpreadCanvas
+                spread={spread}
+                settings={settings}
+                scale={scale}
+                pad={PAD}
+                guides
+                droppable
+                snapHit={snapHit}
+                renderItem={renderItem}
+                onPointerDown={() => setSelected(null)}
+              />
             </div>
           </div>
           <Inspector
@@ -302,9 +299,7 @@ function Inspector({ doc, item, onChange, onToPile }: InspectorProps) {
       <div className="inspector-name" title={photo?.name}>
         {photo?.name}
       </div>
-      <div className="muted small">
-        {side === 'left' ? 'Left' : 'Right'} page · measured from its top-left corner
-      </div>
+      <div className="muted small">{side === 'left' ? 'Left' : 'Right'} page · measured from its top-left corner</div>
       <div className="grid2">
         <NumberField label="X" value={item.x - page.x} onCommit={(n) => onChange({ x: page.x + n }, key('x'))} />
         <NumberField label="Y" value={item.y} onCommit={(n) => onChange({ y: n }, key('y'))} />
@@ -387,9 +382,7 @@ function PileStrip({ spreadId }: { spreadId: string }) {
 
   return (
     <div className={`strip${hover ? ' drop-hover' : ''}`} data-drop="strip">
-      <div className="strip-label caps">
-        Desk · {pile.length}
-      </div>
+      <div className="strip-label caps">Desk · {pile.length}</div>
       <div className="strip-items">
         {pile.length === 0 ? (
           <span className="muted small">Empty. Drag a photo here to send it back to the desk.</span>

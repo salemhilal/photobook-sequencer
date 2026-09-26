@@ -159,7 +159,7 @@ export default function App() {
               ? busy
               : importing
                 ? 'Importing…'
-            : `${doc.pile.length} on desk · ${placed} placed`}
+                : `${doc.pile.length} on desk · ${placed} placed`}
         </span>
         <input
           ref={projectRef}

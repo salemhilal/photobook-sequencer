@@ -10,7 +10,10 @@ export function Preview() {
   const { doc } = useDoc();
   const [index, setIndex] = useState(() => {
     const editing = ui.get().editingSpreadId;
-    return Math.max(0, doc.spreads.findIndex((s) => s.id === editing));
+    return Math.max(
+      0,
+      doc.spreads.findIndex((s) => s.id === editing),
+    );
   });
   const [dir, setDir] = useState<'next' | 'prev'>('next');
   const stageRef = useRef<HTMLDivElement>(null);

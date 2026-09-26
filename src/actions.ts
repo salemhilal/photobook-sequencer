@@ -131,9 +131,11 @@ export function tidyPile(photoIds?: string[]): void {
   const slot = new Map<string, { col: number; row: number }>();
   let gridRow = 0;
   for (const row of rows) {
-    row.sort((a, b) => cx(a) - cx(b)).forEach((p, i) => {
-      slot.set(p.photoId, { col: i % cols, row: gridRow + Math.floor(i / cols) });
-    });
+    row
+      .sort((a, b) => cx(a) - cx(b))
+      .forEach((p, i) => {
+        slot.set(p.photoId, { col: i % cols, row: gridRow + Math.floor(i / cols) });
+      });
     gridRow += Math.ceil(row.length / cols);
   }
 
@@ -263,7 +265,9 @@ export async function importPhotos(files: File[]): Promise<void> {
     const { photos, failed } = await importFiles(files, (done, total) => ui.set({ importing: { done, total } }));
     addPhotosToPile(photos);
     if (failed.length) {
-      ui.set({ notice: `Couldn't read ${failed.length} file${failed.length > 1 ? 's' : ''}: ${failed.slice(0, 3).join(', ')}${failed.length > 3 ? '…' : ''}` });
+      ui.set({
+        notice: `Couldn't read ${failed.length} file${failed.length > 1 ? 's' : ''}: ${failed.slice(0, 3).join(', ')}${failed.length > 3 ? '…' : ''}`,
+      });
     }
   } finally {
     ui.set({ importing: null });

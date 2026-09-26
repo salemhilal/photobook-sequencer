@@ -131,7 +131,8 @@ export async function readZip(file: Blob): Promise<Map<string, ZipEntry>> {
   const count = tail.getUint16(eocd + 10, true);
   const cdSize = tail.getUint32(eocd + 12, true);
   const cdOffset = tail.getUint32(eocd + 16, true);
-  if (cdOffset === LIMIT || count === 0xffff) throw new NotAZipError('This archive uses ZIP64, which is not supported.');
+  if (cdOffset === LIMIT || count === 0xffff)
+    throw new NotAZipError('This archive uses ZIP64, which is not supported.');
 
   const cd = new DataView(await file.slice(cdOffset, cdOffset + cdSize).arrayBuffer());
   const dec = new TextDecoder();

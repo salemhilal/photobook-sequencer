@@ -323,7 +323,9 @@ export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
           <p className="desk-empty-title">
             {Object.keys(doc.photos).length ? 'Every photo is placed' : 'Start by adding photos'}
           </p>
-          <p>Add or drop photos or exported projects here. They land on this desk, where you can drag them onto pages.</p>
+          <p>
+            Add or drop photos or exported projects here. They land on this desk, where you can drag them onto pages.
+          </p>
           <button className="btn primary" onPointerDown={(e) => e.stopPropagation()} onClick={onAddPhotos}>
             Add photos
           </button>
@@ -395,8 +397,7 @@ function SelectionFrames({
         const y2 = snap(view.panY + (p.y + p.h) * k + out);
         return (
           <div key={p.photoId} className="sel-frame" style={{ left: x1, top: y1, width: x2 - x1, height: y2 - y1 }}>
-            {handlesFor === p.photoId &&
-              CORNERS.map((c) => <span key={c} className={`sel-handle sel-handle-${c}`} />)}
+            {handlesFor === p.photoId && CORNERS.map((c) => <span key={c} className={`sel-handle sel-handle-${c}`} />)}
           </div>
         );
       })}

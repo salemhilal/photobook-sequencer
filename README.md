@@ -29,19 +29,19 @@ Netlify runs `npm test && npm run build` for production, pull-request previews, 
 
 ## Shortcuts
 
-| Action       | Mac   | Windows |
-| ------------ | ----- | ------- |
-| Add photos   | ⌘O    | Ctrl+O  |
-| Preview      | ⌘P    | Ctrl+P  |
-| Settings     | ⌘,    | Ctrl+,  |
-| Import       | ⌘I    | Ctrl+I  |
-| Export       | ⌘S    | Ctrl+S  |
-| Save PDF     | ⇧⌘P   | Ctrl+Shift+P |
-| Show/hide spreads | ⌘B | Ctrl+B |
+| Action              | Mac     | Windows         |
+| ------------------- | ------- | --------------- |
+| Add photos          | ⌘O      | Ctrl+O          |
+| Preview             | ⌘P      | Ctrl+P          |
+| Settings            | ⌘,      | Ctrl+,          |
+| Import              | ⌘I      | Ctrl+I          |
+| Export              | ⌘S      | Ctrl+S          |
+| Save PDF            | ⇧⌘P     | Ctrl+Shift+P    |
+| Show/hide spreads   | ⌘B      | Ctrl+B          |
 | Copy / paste photos | ⌘C / ⌘V | Ctrl+C / Ctrl+V |
-| Duplicate photos | ⌘D | Ctrl+D |
-| Undo         | ⌘Z    | Ctrl+Z  |
-| Redo         | ⇧⌘Z   | Ctrl+Y  |
+| Duplicate photos    | ⌘D      | Ctrl+D          |
+| Undo                | ⌘Z      | Ctrl+Z          |
+| Redo                | ⇧⌘Z     | Ctrl+Y          |
 
 Hold ⌘ / Ctrl to see them on screen.
 

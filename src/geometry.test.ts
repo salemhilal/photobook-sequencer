@@ -126,7 +126,12 @@ describe('relayoutRect', () => {
   const to = (pageW: number, pageH: number) => ({ ...settings, pageW, pageH });
 
   it('keeps a full-page photo filling the page', () => {
-    expect(round(relayoutRect({ x: 0, y: 0, w: 10, h: 8 }, settings, to(8, 6.4)))).toEqual({ x: 0, y: 0, w: 8, h: 6.4 });
+    expect(round(relayoutRect({ x: 0, y: 0, w: 10, h: 8 }, settings, to(8, 6.4)))).toEqual({
+      x: 0,
+      y: 0,
+      w: 8,
+      h: 6.4,
+    });
   });
 
   it('keeps a full-spread photo spanning both pages', () => {
