@@ -30,6 +30,10 @@ export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
   const [marquee, setMarquee] = useState<Rect | null>(null);
   const [panning, setPanning] = useState(false);
   const [hoverId, setHoverId] = useState<string | null>(null);
+  /** Files being dragged in from outside the app: what dropping them will do. */
+  const [fileDrop, setFileDrop] = useState<'photos' | 'project' | null>(null);
+  // dragenter/dragleave fire for every child element crossed, so count them.
+  const fileDragDepth = useRef(0);
   const [resizingId, setResizingId] = useState<string | null>(null);
 
   useLayoutEffect(() => {
@@ -226,8 +230,41 @@ export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
     });
   };
 
+  // If a file drag ends anywhere else (dropped outside the desk, or cancelled), clear the indicator.
+  useEffect(() => {
+    const reset = () => {
+      fileDragDepth.current = 0;
+      setFileDrop(null);
+    };
+    window.addEventListener('drop', reset);
+    window.addEventListener('dragend', reset);
+    return () => {
+      window.removeEventListener('drop', reset);
+      window.removeEventListener('dragend', reset);
+    };
+  }, []);
+
+  const isFileDrag = (e: React.DragEvent) => e.dataTransfer.types.includes('Files');
+
+  const onDragEnter = (e: React.DragEvent) => {
+    if (!isFileDrag(e)) return;
+    fileDragDepth.current += 1;
+    // Only MIME types are visible before the drop, not file names.
+    const types = [...e.dataTransfer.items].map((i) => i.type);
+    const project = types.some((t) => t === 'application/zip' || t === 'application/x-zip-compressed');
+    setFileDrop(project ? 'project' : 'photos');
+  };
+
+  const onDragLeave = (e: React.DragEvent) => {
+    if (!isFileDrag(e)) return;
+    fileDragDepth.current = Math.max(0, fileDragDepth.current - 1);
+    if (fileDragDepth.current === 0) setFileDrop(null);
+  };
+
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    fileDragDepth.current = 0;
+    setFileDrop(null);
     const files = [...e.dataTransfer.files];
     const project = files.find(isProjectFile);
     if (project) void openProjectFile(project);
@@ -248,7 +285,12 @@ export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
         e.preventDefault();
         ui.set({ contextMenu: { kind: 'desk', x: e.clientX, y: e.clientY } });
       }}
-      onDragOver={(e) => e.preventDefault()}
+      onDragEnter={onDragEnter}
+      onDragOver={(e) => {
+        e.preventDefault();
+        if (isFileDrag(e)) e.dataTransfer.dropEffect = 'copy';
+      }}
+      onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
       <div
@@ -287,6 +329,11 @@ export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
           <button className="btn primary" onPointerDown={(e) => e.stopPropagation()} onClick={onAddPhotos}>
             Add photos
           </button>
+        </div>
+      )}
+      {fileDrop && (
+        <div className="file-drop">
+          <span>{fileDrop === 'project' ? 'Drop to open project' : 'Drop to add photos'}</span>
         </div>
       )}
       <ZoomControls />

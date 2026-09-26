@@ -454,6 +454,32 @@ button {
 .desk.drop-hover::after {
   opacity: var(--edge, 1);
 }
+/* Files dragged in from the computer. */
+.file-drop {
+  position: absolute;
+  inset: 12px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--accent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  pointer-events: none;
+  animation: file-drop-in 120ms ease-out;
+}
+.file-drop span {
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 500 12px var(--mono);
+  letter-spacing: 0.04em;
+}
+@keyframes file-drop-in {
+  from {
+    opacity: 0;
+  }
+}
 .desk-world {
   position: absolute;
   left: 0;

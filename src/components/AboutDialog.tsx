@@ -24,7 +24,7 @@ export function AboutDialog() {
         <div className="about-body">
           <span className="wordmark">SEQUENCER</span>
           <h2 className="about-name">Photobook Sequencer</h2>
-          <p className="about-tagline">Lay out photos on book spreads, in inches.</p>
+          <p className="about-tagline">A tool for prototyping photo sequences</p>
           <div className="about-links">
             <a href="https://salem.io" target="_blank" rel="noopener noreferrer">
               <ExternalLink />
