@@ -325,7 +325,7 @@ export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
           <p className="desk-empty-title">
             {Object.keys(doc.photos).length ? 'Every photo is placed' : 'Start by adding photos'}
           </p>
-          <p>Add or drop photos here. They land on this desk, where you can drag them onto pages.</p>
+          <p>Add or drop photos or exported projects here. They land on this desk, where you can drag them onto pages.</p>
           <button className="btn primary" onPointerDown={(e) => e.stopPropagation()} onClick={onAddPhotos}>
             Add photos
           </button>
