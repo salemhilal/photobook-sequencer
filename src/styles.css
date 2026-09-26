@@ -22,7 +22,6 @@
   --guide-hit: #1f9fcc;
   --page: #ffffff;
   --page-edge: rgba(0, 0, 0, 0.28);
-  --print: #ffffff;
   --warn: #a8620a;
   --danger: #c2412d;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 3px 10px rgba(0, 0, 0, 0.12);
@@ -53,7 +52,6 @@
   --accent-ink: #e0a13a;
   --accent-soft: rgba(224, 161, 58, 0.18);
   --page: #efede8;
-  --print: #efede8;
   --warn: #f0a44b;
   --danger: #f07a62;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 3px 10px rgba(0, 0, 0, 0.2);
@@ -72,7 +70,6 @@
     --accent-ink: #e0a13a;
     --accent-soft: rgba(224, 161, 58, 0.18);
     --page: #efede8;
-    --print: #efede8;
     --warn: #f0a44b;
   --danger: #f07a62;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 3px 10px rgba(0, 0, 0, 0.2);
@@ -494,19 +491,12 @@ button {
   cursor: grab;
   touch-action: none;
 }
-/* Photos on the desk read as prints: a thin white border around the image. */
-.desk .item {
-  box-shadow:
-    0 0 0 var(--print-border) var(--print),
-    var(--shadow);
-}
 /*
- * Selection: a thin amber frame just outside the photo (and its print border).
- * --gap is the frame's distance from the photo; the print border scales with zoom,
- * the rest stays a constant size on screen.
+ * Selection: a thin amber frame just outside the photo. --gap is the frame's
+ * distance from the photo, a constant size on screen at any zoom.
  */
 .item {
-  --gap: calc(var(--print-border, 0px) + 5px * var(--inv, 1));
+  --gap: calc(5px * var(--inv, 1));
 }
 /* On the desk, frames are drawn in screen space instead (see SelectionFrames). */
 .desk .item.selected::after,
@@ -555,9 +545,6 @@ button {
   pointer-events: none;
   border: calc(1.5px * var(--inv, 1)) solid var(--accent);
   border-radius: calc(3px * var(--inv, 1));
-}
-.desk .item {
-  --print-border: 4px;
 }
 .photo {
   display: block;

@@ -15,9 +15,7 @@ const MAX_ZOOM = 5;
 const GHOST_MAX = 140;
 /** When moving photos on the desk, the drop border fades in within this distance of its edge. */
 const EDGE_FADE_PX = 120;
-/** Print border around desk photos, in inches (4px at zoom 1). Keep in sync with --print-border. */
-const PRINT_BORDER_IN = 4 / DESK_PPI;
-/** Screen pixels between the print border and the selection frame. */
+/** Screen pixels between a photo and its selection frame. */
 const FRAME_GAP_PX = 5;
 
 export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
@@ -387,7 +385,7 @@ function SelectionFrames({
   const k = DESK_PPI * view.zoom;
   const dpr = window.devicePixelRatio || 1;
   const snap = (v: number) => Math.round(v * dpr) / dpr;
-  const out = PRINT_BORDER_IN * k + FRAME_GAP_PX;
+  const out = FRAME_GAP_PX;
   return (
     <div className="selection-layer">
       {items.map((p) => {
