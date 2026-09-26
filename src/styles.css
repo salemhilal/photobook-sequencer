@@ -444,7 +444,9 @@ button {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  color: var(--muted);
+  /* The desk is middle gray in both themes, so text is always light. */
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
   pointer-events: none;
   text-align: center;
   padding: 16px;
@@ -454,7 +456,8 @@ button {
 }
 .desk-empty-title {
   font-size: 18px;
-  color: var(--text);
+  font-weight: 500;
+  color: #fff;
 }
 .desk-empty .btn {
   margin-top: 12px;
