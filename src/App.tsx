@@ -17,6 +17,7 @@ import { savePdf } from './pdf';
 import { copyPhotos, duplicateAndSelect, isInternalPaste, pasteCopied } from './clipboard';
 import { openProjectFile, saveProjectFile } from './project';
 import { AboutDialog } from './components/AboutDialog';
+import { ConfirmDialog } from './components/ConfirmDialog';
 import { ContextMenus } from './components/ContextMenu';
 import { Desk } from './components/Desk';
 import { FileMenu } from './components/FileMenu';
@@ -207,6 +208,7 @@ export default function App() {
       {settingsOpen && <SettingsDialog />}
       {aboutOpen && <AboutDialog />}
       {previewOpen && <Preview />}
+      <ConfirmDialog />
       <ContextMenus />
       <DragGhost />
       {notice && (

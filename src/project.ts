@@ -2,7 +2,7 @@ import { getImage, putImage } from './db';
 import { setUrl, thumbFromBlob } from './images';
 import { docStore, migrateDoc } from './store';
 import type { Doc } from './types';
-import { ui } from './ui';
+import { ask, ui } from './ui';
 import { createZip, readZip, type ZipInput } from './zip';
 
 /**
@@ -185,10 +185,24 @@ export function download(blob: Blob, filename: string): void {
 
 /** Import with confirmation and user-facing errors. */
 export async function openProjectFile(file: File): Promise<void> {
-  const doc = docStore.doc;
-  const hasWork = Object.keys(doc.photos).length > 0;
-  if (hasWork && !window.confirm('Open this project in place of the current one? You can undo this until you reload.')) {
-    return;
+  const photoCount = Object.keys(docStore.doc.photos).length;
+  if (photoCount > 0) {
+    const choice = await ask({
+      title: 'Replace your current project?',
+      message:
+        `“${file.name}” will replace the project you're working on (${photoCount} photo${photoCount === 1 ? '' : 's'}). ` +
+        'You can undo this until you reload the page. To keep a copy, export it first.',
+      actions: [
+        { label: 'Cancel', value: 'cancel' },
+        { label: 'Export current first', value: 'export' },
+        { label: 'Replace', value: 'replace', primary: true },
+      ],
+    });
+    if (choice === 'export') {
+      if (!(await saveProjectFile())) return;
+    } else if (choice !== 'replace') {
+      return;
+    }
   }
   try {
     await importProject(file);
@@ -197,16 +211,18 @@ export async function openProjectFile(file: File): Promise<void> {
   }
 }
 
-/** Export with user-facing errors. */
-export async function saveProjectFile(): Promise<void> {
-  if (ui.get().busy || ui.get().importing) return;
+/** Export with user-facing errors. Resolves to whether the export succeeded. */
+export async function saveProjectFile(): Promise<boolean> {
+  if (ui.get().busy || ui.get().importing) return false;
   if (!Object.keys(docStore.doc.photos).length) {
     ui.set({ notice: 'Add some photos before exporting.' });
-    return;
+    return false;
   }
   try {
     await exportProject();
+    return true;
   } catch (e) {
     ui.set({ notice: e instanceof Error && e.name === 'Error' ? e.message : "Couldn't export the project." });
+    return false;
   }
 }

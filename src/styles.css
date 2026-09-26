@@ -1182,6 +1182,33 @@ body.col-resizing * {
   text-transform: uppercase;
 }
 
+/* Confirmation */
+.app > .modal-backdrop:has(.confirm) {
+  z-index: 70;
+}
+.confirm {
+  width: 420px;
+}
+.confirm-body {
+  padding: 20px 20px 8px;
+}
+.confirm-body h2 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 500;
+}
+.confirm-body p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 20px 18px;
+}
+
 /* About */
 .about {
   width: 360px;

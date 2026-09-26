@@ -31,6 +31,20 @@ export type ContextMenuState =
   | { kind: 'desk'; x: number; y: number }
   | { kind: 'photo'; x: number; y: number; photoId: string };
 
+export interface ConfirmAction {
+  label: string;
+  value: string;
+  primary?: boolean;
+}
+
+/** An in-app confirmation; `resolve` gets the chosen action's value, or null if dismissed. */
+export interface ConfirmRequest {
+  title: string;
+  message: string;
+  actions: ConfirmAction[];
+  resolve: (value: string | null) => void;
+}
+
 export interface UiState {
   selection: string[];
   editingSpreadId: string | null;
@@ -53,6 +67,7 @@ export interface UiState {
   sidebarWidth: number;
   deskColor: string;
   contextMenu: ContextMenuState | null;
+  confirm: ConfirmRequest | null;
 }
 
 // Declared before the store below, which reads them while initializing.
@@ -79,7 +94,24 @@ export const ui = createStore<UiState>({
   sidebarWidth: loadSidebarWidth(),
   deskColor: loadDeskColor(),
   contextMenu: null,
+  confirm: null,
 });
+
+/** Ask the user to choose; resolves to the chosen action's value, or null if dismissed. */
+export function ask(request: Omit<ConfirmRequest, 'resolve'>): Promise<string | null> {
+  return new Promise((resolve) => {
+    ui.get().confirm?.resolve(null);
+    ui.set({
+      confirm: {
+        ...request,
+        resolve: (value) => {
+          ui.set({ confirm: null });
+          resolve(value);
+        },
+      },
+    });
+  });
+}
 
 /** Right-click handler for a photo, wherever it's shown. */
 export function openPhotoMenu(e: { preventDefault(): void; stopPropagation(): void; clientX: number; clientY: number }, photoId: string): void {
