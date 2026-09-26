@@ -3,9 +3,9 @@ import { Plus, X } from 'lucide-react';
 import { current } from 'immer';
 import { relayoutRect } from '../geometry';
 import { docStore, useDoc } from '../store';
-import { applyTheme, saveTheme, type ThemePref } from '../theme';
+import type { ThemePref } from '../theme';
 import type { Doc, Spread } from '../types';
-import { ui } from '../ui';
+import { setTheme, ui } from '../ui';
 import { DeskColorPicker } from './DeskColorPicker';
 import { NumberField } from './NumberField';
 
@@ -24,11 +24,6 @@ const THEMES: { value: ThemePref; label: string }[] = [
 
 function ThemePicker() {
   const theme = ui.use((s) => s.theme);
-  const choose = (t: ThemePref) => {
-    ui.set({ theme: t });
-    applyTheme(t);
-    saveTheme(t);
-  };
   return (
     <div className="segmented" role="radiogroup" aria-labelledby="appearance-label">
       {THEMES.map((t) => (
@@ -38,7 +33,7 @@ function ThemePicker() {
             name="theme"
             value={t.value}
             checked={theme === t.value}
-            onChange={() => choose(t.value)}
+            onChange={() => setTheme(t.value)}
           />
           {t.label}
         </label>

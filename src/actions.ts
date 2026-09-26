@@ -4,7 +4,8 @@ import { importFiles, setUrl } from './images';
 import { docStore, newId } from './store';
 import { fitCentered, inset, largestBorder, pageRect, pileSize, PILE_PHOTO_SIZE } from './geometry';
 import type { Doc, PageSide, PhotoMeta, Placement } from './types';
-import { DESK_PPI, deskGeometry, ui } from './ui';
+import { DESK_PPI, deskGeometry } from './deskGeometry';
+import { ui } from './ui';
 
 const CELL = 1.8;
 const JITTER = 0.3;

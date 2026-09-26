@@ -3,7 +3,8 @@ import { Copy, CopyPlus, LayoutGrid, Trash2, Undo2 } from 'lucide-react';
 import { deleteFromProject, putInPile, tidyPile } from '../actions';
 import { copyPhotos, duplicateAndSelect } from '../clipboard';
 import { docStore, useDoc } from '../store';
-import { MOD_LABEL, ui, type ContextMenuState } from '../ui';
+import { MOD_LABEL } from '../platform';
+import { ui, type ContextMenuState } from '../ui';
 import { DeskColorPicker } from './DeskColorPicker';
 
 /** Renders whichever right-click menu is open. */

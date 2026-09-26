@@ -4,15 +4,9 @@ import { deleteSpread, folioLabel, insertSpread, moveSpread, putInPile, putOnNew
 import { clearGhost, startDrag, trackGhost } from '../drag';
 import { docStore, useDoc } from '../store';
 import type { Placement, Settings, Spread } from '../types';
-import {
-  DESK_PPI,
-  deskGeometry,
-  openPhotoMenu,
-  setSidebarWidth,
-  SIDEBAR_DEFAULT_WIDTH,
-  SIDEBAR_MIN_WIDTH,
-  ui,
-} from '../ui';
+import { DESK_PPI, deskGeometry } from '../deskGeometry';
+import { SIDEBAR_DEFAULT_WIDTH, SIDEBAR_MIN_WIDTH } from '../prefs';
+import { openPhotoMenu, setSidebarWidth, ui } from '../ui';
 import { PhotoImg } from './PhotoImg';
 import { SpreadCanvas } from './SpreadCanvas';
 

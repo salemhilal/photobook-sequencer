@@ -1,4 +1,4 @@
-/** Desk background color. A per-browser viewing preference, like the theme. */
+/** Desk background color. A per-browser viewing preference (see prefs.ts), like the theme. */
 
 export const DEFAULT_DESK = '#787876';
 
@@ -11,26 +11,10 @@ export const DESK_PRESETS: { value: string; label: string }[] = [
   { value: '#f4f3f0', label: 'White' },
 ];
 
-const KEY = 'photobook-desk';
 const HEX = /^#[0-9a-f]{6}$/i;
 
-export function loadDeskColor(): string {
-  try {
-    const v = localStorage.getItem(KEY);
-    if (v && HEX.test(v)) return v.toLowerCase();
-  } catch {
-    // Storage can be unavailable (private mode, blocked site data).
-  }
-  return DEFAULT_DESK;
-}
-
-export function saveDeskColor(color: string): void {
-  try {
-    if (color === DEFAULT_DESK) localStorage.removeItem(KEY);
-    else localStorage.setItem(KEY, color);
-  } catch {
-    // Not persisted; the choice still applies for this session.
-  }
+export function isHexColor(v: string): boolean {
+  return HEX.test(v);
 }
 
 /** Relative luminance (WCAG) of a #rrggbb color. */

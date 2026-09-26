@@ -29,7 +29,8 @@ import { SpreadEditor } from './components/SpreadEditor';
 import { deleteImage, imageIds, loadDoc, saveDoc } from './db';
 import { forgetUrl } from './images';
 import { docStore, emptyDoc, migrateDoc, useDoc } from './store';
-import { hasMod, isMac, isTyping, MOD_LABEL, toggleSidebar, ui } from './ui';
+import { hasMod, isMac, isTyping, MOD_LABEL } from './platform';
+import { toggleSidebar, ui } from './ui';
 
 const SAVE_DELAY = 400;
 /** How long the modifier must be held before shortcut hints appear. */

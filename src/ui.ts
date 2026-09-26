@@ -1,7 +1,12 @@
+import { applyDeskColor } from './deskColor';
+import { deskColorPref, sidebarOpenPref, sidebarWidthPref, themePref } from './prefs';
 import { createStore } from './store';
-import { applyDeskColor, loadDeskColor, saveDeskColor } from './deskColor';
-import { loadTheme, type ThemePref } from './theme';
-import type { PageSide } from './types';
+import { applyTheme, type ThemePref } from './theme';
+
+/**
+ * UI state that isn't part of the document or its undo history: selection,
+ * open panels, drag feedback, and per-browser preferences.
+ */
 
 export interface DeskView {
   panX: number;
@@ -17,15 +22,6 @@ export interface Ghost {
   w: number;
   h: number;
 }
-
-/** What the pointer is over during a drag, as resolved by `hitTest`. */
-export type DropTarget =
-  | { kind: 'page'; spreadId: string; side: PageSide }
-  | { kind: 'desk' }
-  | { kind: 'strip' }
-  /** The gap before spread `index` in the sidebar: dropping there adds a spread. */
-  | { kind: 'insert'; index: number }
-  | null;
 
 export type ContextMenuState =
   { kind: 'desk'; x: number; y: number } | { kind: 'photo'; x: number; y: number; photoId: string };
@@ -52,7 +48,7 @@ export interface UiState {
   aboutOpen: boolean;
   view: DeskView;
   ghost: Ghost | null;
-  /** `page:<spreadId>:<side>`, `desk`, or `strip` — for drop highlighting. */
+  /** The drop target under the pointer during a drag (see targetKey), for highlighting. */
   hoverKey: string | null;
   importing: { done: number; total: number } | null;
   /** Status text for long-running work like exporting. */
@@ -69,12 +65,6 @@ export interface UiState {
   confirm: ConfirmRequest | null;
 }
 
-// Declared before the store below, which reads them while initializing.
-const SIDEBAR_KEY = 'photobook-sidebar';
-export const SIDEBAR_DEFAULT_WIDTH = 284;
-export const SIDEBAR_MIN_WIDTH = 240;
-const SIDEBAR_WIDTH_KEY = 'photobook-sidebar-width';
-
 export const ui = createStore<UiState>({
   selection: [],
   editingSpreadId: null,
@@ -88,10 +78,10 @@ export const ui = createStore<UiState>({
   busy: null,
   notice: null,
   hints: false,
-  theme: loadTheme(),
-  sidebarOpen: loadSidebarOpen(),
-  sidebarWidth: loadSidebarWidth(),
-  deskColor: loadDeskColor(),
+  theme: themePref.load(),
+  sidebarOpen: sidebarOpenPref.load(),
+  sidebarWidth: sidebarWidthPref.load(),
+  deskColor: deskColorPref.load(),
   contextMenu: null,
   confirm: null,
 });
@@ -122,102 +112,26 @@ export function openPhotoMenu(
   ui.set({ contextMenu: { kind: 'photo', x: e.clientX, y: e.clientY, photoId } });
 }
 
+export function setTheme(theme: ThemePref): void {
+  ui.set({ theme });
+  applyTheme(theme);
+  themePref.save(theme);
+}
+
 export function setDeskColor(color: string): void {
   ui.set({ deskColor: color });
   applyDeskColor(color);
-  saveDeskColor(color);
-}
-
-function loadSidebarOpen(): boolean {
-  try {
-    return localStorage.getItem(SIDEBAR_KEY) !== 'closed';
-  } catch {
-    return true;
-  }
-}
-
-function loadSidebarWidth(): number {
-  try {
-    const n = Number(localStorage.getItem(SIDEBAR_WIDTH_KEY));
-    if (Number.isFinite(n) && n >= SIDEBAR_MIN_WIDTH) return n;
-  } catch {
-    // Fall through to the default.
-  }
-  return SIDEBAR_DEFAULT_WIDTH;
+  deskColorPref.save(color);
 }
 
 /** Set the sidebar width; `persist` saves it (at the end of a resize drag). */
 export function setSidebarWidth(width: number, persist: boolean): void {
   ui.set({ sidebarWidth: width });
-  if (!persist) return;
-  try {
-    if (width === SIDEBAR_DEFAULT_WIDTH) localStorage.removeItem(SIDEBAR_WIDTH_KEY);
-    else localStorage.setItem(SIDEBAR_WIDTH_KEY, String(Math.round(width)));
-  } catch {
-    // Not persisted; still applies for this session.
-  }
+  if (persist) sidebarWidthPref.save(Math.round(width));
 }
 
 export function toggleSidebar(): void {
   const open = !ui.get().sidebarOpen;
   ui.set({ sidebarOpen: open });
-  try {
-    if (open) localStorage.removeItem(SIDEBAR_KEY);
-    else localStorage.setItem(SIDEBAR_KEY, 'closed');
-  } catch {
-    // Not persisted; still applies for this session.
-  }
+  sidebarOpenPref.save(open);
 }
-
-/** Screen pixels per inch on the desk at zoom 1. */
-export const DESK_PPI = 48;
-
-export function targetKey(t: DropTarget): string | null {
-  if (!t) return null;
-  if (t.kind === 'page') return `page:${t.spreadId}:${t.side}`;
-  if (t.kind === 'insert') return `insert:${t.index}`;
-  return t.kind;
-}
-
-/** Resolve the drop target under a client point via `data-drop` attributes. */
-export function hitTest(clientX: number, clientY: number): DropTarget {
-  for (const el of document.elementsFromPoint(clientX, clientY)) {
-    if (!(el instanceof HTMLElement)) continue;
-    const kind = el.dataset.drop;
-    if (kind === 'page') {
-      const spreadId = el.dataset.spread;
-      const side = el.dataset.side;
-      if (spreadId && (side === 'left' || side === 'right')) return { kind: 'page', spreadId, side };
-    }
-    if (kind === 'desk') return { kind: 'desk' };
-    if (kind === 'strip') return { kind: 'strip' };
-    if (kind === 'insert') {
-      const index = Number(el.dataset.index);
-      if (Number.isInteger(index)) return { kind: 'insert', index };
-    }
-    // A modal blocks targets beneath it.
-    if (el.dataset.modal !== undefined) return null;
-  }
-  return null;
-}
-
-/** Converts client coordinates to desk inches; registered by the Desk component. */
-export const deskGeometry = {
-  toDesk: (clientX: number, clientY: number): { x: number; y: number } => ({ x: clientX, y: clientY }),
-  /** Visible desk area in desk inches. */
-  visible: (): { x: number; y: number; w: number; h: number } => ({ x: 0, y: 0, w: 20, h: 12 }),
-};
-
-export function isTyping(e: Event): boolean {
-  const t = e.target;
-  return t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement;
-}
-
-export const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-
-/** The platform's shortcut modifier: Cmd on macOS, Ctrl elsewhere. */
-export function hasMod(e: KeyboardEvent): boolean {
-  return isMac ? e.metaKey : e.ctrlKey;
-}
-
-export const MOD_LABEL = isMac ? '⌘' : 'Ctrl+';

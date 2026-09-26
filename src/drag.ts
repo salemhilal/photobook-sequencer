@@ -1,4 +1,45 @@
-import { hitTest, targetKey, ui, type DropTarget } from './ui';
+import type { PageSide } from './types';
+import { ui } from './ui';
+
+/** What the pointer is over during a drag, as resolved by `hitTest`. */
+export type DropTarget =
+  | { kind: 'page'; spreadId: string; side: PageSide }
+  | { kind: 'desk' }
+  /** The desk strip at the bottom of the spread editor. */
+  | { kind: 'strip' }
+  /** The gap before spread `index` in the sidebar: dropping there adds a spread. */
+  | { kind: 'insert'; index: number }
+  | null;
+
+/** A string identifying a drop target, compared against `ui.hoverKey` for highlighting. */
+export function targetKey(t: DropTarget): string | null {
+  if (!t) return null;
+  if (t.kind === 'page') return `page:${t.spreadId}:${t.side}`;
+  if (t.kind === 'insert') return `insert:${t.index}`;
+  return t.kind;
+}
+
+/** Resolve the drop target under a client point via `data-drop` attributes. */
+export function hitTest(clientX: number, clientY: number): DropTarget {
+  for (const el of document.elementsFromPoint(clientX, clientY)) {
+    if (!(el instanceof HTMLElement)) continue;
+    const kind = el.dataset.drop;
+    if (kind === 'page') {
+      const spreadId = el.dataset.spread;
+      const side = el.dataset.side;
+      if (spreadId && (side === 'left' || side === 'right')) return { kind: 'page', spreadId, side };
+    }
+    if (kind === 'desk') return { kind: 'desk' };
+    if (kind === 'strip') return { kind: 'strip' };
+    if (kind === 'insert') {
+      const index = Number(el.dataset.index);
+      if (Number.isInteger(index)) return { kind: 'insert', index };
+    }
+    // A modal blocks targets beneath it.
+    if (el.dataset.modal !== undefined) return null;
+  }
+  return null;
+}
 
 const THRESHOLD = 4;
 

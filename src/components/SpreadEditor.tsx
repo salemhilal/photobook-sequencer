@@ -17,7 +17,8 @@ import {
 } from '../geometry';
 import { docStore, useDoc } from '../store';
 import type { Doc, Placement, Spread } from '../types';
-import { isTyping, openPhotoMenu, ui } from '../ui';
+import { isTyping } from '../platform';
+import { openPhotoMenu, ui } from '../ui';
 import { NumberField } from './NumberField';
 import { PhotoImg } from './PhotoImg';
 import { SpreadCanvas } from './SpreadCanvas';

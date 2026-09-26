@@ -1,0 +1,64 @@
+import { DEFAULT_DESK, isHexColor } from './deskColor';
+import type { ThemePref } from './theme';
+
+/**
+ * Per-browser viewing preferences, kept in localStorage (not in the project,
+ * and not in undo history). Storage can be unavailable (private mode, blocked
+ * site data), so reads fall back to the default and failed writes are ignored:
+ * the choice still applies for the session.
+ */
+export interface Pref<T> {
+  load(): T;
+  save(value: T): void;
+}
+
+export function createPref<T>(
+  key: string,
+  fallback: T,
+  parse: (raw: string) => T | undefined,
+  serialize: (value: T) => string = String,
+): Pref<T> {
+  return {
+    load() {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw === null ? fallback : (parse(raw) ?? fallback);
+      } catch {
+        return fallback;
+      }
+    },
+    save(value) {
+      try {
+        // Storing only non-defaults keeps storage clean and lets defaults change later.
+        if (value === fallback) localStorage.removeItem(key);
+        else localStorage.setItem(key, serialize(value));
+      } catch {
+        // Not persisted.
+      }
+    },
+  };
+}
+
+export const SIDEBAR_DEFAULT_WIDTH = 284;
+export const SIDEBAR_MIN_WIDTH = 240;
+
+// The theme and desk keys are also read by the inline script in index.html, before first paint.
+export const themePref = createPref<ThemePref>('photobook-theme', 'system', (raw) =>
+  raw === 'light' || raw === 'dark' ? raw : undefined,
+);
+
+export const deskColorPref = createPref('photobook-desk', DEFAULT_DESK, (raw) =>
+  isHexColor(raw) ? raw.toLowerCase() : undefined,
+);
+
+export const sidebarOpenPref = createPref(
+  'photobook-sidebar',
+  true,
+  (raw) => raw !== 'closed',
+  (open) => (open ? 'open' : 'closed'),
+);
+
+export const sidebarWidthPref = createPref('photobook-sidebar-width', SIDEBAR_DEFAULT_WIDTH, (raw) => {
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= SIDEBAR_MIN_WIDTH ? n : undefined;
+});

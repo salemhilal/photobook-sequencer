@@ -6,7 +6,9 @@ import { clearGhost, startDrag, trackGhost } from '../drag';
 import { intersects, resizeRect, type Corner, type Rect } from '../geometry';
 import { docStore, useDoc } from '../store';
 import type { Placement } from '../types';
-import { DESK_PPI, deskGeometry, isTyping, openPhotoMenu, ui } from '../ui';
+import { DESK_PPI, deskGeometry } from '../deskGeometry';
+import { isTyping } from '../platform';
+import { openPhotoMenu, ui } from '../ui';
 import { PhotoImg } from './PhotoImg';
 
 const CORNERS: Corner[] = ['nw', 'ne', 'sw', 'se'];

@@ -2,7 +2,8 @@ import { getImage, putImage } from './db';
 import { setUrl, thumbFromBlob } from './images';
 import { docStore, migrateDoc } from './store';
 import type { Doc } from './types';
-import { ask, MOD_LABEL, ui } from './ui';
+import { MOD_LABEL } from './platform';
+import { ask, ui } from './ui';
 import { createZip, readZip, type ZipInput } from './zip';
 
 /**
