@@ -1,7 +1,9 @@
-import { duplicatePhotos } from './actions';
+import { useEffect } from 'react';
+import { duplicatePhotos, importPhotos } from './actions';
 import { photoAsPng } from './images';
 import { docStore, newId } from './store';
-import { ui } from './ui';
+import { isTyping } from './platform';
+import { deskCovered, ui } from './ui';
 
 /**
  * Copying photos inside the app. ⌘C remembers which photos were copied and also
@@ -65,4 +67,38 @@ function selectIfOnDesk(ids: string[]): void {
   const onDesk = new Set(docStore.doc.pile.map((p) => p.photoId));
   const selection = ids.filter((id) => onDesk.has(id));
   if (selection.length) ui.set({ selection });
+}
+
+/**
+ * ⌘V / Ctrl+V on the desk: photos copied in the app are pasted as duplicates;
+ * images copied elsewhere are added to the desk.
+ */
+export function usePasteHandler(): void {
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      if (isTyping(e) || ui.get().importing || deskCovered()) return;
+      if (isInternalPaste(e.clipboardData)) {
+        e.preventDefault();
+        void pasteCopied();
+        return;
+      }
+      const images = [...(e.clipboardData?.files ?? [])].filter((f) => f.type.startsWith('image/'));
+      if (!images.length) return;
+      e.preventDefault();
+      void importPhotos(images.map(renamePasted(images.length)));
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, []);
+}
+
+/** Clipboard images usually arrive as a generic "image.png"; name them "Pasted image 18.23.png". */
+function renamePasted(count: number) {
+  const time = new Date().toTimeString().slice(0, 5).replace(':', '.');
+  return (f: File, i: number): File => {
+    if (!/^image\.\w+$/i.test(f.name)) return f;
+    const ext = f.type.split('/')[1]?.replace('jpeg', 'jpg') ?? 'png';
+    const suffix = count > 1 ? ` ${i + 1}` : '';
+    return new File([f], `Pasted image ${time}${suffix}.${ext}`, { type: f.type });
+  };
 }

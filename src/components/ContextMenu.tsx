@@ -2,8 +2,8 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { Copy, CopyPlus, LayoutGrid, Trash2, Undo2 } from 'lucide-react';
 import { deleteFromProject, putInPile, tidyPile } from '../actions';
 import { copyPhotos, duplicateAndSelect } from '../clipboard';
+import { shortcutLabel } from '../commands';
 import { docStore, useDoc } from '../store';
-import { MOD_LABEL } from '../platform';
 import { ui, type ContextMenuState } from '../ui';
 import { DeskColorPicker } from './DeskColorPicker';
 
@@ -118,7 +118,7 @@ function PhotoItems({ menu, onClose }: { menu: Extract<ContextMenuState, { kind:
       >
         <Copy />
         <span className="menu-label">Copy image</span>
-        <kbd className="menu-shortcut">{MOD_LABEL}C</kbd>
+        <kbd className="menu-shortcut">{shortcutLabel('copy')}</kbd>
       </button>
       <button
         className="menu-item"
@@ -130,7 +130,7 @@ function PhotoItems({ menu, onClose }: { menu: Extract<ContextMenuState, { kind:
       >
         <CopyPlus />
         <span className="menu-label">Duplicate</span>
-        <kbd className="menu-shortcut">{MOD_LABEL}D</kbd>
+        <kbd className="menu-shortcut">{shortcutLabel('duplicate')}</kbd>
       </button>
       {onPage && (
         <button

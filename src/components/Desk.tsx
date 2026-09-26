@@ -1,6 +1,7 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import { bump, importPhotos, putOnNewSpread, putOnPage } from '../actions';
+import { addPhotos } from '../commands';
 import { isProjectFile, openProjectFile } from '../project';
 import { clearGhost, startDrag, trackGhost } from '../drag';
 import { intersects, resizeRect, type Corner, type Rect } from '../geometry';
@@ -20,7 +21,7 @@ const EDGE_FADE_PX = 120;
 /** Screen pixels between a photo and its selection frame. */
 const FRAME_GAP_PX = 5;
 
-export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
+export function Desk() {
   const { doc } = useDoc();
   const view = ui.use((s) => s.view);
   const selection = ui.use((s) => s.selection);
@@ -328,7 +329,7 @@ export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
           <p>
             Add or drop photos or exported projects here. They land on this desk, where you can drag them onto pages.
           </p>
-          <button className="btn primary" onPointerDown={(e) => e.stopPropagation()} onClick={onAddPhotos}>
+          <button className="btn primary" onPointerDown={(e) => e.stopPropagation()} onClick={addPhotos}>
             Add photos
           </button>
         </div>
