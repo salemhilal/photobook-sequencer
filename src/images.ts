@@ -50,26 +50,23 @@ export function forgetUrl(id: string): void {
 }
 
 /**
- * Copy a photo's original file to the clipboard as PNG (the image type browsers
- * can reliably write), upright per its EXIF orientation. Falls back to the display
- * copy if the original can't be decoded. Must be called from a user gesture.
+ * A photo's original as PNG (the image type browsers can reliably put on the
+ * clipboard), upright per its EXIF orientation. Falls back to the display copy
+ * if the original can't be decoded.
  */
-export function copyPhotoToClipboard(id: string): Promise<void> {
-  const png = (async () => {
-    const img = await getImage(id);
-    if (!img) throw new Error('Image not found');
-    let bitmap: ImageBitmap;
-    try {
-      bitmap = await createImageBitmap(img.full, { imageOrientation: 'from-image' });
-    } catch {
-      bitmap = await createImageBitmap(img.thumb);
-    }
-    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-    canvas.getContext('2d')?.drawImage(bitmap, 0, 0);
-    bitmap.close();
-    return canvas.convertToBlob({ type: 'image/png' });
-  })();
-  return navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]);
+export async function photoAsPng(id: string): Promise<Blob> {
+  const img = await getImage(id);
+  if (!img) throw new Error('Image not found');
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(img.full, { imageOrientation: 'from-image' });
+  } catch {
+    bitmap = await createImageBitmap(img.thumb);
+  }
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+  canvas.getContext('2d')?.drawImage(bitmap, 0, 0);
+  bitmap.close();
+  return canvas.convertToBlob({ type: 'image/png' });
 }
 
 /** Decode an image file (applying EXIF orientation) and make its display-size copy. */

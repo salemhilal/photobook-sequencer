@@ -1,9 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Copy, CopyPlus, LayoutGrid, Trash2, Undo2 } from 'lucide-react';
-import { deleteFromProject, duplicatePhoto, putInPile, tidyPile } from '../actions';
-import { copyPhotoToClipboard } from '../images';
+import { deleteFromProject, putInPile, tidyPile } from '../actions';
+import { copyPhotos, duplicateAndSelect } from '../clipboard';
 import { docStore, useDoc } from '../store';
-import { ui, type ContextMenuState } from '../ui';
+import { MOD_LABEL, ui, type ContextMenuState } from '../ui';
 import { DeskColorPicker } from './DeskColorPicker';
 
 /** Renders whichever right-click menu is open. */
@@ -108,7 +108,7 @@ function PhotoItems({ menu, onClose }: { menu: Extract<ContextMenuState, { kind:
         role="menuitem"
         onClick={() => {
           // The clipboard write must start inside the click, so it isn't awaited first.
-          copyPhotoToClipboard(menu.photoId).then(
+          copyPhotos([menu.photoId]).then(
             () => ui.set({ notice: `Copied ${name}` }),
             () => ui.set({ notice: "Couldn't copy the image. Your browser may not allow it." }),
           );
@@ -117,19 +117,19 @@ function PhotoItems({ menu, onClose }: { menu: Extract<ContextMenuState, { kind:
       >
         <Copy />
         <span className="menu-label">Copy image</span>
+        <kbd className="menu-shortcut">{MOD_LABEL}C</kbd>
       </button>
       <button
         className="menu-item"
         role="menuitem"
         onClick={() => {
-          void duplicatePhoto(menu.photoId).then((id) => {
-            if (id && !onPage) ui.set({ selection: [id] });
-          });
+          void duplicateAndSelect([menu.photoId]);
           onClose();
         }}
       >
         <CopyPlus />
         <span className="menu-label">Duplicate</span>
+        <kbd className="menu-shortcut">{MOD_LABEL}D</kbd>
       </button>
       {onPage && (
         <button

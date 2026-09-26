@@ -1,5 +1,5 @@
 import type { Draft } from 'immer';
-import { getImage, putImage } from './db';
+import { getImage, putImage, type StoredImage } from './db';
 import { importFiles, setUrl } from './images';
 import { docStore, newId } from './store';
 import { fitCentered, inset, largestBorder, pageRect, pileSize, PILE_PHOTO_SIZE } from './geometry';
@@ -156,35 +156,40 @@ export function copyName(name: string): string {
 const DUPLICATE_OFFSET = 0.25;
 
 /**
- * Duplicate a photo as a new, independent photo (with its own copy of the image data),
- * placed slightly offset from the original: on the desk, or on the same spread.
+ * Duplicate photos as new, independent photos (each with its own copy of the image
+ * data), placed `offset` inches down and right of the originals: on the desk, or on
+ * the same spread. One undo step. Returns the new photos' ids.
  */
-export async function duplicatePhoto(photoId: string): Promise<string | null> {
-  const img = await getImage(photoId);
-  const meta = docStore.doc.photos[photoId];
-  if (!img || !meta) return null;
-  const id = newId();
-  setUrl(id, img.thumb);
-  // Reference the new photo before storing its image, so a background cleanup
-  // of unreferenced images can't remove it in between.
+export async function duplicatePhotos(photoIds: string[], offset = DUPLICATE_OFFSET): Promise<string[]> {
+  const sources: { from: string; id: string; img: StoredImage }[] = [];
+  for (const from of photoIds) {
+    const img = await getImage(from);
+    if (img && docStore.doc.photos[from]) sources.push({ from, id: newId(), img });
+  }
+  if (!sources.length) return [];
+  for (const { id, img } of sources) setUrl(id, img.thumb);
+
+  // Reference the new photos before storing their images, so a background cleanup
+  // of unreferenced images can't remove them in between.
   docStore.apply((d) => {
-    d.photos[id] = { ...meta, id, name: copyName(meta.name) };
-    const onDesk = d.pile.find((p) => p.photoId === photoId);
-    if (onDesk) {
-      d.pile.push({ ...onDesk, photoId: id, x: onDesk.x + DUPLICATE_OFFSET, y: onDesk.y + DUPLICATE_OFFSET, z: d.nextZ++ });
-      return;
-    }
-    for (const s of d.spreads) {
-      const onPage = s.items.find((p) => p.photoId === photoId);
-      if (onPage) {
-        s.items.push({ ...onPage, photoId: id, x: onPage.x + DUPLICATE_OFFSET, y: onPage.y + DUPLICATE_OFFSET, z: d.nextZ++ });
-        return;
+    for (const { from, id } of sources) {
+      const meta = d.photos[from];
+      if (!meta) continue;
+      d.photos[id] = { ...meta, id, name: copyName(meta.name) };
+      const copy = (p: Placement): Placement => ({ ...p, photoId: id, x: p.x + offset, y: p.y + offset, z: d.nextZ++ });
+      const onDesk = d.pile.find((p) => p.photoId === from);
+      if (onDesk) {
+        d.pile.push(copy(onDesk));
+        continue;
       }
+      const spread = d.spreads.find((s) => s.items.some((p) => p.photoId === from));
+      const onPage = spread?.items.find((p) => p.photoId === from);
+      if (spread && onPage) spread.items.push(copy(onPage));
+      else putInPile(d, id);
     }
-    putInPile(d, id);
   });
-  await putImage(id, img);
-  return id;
+  for (const { id, img } of sources) await putImage(id, img);
+  return sources.map((s) => s.id);
 }
 
 export function deleteFromProject(photoIds: string[]): void {

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { deleteFromProject, importPhotos } from './actions';
 import { savePdf } from './pdf';
+import { copyPhotos, duplicateAndSelect, isInternalPaste, pasteCopied } from './clipboard';
 import { openProjectFile, saveProjectFile } from './project';
 import { ContextMenus } from './components/ContextMenu';
 import { Desk } from './components/Desk';
@@ -364,11 +365,21 @@ async function collectGarbage(): Promise<void> {
   }
 }
 
-/** Pasting images (⌘V / Ctrl+V) adds them to the desk. */
+/**
+ * ⌘V / Ctrl+V: photos copied in the app are pasted as duplicates; images copied
+ * elsewhere are added to the desk.
+ */
 function usePasteImages(): void {
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
       if (isTyping(e) || ui.get().importing) return;
+      const s = ui.get();
+      if (s.editingSpreadId || s.previewOpen || s.settingsOpen) return;
+      if (isInternalPaste(e.clipboardData)) {
+        e.preventDefault();
+        void pasteCopied();
+        return;
+      }
       const images = [...(e.clipboardData?.files ?? [])].filter((f) => f.type.startsWith('image/'));
       if (!images.length) return;
       e.preventDefault();
@@ -411,6 +422,14 @@ function useGlobalKeys(): void {
       if (mod && key === 'a') {
         e.preventDefault();
         ui.set({ selection: docStore.doc.pile.map((p) => p.photoId) });
+      } else if (mod && key === 'c' && s.selection.length) {
+        e.preventDefault();
+        copyPhotos(s.selection).catch(() => {
+          // Still pasteable inside the app; only other apps miss out.
+        });
+      } else if (mod && key === 'd' && s.selection.length) {
+        e.preventDefault();
+        void duplicateAndSelect(s.selection);
       } else if (e.key === 'Escape') {
         ui.set({ selection: [] });
       } else if ((e.key === 'Delete' || e.key === 'Backspace') && s.selection.length) {
