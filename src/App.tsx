@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Redo2, Settings, Undo2, X } from 'lucide-react';
+import { Download, FileText, FolderOpen, ImagePlus, Redo2, Settings, Undo2, X } from 'lucide-react';
 import { deleteFromProject, importPhotos } from './actions';
 import { savePdf } from './pdf';
 import { openProjectFile, saveProjectFile } from './project';
 import { Desk } from './components/Desk';
+import { FileMenu } from './components/FileMenu';
 import { PhotoImg } from './components/PhotoImg';
 import { Preview } from './components/Preview';
 import { SettingsDialog } from './components/SettingsDialog';
@@ -59,15 +60,38 @@ export default function App() {
   return (
     <div className="app">
       <header className="toolbar">
-        <button
-          className="btn primary has-hint"
-          onClick={openFiles}
-          disabled={importing !== null}
-          title={`Add photos (${MOD_LABEL}${SHORTCUTS.addPhotos})`}
-        >
-          Add photos
-          <ShortcutHint k={SHORTCUTS.addPhotos} />
-        </button>
+        <FileMenu
+          items={[
+            {
+              label: 'Add photos…',
+              shortcut: `${MOD_LABEL}${SHORTCUTS.addPhotos}`,
+              icon: <ImagePlus />,
+              onSelect: openFiles,
+              disabled: importing !== null,
+            },
+            {
+              label: 'Import project…',
+              shortcut: `${MOD_LABEL}${SHORTCUTS.import}`,
+              icon: <FolderOpen />,
+              onSelect: () => projectRef.current?.click(),
+              disabled: importing !== null || busy !== null,
+            },
+            {
+              label: 'Export project',
+              shortcut: `${MOD_LABEL}${SHORTCUTS.export}`,
+              icon: <Download />,
+              onSelect: () => void saveProjectFile(),
+              disabled: importing !== null || busy !== null,
+            },
+            {
+              label: 'Save PDF',
+              shortcut: PDF_LABEL,
+              icon: <FileText />,
+              onSelect: () => void savePdf(),
+              disabled: importing !== null || busy !== null,
+            },
+          ]}
+        />
         <input
           ref={fileRef}
           type="file"
@@ -123,34 +147,6 @@ export default function App() {
             if (file) void openProjectFile(file);
           }}
         />
-        <button
-          className="btn has-hint"
-          onClick={() => projectRef.current?.click()}
-          disabled={importing !== null || busy !== null}
-          title={`Open a project file (${MOD_LABEL}${SHORTCUTS.import})`}
-        >
-          Import
-          <ShortcutHint k={SHORTCUTS.import} />
-        </button>
-        <button
-          className="btn has-hint"
-          onClick={() => void saveProjectFile()}
-          disabled={importing !== null || busy !== null}
-          title={`Save the project, photos included, as a .zip (${MOD_LABEL}${SHORTCUTS.export})`}
-        >
-          Export
-          <ShortcutHint k={SHORTCUTS.export} />
-        </button>
-        <button
-          className="btn has-hint"
-          onClick={() => void savePdf()}
-          disabled={importing !== null || busy !== null}
-          title={`Download the book as a PDF (${PDF_LABEL})`}
-        >
-          Save PDF
-          <ShortcutHint label={PDF_LABEL} />
-        </button>
-        <span className="toolbar-divider" />
         <button
           className="btn has-hint"
           onClick={() => ui.set({ previewOpen: true, settingsOpen: false })}
