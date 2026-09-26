@@ -477,7 +477,47 @@ button {
  * the rest stays a constant size on screen.
  */
 .item {
-  --gap: calc(var(--print-border, 0px) + 3px * var(--inv, 1));
+  --gap: calc(var(--print-border, 0px) + 5px * var(--inv, 1));
+}
+/* On the desk, frames are drawn in screen space instead (see SelectionFrames). */
+.desk .item.selected::after,
+.desk .handle::before {
+  display: none;
+}
+.selection-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.sel-frame {
+  position: absolute;
+  border: 1.5px solid var(--accent);
+  border-radius: 3px;
+}
+.sel-handle {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  background: #fff;
+  border: 1px solid var(--accent);
+  border-radius: 1.5px;
+}
+/* Centered on the frame's corners (offset by half the handle plus the border). */
+.sel-handle-nw {
+  left: -4.5px;
+  top: -4.5px;
+}
+.sel-handle-ne {
+  right: -4.5px;
+  top: -4.5px;
+}
+.sel-handle-sw {
+  left: -4.5px;
+  bottom: -4.5px;
+}
+.sel-handle-se {
+  right: -4.5px;
+  bottom: -4.5px;
 }
 .item.selected::after {
   content: '';

@@ -15,6 +15,10 @@ const MAX_ZOOM = 5;
 const GHOST_MAX = 140;
 /** When moving photos on the desk, the drop border fades in within this distance of its edge. */
 const EDGE_FADE_PX = 120;
+/** Print border around desk photos, in inches (4px at zoom 1). Keep in sync with --print-border. */
+const PRINT_BORDER_IN = 4 / DESK_PPI;
+/** Screen pixels between the print border and the selection frame. */
+const FRAME_GAP_PX = 5;
 
 export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
   const { doc } = useDoc();
@@ -25,6 +29,8 @@ export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
   const spaceHeld = useRef(false);
   const [marquee, setMarquee] = useState<Rect | null>(null);
   const [panning, setPanning] = useState(false);
+  const [hoverId, setHoverId] = useState<string | null>(null);
+  const [resizingId, setResizingId] = useState<string | null>(null);
 
   useLayoutEffect(() => {
     deskGeometry.toDesk = (cx, cy) => {
@@ -199,6 +205,7 @@ export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
     if (e.button !== 0) return;
     e.stopPropagation();
     const k = DESK_PPI * ui.get().view.zoom;
+    setResizingId(p.photoId);
     startDrag(e, {
       onStart: () => docStore.begin(),
       onMove: ({ e: ev, dx, dy }) => {
@@ -209,9 +216,13 @@ export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
         });
       },
       onEnd: (_, moved) => {
+        setResizingId(null);
         if (moved) docStore.end();
       },
-      onCancel: () => docStore.cancel(),
+      onCancel: () => {
+        setResizingId(null);
+        docStore.cancel();
+      },
     });
   };
 
@@ -255,9 +266,15 @@ export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
             handles={single === p.photoId}
             onDown={onItemDown}
             onHandleDown={onHandleDown}
+            onHover={setHoverId}
           />
         ))}
       </div>
+      <SelectionFrames
+        items={items.filter((p) => selection.includes(p.photoId))}
+        view={view}
+        handlesFor={single && (hoverId === single || resizingId === single) ? single : null}
+      />
       {marquee && (
         <div className="marquee" style={{ left: marquee.x, top: marquee.y, width: marquee.w, height: marquee.h }} />
       )}
@@ -283,15 +300,18 @@ interface ItemProps {
   handles: boolean;
   onDown: (e: React.PointerEvent, p: Placement) => void;
   onHandleDown: (e: React.PointerEvent, p: Placement, c: Corner) => void;
+  onHover: (id: string | null) => void;
 }
 
-const DeskItem = memo(function DeskItem({ p, selected, handles, onDown, onHandleDown }: ItemProps) {
+const DeskItem = memo(function DeskItem({ p, selected, handles, onDown, onHandleDown, onHover }: ItemProps) {
   return (
     <div
       className={`item${selected ? ' selected' : ''}`}
       style={{ left: p.x * DESK_PPI, top: p.y * DESK_PPI, width: p.w * DESK_PPI, height: p.h * DESK_PPI }}
       onPointerDown={(e) => onDown(e, p)}
       onContextMenu={(e) => openPhotoMenu(e, p.photoId)}
+      onPointerEnter={() => onHover(p.photoId)}
+      onPointerLeave={() => onHover(null)}
     >
       <PhotoImg id={p.photoId} />
       {handles &&
@@ -301,6 +321,43 @@ const DeskItem = memo(function DeskItem({ p, selected, handles, onDown, onHandle
     </div>
   );
 });
+
+/**
+ * Selection frames, drawn in screen space over the desk rather than inside the
+ * zoomed layer, with edges snapped to device pixels so all four sides match at any zoom.
+ * (The resize hit areas stay on the photos; these are just the visuals.)
+ */
+function SelectionFrames({
+  items,
+  view,
+  handlesFor,
+}: {
+  items: Placement[];
+  view: { panX: number; panY: number; zoom: number };
+  handlesFor: string | null;
+}) {
+  if (!items.length) return null;
+  const k = DESK_PPI * view.zoom;
+  const dpr = window.devicePixelRatio || 1;
+  const snap = (v: number) => Math.round(v * dpr) / dpr;
+  const out = PRINT_BORDER_IN * k + FRAME_GAP_PX;
+  return (
+    <div className="selection-layer">
+      {items.map((p) => {
+        const x1 = snap(view.panX + p.x * k - out);
+        const y1 = snap(view.panY + p.y * k - out);
+        const x2 = snap(view.panX + (p.x + p.w) * k + out);
+        const y2 = snap(view.panY + (p.y + p.h) * k + out);
+        return (
+          <div key={p.photoId} className="sel-frame" style={{ left: x1, top: y1, width: x2 - x1, height: y2 - y1 }}>
+            {handlesFor === p.photoId &&
+              CORNERS.map((c) => <span key={c} className={`sel-handle sel-handle-${c}`} />)}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function ZoomControls() {
   const zoom = ui.use((s) => s.view.zoom);
