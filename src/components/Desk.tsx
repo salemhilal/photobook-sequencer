@@ -1,5 +1,6 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { bump, importPhotos, putOnPage } from '../actions';
+import { isProjectFile, openProjectFile } from '../project';
 import { clearGhost, startDrag, trackGhost } from '../drag';
 import { intersects, resizeRect, type Corner, type Rect } from '../geometry';
 import { docStore, useDoc } from '../store';
@@ -199,7 +200,9 @@ export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const files = [...e.dataTransfer.files];
-    if (files.length) void importPhotos(files);
+    const project = files.find(isProjectFile);
+    if (project) void openProjectFile(project);
+    else if (files.length) void importPhotos(files);
   };
 
   const items = [...doc.pile].sort((a, b) => a.z - b.z);

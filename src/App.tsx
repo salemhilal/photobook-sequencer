@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { deleteFromProject, importPhotos } from './actions';
+import { openProjectFile, saveProjectFile } from './project';
 import { Desk } from './components/Desk';
 import { PhotoImg } from './components/PhotoImg';
 import { Preview } from './components/Preview';
@@ -8,15 +9,14 @@ import { Sidebar } from './components/Sidebar';
 import { SpreadEditor } from './components/SpreadEditor';
 import { deleteImage, imageIds, loadDoc, saveDoc } from './db';
 import { forgetUrl } from './images';
-import { docStore, emptyDoc, useDoc } from './store';
-import type { Doc } from './types';
+import { docStore, emptyDoc, migrateDoc, useDoc } from './store';
 import { hasMod, isMac, isTyping, MOD_LABEL, ui } from './ui';
 
 const SAVE_DELAY = 400;
 /** How long the modifier must be held before shortcut hints appear. */
 const HINT_DELAY = 250;
 
-const SHORTCUTS = { addPhotos: 'O', preview: 'P', settings: ',' } as const;
+const SHORTCUTS = { addPhotos: 'O', preview: 'P', settings: ',', export: 'S', import: 'I' } as const;
 const UNDO_LABEL = `${MOD_LABEL}Z`;
 const REDO_LABEL = isMac ? '⇧⌘Z' : 'Ctrl+Y';
 
@@ -27,12 +27,19 @@ export default function App() {
   const settingsOpen = ui.use((s) => s.settingsOpen);
   const importing = ui.use((s) => s.importing);
   const notice = ui.use((s) => s.notice);
+  const busy = ui.use((s) => s.busy);
   const fileRef = useRef<HTMLInputElement>(null);
+  const projectRef = useRef<HTMLInputElement>(null);
   const loaded = usePersistence();
 
   useGlobalKeys();
-  useShortcuts(() => {
-    if (!ui.get().importing) fileRef.current?.click();
+  useShortcuts({
+    addPhotos: () => {
+      if (!ui.get().importing) fileRef.current?.click();
+    },
+    importProject: () => {
+      if (!ui.get().importing) projectRef.current?.click();
+    },
   });
 
   useEffect(() => {
@@ -93,11 +100,45 @@ export default function App() {
           </button>
         </div>
         <span className="status">
-          {importing
+          {importing?.total
             ? `Importing ${importing.done} of ${importing.total}…`
+            : busy
+              ? busy
+              : importing
+                ? 'Importing…'
             : `${doc.pile.length} on desk · ${placed} placed`}
         </span>
         <span className="spacer" />
+        <input
+          ref={projectRef}
+          type="file"
+          accept=".zip,application/zip"
+          hidden
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = '';
+            if (file) void openProjectFile(file);
+          }}
+        />
+        <button
+          className="btn has-hint"
+          onClick={() => projectRef.current?.click()}
+          disabled={importing !== null || busy !== null}
+          title={`Open a project file (${MOD_LABEL}${SHORTCUTS.import})`}
+        >
+          Import
+          <ShortcutHint k={SHORTCUTS.import} />
+        </button>
+        <button
+          className="btn has-hint"
+          onClick={() => void saveProjectFile()}
+          disabled={importing !== null || busy !== null}
+          title={`Save the project, photos included, as a .zip (${MOD_LABEL}${SHORTCUTS.export})`}
+        >
+          Export
+          <ShortcutHint k={SHORTCUTS.export} />
+        </button>
+        <span className="toolbar-divider" />
         <button
           className="btn has-hint"
           onClick={() => ui.set({ previewOpen: true, settingsOpen: false })}
@@ -150,10 +191,10 @@ function ShortcutHint({ k, label, below }: { k?: string; label?: string; below?:
  * App-level shortcuts, plus hints: holding the modifier alone for a moment
  * reveals each shortcut's key over its button.
  */
-function useShortcuts(addPhotos: () => void): void {
-  const addRef = useRef(addPhotos);
+function useShortcuts(actions: { addPhotos: () => void; importProject: () => void }): void {
+  const actionsRef = useRef(actions);
   useEffect(() => {
-    addRef.current = addPhotos;
+    actionsRef.current = actions;
   });
 
   useEffect(() => {
@@ -177,7 +218,13 @@ function useShortcuts(addPhotos: () => void): void {
       const key = e.key.toUpperCase();
       if (key === SHORTCUTS.addPhotos) {
         e.preventDefault();
-        addRef.current();
+        actionsRef.current.addPhotos();
+      } else if (key === SHORTCUTS.import) {
+        e.preventDefault();
+        actionsRef.current.importProject();
+      } else if (key === SHORTCUTS.export) {
+        e.preventDefault();
+        void saveProjectFile();
       } else if (key === SHORTCUTS.preview) {
         e.preventDefault();
         ui.set((s) => ({ previewOpen: !s.previewOpen, settingsOpen: false }));
@@ -232,7 +279,7 @@ function usePersistence(): boolean {
     void loadDoc()
       .then((stored) => {
         if (cancelled) return;
-        docStore.reset(stored ? migrate(stored) : emptyDoc());
+        docStore.reset(stored ? migrateDoc(stored) : emptyDoc());
         setLoaded(true);
         void collectGarbage();
         let last = docStore.doc;
@@ -273,12 +320,6 @@ async function collectGarbage(): Promise<void> {
       forgetUrl(id);
     }
   }
-}
-
-/** Fill in fields that older saved docs may lack. */
-function migrate(stored: Doc): Doc {
-  const base = emptyDoc();
-  return { ...base, ...stored, settings: { ...base.settings, ...stored.settings } };
 }
 
 function useGlobalKeys(): void {

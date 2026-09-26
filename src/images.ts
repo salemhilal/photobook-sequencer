@@ -18,7 +18,8 @@ function subscribe(fn: () => void): () => void {
   return () => listeners.delete(fn);
 }
 
-function setUrl(id: string, blob: Blob): void {
+/** Show `blob` as the photo's display image. */
+export function setUrl(id: string, blob: Blob): void {
   const old = urls.get(id);
   if (old) URL.revokeObjectURL(old);
   urls.set(id, URL.createObjectURL(blob));
@@ -46,6 +47,16 @@ export function forgetUrl(id: string): void {
   const url = urls.get(id);
   if (url) URL.revokeObjectURL(url);
   urls.delete(id);
+}
+
+/** Decode an image file (applying EXIF orientation) and make its display-size copy. */
+export async function thumbFromBlob(blob: Blob): Promise<Blob> {
+  const bitmap = await createImageBitmap(blob, { imageOrientation: 'from-image' });
+  try {
+    return await makeThumb(bitmap);
+  } finally {
+    bitmap.close();
+  }
 }
 
 async function makeThumb(bitmap: ImageBitmap): Promise<Blob> {

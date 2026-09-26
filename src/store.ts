@@ -76,6 +76,15 @@ class DocStore {
     this.emit();
   }
 
+  /** Replace the whole document as one undoable step (e.g. importing a project). */
+  replace(doc: Doc): void {
+    this.push(this.present);
+    this.future = [];
+    this.lastCoalesce = null;
+    this.present = doc;
+    this.emit();
+  }
+
   /** Change the present without recording history (e.g. raising a clicked photo). */
   silent(recipe: Recipe): void {
     const next = produce(this.present, recipe);
@@ -162,6 +171,12 @@ export function emptyDoc(): Doc {
     settings: { pageW: 10, pageH: 8, centerV: true, centerH: true, keepRelative: true, borders: [0.5, 1.25] },
     nextZ: 1,
   };
+}
+
+/** Fill in fields that older saved or exported docs may lack. */
+export function migrateDoc(stored: Doc): Doc {
+  const base = emptyDoc();
+  return { ...base, ...stored, settings: { ...base.settings, ...stored.settings } };
 }
 
 export const docStore = new DocStore(emptyDoc());

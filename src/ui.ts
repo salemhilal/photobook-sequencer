@@ -33,6 +33,8 @@ export interface UiState {
   /** `page:<spreadId>:<side>`, `desk`, or `strip` — for drop highlighting. */
   hoverKey: string | null;
   importing: { done: number; total: number } | null;
+  /** Status text for long-running work like exporting. */
+  busy: string | null;
   notice: string | null;
   /** True while the shortcut modifier is held, to reveal shortcut hints. */
   hints: boolean;
@@ -47,6 +49,7 @@ export const ui = createStore<UiState>({
   ghost: null,
   hoverKey: null,
   importing: null,
+  busy: null,
   notice: null,
   hints: false,
 });
