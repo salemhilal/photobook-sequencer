@@ -1,24 +1,36 @@
+/*
+ * Darkroom theme. The desk and editor stage are photographic middle gray (~18%)
+ * in both themes so photos are judged against a neutral. Amber "safelight" marks
+ * selection and actions; non-photo blue marks guides, as in print production.
+ */
 :root {
-  --bg: #f6f5f2;
-  --panel: #ffffff;
-  --desk: #e4e1da;
-  --stage: #ecebe7;
-  --text: #1f1e1c;
-  --muted: #74716b;
-  --border: rgba(0, 0, 0, 0.12);
-  --border-strong: rgba(0, 0, 0, 0.24);
-  --accent: #2f6fdb;
-  --accent-soft: rgba(47, 111, 219, 0.14);
-  --guide: rgba(47, 111, 219, 0.55);
-  --guide-hit: #e0457b;
+  --bg: #f2f1ee;
+  --panel: #fafaf8;
+  --desk: #787876;
+  --stage: #787876;
+  --text: #1b1a18;
+  --muted: #6b6862;
+  --hover: rgba(0, 0, 0, 0.06);
+  --fill: rgba(0, 0, 0, 0.05);
+  --border: rgba(0, 0, 0, 0.09);
+  --border-strong: rgba(0, 0, 0, 0.18);
+  --accent: #e0a13a;
+  --on-accent: #1f1606;
+  --accent-ink: #94600f;
+  --accent-soft: rgba(224, 161, 58, 0.2);
+  --guide: rgba(74, 178, 214, 0.5);
+  --guide-hit: #1f9fcc;
   --page: #ffffff;
-  --page-edge: rgba(0, 0, 0, 0.18);
-  --warn: #b25e09;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
-  --radius: 6px;
+  --page-edge: rgba(0, 0, 0, 0.28);
+  --print: #ffffff;
+  --warn: #a8620a;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 3px 10px rgba(0, 0, 0, 0.12);
+  --radius: 5px;
+  --font: 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   color-scheme: light dark;
-  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  font-size: 14px;
+  font-family: var(--font);
+  font-size: 13px;
   color: var(--text);
   background: var(--bg);
 }
@@ -28,40 +40,38 @@
   color-scheme: light;
 }
 :root[data-theme='dark'] {
-  --bg: #1c1c1e;
-  --panel: #242426;
-  --desk: #141415;
-  --stage: #18181a;
-  --text: #ecebe8;
-  --muted: #9a9892;
-  --border: rgba(255, 255, 255, 0.1);
-  --border-strong: rgba(255, 255, 255, 0.22);
-  --accent: #5b93f0;
-  --accent-soft: rgba(91, 147, 240, 0.2);
-  --guide: rgba(91, 147, 240, 0.6);
-  --page: #f4f3f0;
-  --page-edge: rgba(255, 255, 255, 0.2);
+  --bg: #151514;
+  --panel: #1c1c1a;
+  --text: #e9e6df;
+  --muted: #8d8a83;
+  --hover: rgba(255, 255, 255, 0.07);
+  --fill: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --accent-ink: #e0a13a;
+  --accent-soft: rgba(224, 161, 58, 0.18);
+  --page: #efede8;
+  --print: #efede8;
   --warn: #f0a44b;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 2px 10px rgba(0, 0, 0, 0.35);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 3px 10px rgba(0, 0, 0, 0.2);
   color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #1c1c1e;
-    --panel: #242426;
-    --desk: #141415;
-    --stage: #18181a;
-    --text: #ecebe8;
-    --muted: #9a9892;
-    --border: rgba(255, 255, 255, 0.1);
-    --border-strong: rgba(255, 255, 255, 0.22);
-    --accent: #5b93f0;
-    --accent-soft: rgba(91, 147, 240, 0.2);
-    --guide: rgba(91, 147, 240, 0.6);
-    --page: #f4f3f0;
-    --page-edge: rgba(255, 255, 255, 0.2);
+    --bg: #151514;
+    --panel: #1c1c1a;
+    --text: #e9e6df;
+    --muted: #8d8a83;
+    --hover: rgba(255, 255, 255, 0.07);
+    --fill: rgba(255, 255, 255, 0.06);
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.16);
+    --accent-ink: #e0a13a;
+    --accent-soft: rgba(224, 161, 58, 0.18);
+    --page: #efede8;
+    --print: #efede8;
     --warn: #f0a44b;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 2px 10px rgba(0, 0, 0, 0.35);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 3px 10px rgba(0, 0, 0, 0.2);
     color-scheme: dark;
   }
 }
@@ -109,24 +119,37 @@ button {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 30px;
-  padding: 0 12px;
-  border: 1px solid var(--border-strong);
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid transparent;
   border-radius: var(--radius);
-  background: var(--panel);
+  background: var(--fill);
   cursor: pointer;
   white-space: nowrap;
 }
 .btn:hover:not(:disabled) {
+  background: var(--hover);
+}
+.btn.ghost {
+  background: transparent;
+}
+.btn.ghost:hover:not(:disabled) {
+  background: var(--hover);
+}
+.btn.accent {
+  background: transparent;
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.btn.accent:hover:not(:disabled) {
   background: var(--accent-soft);
 }
 .btn:disabled {
   color: color-mix(in srgb, currentColor 35%, transparent);
-  border-color: var(--border);
   cursor: default;
 }
 .btn.primary:disabled {
-  color: #fff;
+  color: var(--on-accent);
   opacity: 0.4;
 }
 .btn:disabled .shortcut-hint {
@@ -137,7 +160,7 @@ button {
   height: 24px;
 }
 .btn.icon {
-  width: 30px;
+  width: 28px;
   padding: 0;
   font-size: 18px;
   line-height: 1;
@@ -157,7 +180,8 @@ button {
 .btn.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
+  font-weight: 500;
 }
 .btn.primary:hover:not(:disabled) {
   background: var(--accent);
@@ -236,7 +260,7 @@ button {
   border-radius: 5px;
   background: var(--text);
   color: var(--bg);
-  font: 600 14px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font: 500 12px/1.4 var(--mono);
   white-space: nowrap;
   pointer-events: none;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
@@ -259,18 +283,26 @@ button {
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  height: 48px;
+  gap: 6px;
+  height: 42px;
   padding: 0 12px;
   border-bottom: 1px solid var(--border);
   background: var(--panel);
   flex-shrink: 0;
 }
+.wordmark {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  padding: 0 8px 0 4px;
+  user-select: none;
+}
 .status {
   color: var(--muted);
-  font-size: 13px;
-  margin-left: 4px;
-  font-variant-numeric: tabular-nums;
+  font-family: var(--mono);
+  font-size: 11px;
+  margin-left: 6px;
 }
 .main {
   position: relative;
@@ -389,9 +421,13 @@ button {
   display: flex;
   gap: 4px;
 }
+.zoom .btn {
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
 .zoom-level {
-  min-width: 58px;
-  font-variant-numeric: tabular-nums;
+  min-width: 52px;
+  font: 11px var(--mono);
 }
 
 /* Sidebar */
@@ -468,7 +504,7 @@ button {
   opacity: 1;
 }
 .row-delete:hover {
-  color: #d13f3f;
+  color: var(--text);
 }
 .spread-row-head .muted {
   margin-left: auto;
@@ -682,13 +718,16 @@ button {
 .num-field input {
   width: 100%;
   min-width: 0;
-  height: 28px;
+  height: 26px;
   padding: 0 6px;
-  border: 1px solid var(--border-strong);
+  border: 1px solid transparent;
   border-radius: var(--radius);
-  background: transparent;
-  font: inherit;
-  font-variant-numeric: tabular-nums;
+  background: var(--fill);
+  font: 12px var(--mono);
+}
+.num-field input:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 .num-suffix {
   color: var(--muted);
@@ -769,7 +808,8 @@ button {
 .segmented {
   display: inline-flex;
   padding: 2px;
-  border: 1px solid var(--border-strong);
+  background: var(--fill);
+  border: 0;
   border-radius: var(--radius);
   gap: 2px;
 }
@@ -784,7 +824,7 @@ button {
 }
 .segmented label.on {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 .segmented input {
   position: absolute;
@@ -803,12 +843,12 @@ button {
   z-index: 30;
   display: flex;
   flex-direction: column;
-  background: #2a2927;
-  color: #eee;
+  background: #0f0f0e;
+  color: #e9e6df;
 }
 .preview .muted,
 .preview .hint {
-  color: #a9a6a0;
+  color: #8d8a83;
 }
 .preview-head {
   display: flex;
@@ -817,8 +857,10 @@ button {
   padding: 10px 16px;
 }
 .preview .btn {
-  background: transparent;
-  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.07);
+}
+.preview .btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
 }
 .preview-stage {
   position: relative;
@@ -888,14 +930,14 @@ button {
 }
 
 /* Drag feedback */
-.ghost {
+.drag-ghost {
   position: fixed;
   z-index: 100;
   pointer-events: none;
   opacity: 0.85;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
-.ghost-count {
+.drag-ghost-count {
   position: absolute;
   top: -8px;
   right: -8px;
@@ -904,8 +946,9 @@ button {
   padding: 0 6px;
   border-radius: 11px;
   background: var(--accent);
-  color: #fff;
-  font-size: 12px;
+  color: var(--on-accent);
+  font-family: var(--mono);
+  font-size: 11px;
   display: grid;
   place-items: center;
 }

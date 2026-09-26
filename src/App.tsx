@@ -72,6 +72,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="toolbar">
+        <span className="wordmark">SEQUENCER</span>
         <FileMenu
           items={[
             {
@@ -118,7 +119,7 @@ export default function App() {
         />
         <div className="btn-group">
           <button
-            className="btn icon has-hint"
+            className="btn ghost icon has-hint"
             aria-label="Undo"
             title={`Undo (${UNDO_LABEL})`}
             disabled={!canUndo}
@@ -128,7 +129,7 @@ export default function App() {
             <ShortcutHint label={UNDO_LABEL} below />
           </button>
           <button
-            className="btn icon has-hint"
+            className="btn ghost icon has-hint"
             aria-label="Redo"
             title={`Redo (${REDO_LABEL})`}
             disabled={!canRedo}
@@ -160,7 +161,7 @@ export default function App() {
           }}
         />
         <button
-          className="btn has-hint"
+          className="btn accent has-hint"
           onClick={() => ui.set({ previewOpen: true, settingsOpen: false })}
           title={`Preview book (${MOD_LABEL}${SHORTCUTS.preview})`}
         >
@@ -168,7 +169,7 @@ export default function App() {
           <ShortcutHint k={SHORTCUTS.preview} />
         </button>
         <button
-          className={`btn icon has-hint${sidebarOpen ? '' : ' active'}`}
+          className={`btn ghost icon has-hint${sidebarOpen ? '' : ' active'}`}
           aria-label={sidebarOpen ? 'Hide spreads' : 'Show spreads'}
           aria-pressed={!sidebarOpen}
           onClick={toggleSidebar}
@@ -178,7 +179,7 @@ export default function App() {
           <ShortcutHint k={SHORTCUTS.sidebar} />
         </button>
         <button
-          className="btn icon has-hint"
+          className="btn ghost icon has-hint"
           aria-label="Settings"
           onClick={() => ui.set({ settingsOpen: true, previewOpen: false })}
           title={`Settings (${MOD_LABEL}${SHORTCUTS.settings})`}
@@ -293,11 +294,11 @@ function DragGhost() {
   if (!ghost) return null;
   return (
     <div
-      className="ghost"
+      className="drag-ghost"
       style={{ left: ghost.clientX - ghost.w / 2, top: ghost.clientY - ghost.h / 2, width: ghost.w, height: ghost.h }}
     >
       <PhotoImg id={ghost.photoId} />
-      {ghost.count > 1 && <span className="ghost-count">{ghost.count}</span>}
+      {ghost.count > 1 && <span className="drag-ghost-count">{ghost.count}</span>}
     </div>
   );
 }

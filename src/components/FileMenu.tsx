@@ -46,7 +46,7 @@ export function FileMenu({ items }: { items: MenuItem[] }) {
     <div className="menu" ref={rootRef}>
       <button
         ref={buttonRef}
-        className={`btn${open ? ' active' : ''}`}
+        className={`btn ghost${open ? ' active' : ''}`}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
