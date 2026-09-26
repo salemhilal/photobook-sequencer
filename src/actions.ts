@@ -3,6 +3,7 @@ import { getImage, putImage, type StoredImage } from './db';
 import { importFiles, setUrl } from './images';
 import { docStore, newId } from './store';
 import { fitCentered, inset, largestBorder, pageRect, pileSize, PILE_PHOTO_SIZE } from './geometry';
+import type { DropTarget } from './drag';
 import type { Doc, PageSide, PhotoMeta, Placement } from './types';
 import { DESK_PPI, deskGeometry } from './deskGeometry';
 import { ui } from './ui';
@@ -49,6 +50,48 @@ export function placementOnPage(d: Draft<Doc> | Doc, photoId: string, side: Page
   return { photoId, ...r, z: 0 };
 }
 
+/** Where a photo is: on the desk, on a spread, or (if unplaced) nowhere. */
+export type Location<D extends Doc | Draft<Doc>> =
+  | { where: 'desk'; placement: D['pile'][number] }
+  | { where: 'spread'; spread: D['spreads'][number]; placement: D['pile'][number] }
+  | null;
+
+export function locate<D extends Doc | Draft<Doc>>(d: D, photoId: string): Location<D> {
+  const onDesk = d.pile.find((p) => p.photoId === photoId);
+  if (onDesk) return { where: 'desk', placement: onDesk };
+  for (const spread of d.spreads) {
+    const placement = spread.items.find((p) => p.photoId === photoId);
+    if (placement) return { where: 'spread', spread, placement };
+  }
+  return null;
+}
+
+/**
+ * Recipe: what dropping photos on a target does. Pages fit and center them;
+ * gaps between spreads add a spread; the desk (at `at`, in desk inches) and the
+ * editor's desk strip return them to the desk. Returns false for no target.
+ */
+export function dropPhotos(
+  d: Draft<Doc>,
+  target: DropTarget,
+  photoIds: string[],
+  at?: { x: number; y: number },
+): boolean {
+  if (!target) return false;
+  switch (target.kind) {
+    case 'page':
+      putOnPage(d, photoIds, target.spreadId, target.side);
+      return true;
+    case 'insert':
+      putOnNewSpread(d, photoIds, target.index);
+      return true;
+    case 'desk':
+    case 'strip':
+      for (const id of photoIds) putInPile(d, id, target.kind === 'desk' ? at : undefined);
+      return true;
+  }
+}
+
 export function bump(d: Draft<Doc>, p: Placement): void {
   p.z = d.nextZ++;
 }
@@ -84,7 +127,7 @@ export function putInPile(d: Draft<Doc>, photoId: string, at?: { x: number; y: n
   const photo = d.photos[photoId];
   if (!photo) return;
   removeFromSpreads(d, photoId);
-  if (d.pile.some((p) => p.photoId === photoId)) return;
+  if (locate(d, photoId)?.where === 'desk') return;
   const { w, h } = pileSize(photo);
   let c = at;
   if (!c) {
@@ -179,16 +222,14 @@ export async function duplicatePhotos(photoIds: string[], offset = DUPLICATE_OFF
       const meta = d.photos[from];
       if (!meta) continue;
       d.photos[id] = { ...meta, id, name: copyName(meta.name) };
-      const copy = (p: Placement): Placement => ({ ...p, photoId: id, x: p.x + offset, y: p.y + offset, z: d.nextZ++ });
-      const onDesk = d.pile.find((p) => p.photoId === from);
-      if (onDesk) {
-        d.pile.push(copy(onDesk));
+      const at = locate(d, from);
+      if (!at) {
+        putInPile(d, id);
         continue;
       }
-      const spread = d.spreads.find((s) => s.items.some((p) => p.photoId === from));
-      const onPage = spread?.items.find((p) => p.photoId === from);
-      if (spread && onPage) spread.items.push(copy(onPage));
-      else putInPile(d, id);
+      const p = at.placement;
+      const copy = { ...p, photoId: id, x: p.x + offset, y: p.y + offset, z: d.nextZ++ };
+      (at.where === 'desk' ? d.pile : at.spread.items).push(copy);
     }
   });
   for (const { id, img } of sources) await putImage(id, img);

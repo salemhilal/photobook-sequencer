@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Copy, CopyPlus, LayoutGrid, Trash2, Undo2 } from 'lucide-react';
-import { deleteFromProject, putInPile, tidyPile } from '../actions';
+import { deleteFromProject, locate, putInPile, tidyPile } from '../actions';
 import { copyPhotos, duplicateAndSelect } from '../clipboard';
 import { shortcutLabel } from '../commands';
 import { docStore, useDoc } from '../store';
@@ -98,7 +98,7 @@ function DeskItems({ onClose }: { onClose: () => void }) {
 function PhotoItems({ menu, onClose }: { menu: Extract<ContextMenuState, { kind: 'photo' }>; onClose: () => void }) {
   const { doc } = useDoc();
   const name = doc.photos[menu.photoId]?.name ?? 'Photo';
-  const onPage = !doc.pile.some((p) => p.photoId === menu.photoId);
+  const onPage = locate(doc, menu.photoId)?.where === 'spread';
   return (
     <>
       <div className="menu-caption data muted" title={name}>

@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { GripVertical, Plus, X } from 'lucide-react';
-import { deleteSpread, folioLabel, insertSpread, moveSpread, putInPile, putOnNewSpread, putOnPage } from '../actions';
+import { deleteSpread, dropPhotos, folioLabel, insertSpread, moveSpread } from '../actions';
 import { clearGhost, startDrag, trackGhost } from '../drag';
 import { docStore, useDoc } from '../store';
 import type { Placement, Settings, Spread } from '../types';
@@ -222,15 +222,10 @@ function SpreadRow({ spread, index, total, settings, thumbW, dragging, onHeaderD
         const target = trackGhost(ev, null);
         clearGhost();
         if (!moved) return open();
-        if (target?.kind === 'page') {
-          if (target.spreadId === spread.id && target.side === fromSide) return;
-          docStore.apply((d) => putOnPage(d, [p.photoId], target.spreadId, target.side));
-        } else if (target?.kind === 'insert') {
-          docStore.apply((d) => putOnNewSpread(d, [p.photoId], target.index));
-        } else if (target?.kind === 'desk') {
-          const at = deskGeometry.toDesk(ev.clientX, ev.clientY);
-          docStore.apply((d) => putInPile(d, p.photoId, at));
-        }
+        // Dropping back on the page it came from leaves it where it was.
+        if (target?.kind === 'page' && target.spreadId === spread.id && target.side === fromSide) return;
+        const at = deskGeometry.toDesk(ev.clientX, ev.clientY);
+        docStore.apply((d) => void dropPhotos(d, target, [p.photoId], at));
       },
       onCancel: clearGhost,
     });

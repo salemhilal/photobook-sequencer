@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { bump, folioLabel, putInPile, putOnPage } from '../actions';
+import { bump, dropPhotos, folioLabel, putInPile, putOnPage } from '../actions';
 import { clearGhost, startDrag, trackGhost } from '../drag';
 import {
   fitCentered,
@@ -140,8 +140,9 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
         }
         const target = trackGhost(ev, null);
         clearGhost();
+        // Moves within the spread stay put; dropping on the desk strip returns the photo to the desk.
         if (target?.kind === 'strip') {
-          docStore.preview((d) => putInPile(d, p.photoId));
+          docStore.preview((d) => void dropPhotos(d, target, [p.photoId]));
           setSelected(null);
         }
         docStore.end();
@@ -375,7 +376,7 @@ function PileStrip({ spreadId }: { spreadId: string }) {
           docStore.apply((d) => putOnPage(d, [p.photoId], spreadId, pick));
           return;
         }
-        if (target?.kind === 'page') docStore.apply((d) => putOnPage(d, [p.photoId], target.spreadId, target.side));
+        if (target?.kind === 'page') docStore.apply((d) => void dropPhotos(d, target, [p.photoId]));
       },
       onCancel: clearGhost,
     });

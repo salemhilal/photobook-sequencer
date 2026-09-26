@@ -4,7 +4,9 @@ import {
   folioLabel,
   deleteFromProject,
   deleteSpread,
+  dropPhotos,
   insertSpread,
+  locate,
   moveSpread,
   putInPile,
   putOnNewSpread,
@@ -206,5 +208,33 @@ describe('tidyPile', () => {
     tidyPile();
     docStore.undo();
     expect(doc().pile).toEqual(before);
+  });
+});
+
+describe('locate', () => {
+  it('finds photos on the desk or on a spread', () => {
+    docStore.apply((d) => putOnPage(d, ['sq'], middle().id, 'right'));
+    expect(locate(doc(), 'land')?.where).toBe('desk');
+    const onSpread = locate(doc(), 'sq');
+    expect(onSpread?.where === 'spread' && onSpread.spread.id).toBe(middle().id);
+    expect(locate(doc(), 'nope')).toBeNull();
+  });
+});
+
+describe('dropPhotos', () => {
+  it('places photos on pages, in new spreads, or back on the desk', () => {
+    docStore.apply((d) => void dropPhotos(d, { kind: 'page', spreadId: middle().id, side: 'left' }, ['sq']));
+    expect(locate(doc(), 'sq')?.where).toBe('spread');
+    docStore.apply((d) => void dropPhotos(d, { kind: 'insert', index: 1 }, ['land']));
+    expect(doc().spreads).toHaveLength(5);
+    expect(doc().spreads[1]!.items.map((i) => i.photoId)).toEqual(['land']);
+    docStore.apply((d) => void dropPhotos(d, { kind: 'desk' }, ['sq'], { x: 10, y: 10 }));
+    expect(doc().pile.find((p) => p.photoId === 'sq')).toMatchObject({ x: 9, y: 9 });
+  });
+
+  it('does nothing without a target', () => {
+    const before = doc();
+    docStore.apply((d) => void dropPhotos(d, null, ['sq']));
+    expect(doc()).toBe(before);
   });
 });

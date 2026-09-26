@@ -1,6 +1,6 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
-import { bump, importPhotos, putOnNewSpread, putOnPage } from '../actions';
+import { bump, dropPhotos, importPhotos } from '../actions';
 import { addPhotos } from '../commands';
 import { isProjectFile, openProjectFile } from '../project';
 import { clearGhost, startDrag, trackGhost } from '../drag';
@@ -184,16 +184,13 @@ export function Desk() {
         }
         const target = trackGhost(ev, null);
         clearGhost();
-        if (target?.kind === 'page') {
-          docStore.preview((d) => putOnPage(d, ids, target.spreadId, target.side));
+        if (target?.kind === 'desk') {
+          // Moved around the desk: keep the new positions.
+          docStore.end();
+        } else if (target) {
+          docStore.preview((d) => void dropPhotos(d, target, ids));
           docStore.end();
           ui.set({ selection: [] });
-        } else if (target?.kind === 'insert') {
-          docStore.preview((d) => putOnNewSpread(d, ids, target.index));
-          docStore.end();
-          ui.set({ selection: [] });
-        } else if (target?.kind === 'desk') {
-          docStore.end();
         } else {
           docStore.cancel();
         }
