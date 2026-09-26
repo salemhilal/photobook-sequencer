@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { X } from 'lucide-react';
 import { current } from 'immer';
 import { relayoutRect } from '../geometry';
 import { docStore, useDoc } from '../store';
@@ -93,7 +94,7 @@ export function SettingsDialog() {
           <div className="modal-title">Settings</div>
           <span className="spacer" />
           <button className="btn icon" aria-label="Close" onClick={close}>
-            ×
+            <X />
           </button>
         </header>
         <div className="settings-body">
@@ -175,7 +176,7 @@ export function SettingsDialog() {
                   aria-label={`Remove ${b} in guide`}
                   onClick={() => docStore.apply((d) => void d.settings.borders.splice(i, 1))}
                 >
-                  ×
+                  <X />
                 </button>
               </div>
             ))}

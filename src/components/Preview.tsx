@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { spreadLabel } from '../actions';
 import { savePdf } from '../pdf';
 import { useDoc } from '../store';
@@ -69,7 +70,7 @@ export function Preview() {
       </header>
       <div className="preview-stage" ref={stageRef}>
         <button className="turn prev" aria-label="Previous spread" disabled={index === 0} onClick={() => go(-1)}>
-          ‹
+          <ChevronLeft />
         </button>
         <div key={spread.id} className={`preview-spread turn-${dir}`}>
           <SpreadCanvas spread={spread} settings={settings} scale={scale} clip className="book" />
@@ -80,7 +81,7 @@ export function Preview() {
           disabled={index === spreads.length - 1}
           onClick={() => go(1)}
         >
-          ›
+          <ChevronRight />
         </button>
       </div>
     </div>

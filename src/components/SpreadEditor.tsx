@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { bump, putInPile, putOnPage, spreadLabel } from '../actions';
 import { clearGhost, startDrag, trackGhost } from '../drag';
 import {
@@ -209,7 +210,7 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
       <div className="modal editor" data-modal>
         <header className="modal-head">
           <button className="btn icon" aria-label="Previous spread" disabled={index === 0} onClick={() => go(-1)}>
-            ‹
+            <ChevronLeft />
           </button>
           <div className="modal-title">
             {index === 0 || index === doc.spreads.length - 1 ? `Page ${label}` : `Pages ${label}`}
@@ -224,12 +225,12 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
             disabled={index === doc.spreads.length - 1}
             onClick={() => go(1)}
           >
-            ›
+            <ChevronRight />
           </button>
           <span className="spacer" />
           <span className="hint">Shift: free resize · Alt: no snapping · Arrows nudge</span>
           <button className="btn icon" aria-label="Close" onClick={close}>
-            ×
+            <X />
           </button>
         </header>
         <div className="editor-body">

@@ -138,6 +138,18 @@ button {
   font-size: 18px;
   line-height: 1;
 }
+.btn .lucide,
+.row-delete .lucide,
+.grip .lucide {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.75;
+  flex-shrink: 0;
+}
+.turn .lucide {
+  width: 28px;
+  height: 28px;
+}
 .btn.primary {
   background: var(--accent);
   border-color: var(--accent);
@@ -365,6 +377,7 @@ button {
   font-weight: 500;
 }
 .grip {
+  display: inline-flex;
   cursor: grab;
   color: var(--muted);
   padding: 0 2px;
@@ -375,6 +388,7 @@ button {
   opacity: 0.3;
 }
 .row-delete {
+  display: inline-flex;
   margin-left: auto;
   border: 0;
   background: none;

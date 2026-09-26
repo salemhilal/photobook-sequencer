@@ -1,4 +1,5 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Minus, Plus } from 'lucide-react';
 import { bump, importPhotos, putOnPage } from '../actions';
 import { isProjectFile, openProjectFile } from '../project';
 import { clearGhost, startDrag, trackGhost } from '../drag';
@@ -288,13 +289,13 @@ function ZoomControls() {
   return (
     <div className="zoom" onPointerDown={(e) => e.stopPropagation()}>
       <button className="btn icon" aria-label="Zoom out" onClick={() => step(1 / 1.25)}>
-        −
+        <Minus />
       </button>
       <button className="btn zoom-level" onClick={() => zoomAround(1, 0, 0)} title="Reset zoom">
         {Math.round(zoom * 100)}%
       </button>
       <button className="btn icon" aria-label="Zoom in" onClick={() => step(1.25)}>
-        +
+        <Plus />
       </button>
     </div>
   );

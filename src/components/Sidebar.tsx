@@ -1,4 +1,5 @@
 import { useRef, useState, type CSSProperties } from 'react';
+import { GripVertical, X } from 'lucide-react';
 import { deleteSpread, insertSpread, moveSpread, putInPile, putOnPage, spreadLabel } from '../actions';
 import { clearGhost, startDrag, trackGhost } from '../drag';
 import { docStore, useDoc } from '../store';
@@ -139,11 +140,11 @@ function SpreadRow({ spread, index, total, settings, dragging, onGripDown }: Row
       <div className="spread-row-head">
         {middle ? (
           <span className="grip" title="Drag to reorder" onPointerDown={(e) => onGripDown(e, spread)}>
-            ⠿
+            <GripVertical />
           </span>
         ) : (
           <span className="grip locked" title="First and last pages stay in place">
-            ⠿
+            <GripVertical />
           </span>
         )}
         <span className="spread-label">
@@ -157,7 +158,7 @@ function SpreadRow({ spread, index, total, settings, dragging, onGripDown }: Row
             title="Delete spread (photos return to the desk)"
             onClick={() => deleteSpread(spread.id)}
           >
-            ×
+            <X />
           </button>
         )}
       </div>
