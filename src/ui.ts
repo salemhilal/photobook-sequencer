@@ -1,4 +1,5 @@
 import { createStore } from './store';
+import { applyDeskColor, loadDeskColor, saveDeskColor } from './deskColor';
 import { loadTheme, type ThemePref } from './theme';
 import type { PageSide } from './types';
 
@@ -43,6 +44,7 @@ export interface UiState {
   hints: boolean;
   theme: ThemePref;
   sidebarOpen: boolean;
+  deskColor: string;
 }
 
 const SIDEBAR_KEY = 'photobook-sidebar';
@@ -61,7 +63,14 @@ export const ui = createStore<UiState>({
   hints: false,
   theme: loadTheme(),
   sidebarOpen: loadSidebarOpen(),
+  deskColor: loadDeskColor(),
 });
+
+export function setDeskColor(color: string): void {
+  ui.set({ deskColor: color });
+  applyDeskColor(color);
+  saveDeskColor(color);
+}
 
 
 function loadSidebarOpen(): boolean {

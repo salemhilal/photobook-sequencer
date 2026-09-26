@@ -43,6 +43,8 @@ Netlify runs `npm test && npm run build` for production, pull-request previews, 
 
 Hold ⌘ / Ctrl to see them on screen.
 
+Right-click the desk to tidy photos into a grid or change the desk color.
+
 ## Project files
 
 Export saves a `.zip` you can import anywhere:

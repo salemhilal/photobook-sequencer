@@ -6,6 +6,7 @@ import { docStore, useDoc } from '../store';
 import { applyTheme, saveTheme, type ThemePref } from '../theme';
 import type { Doc, Spread } from '../types';
 import { ui } from '../ui';
+import { DeskColorPicker } from './DeskColorPicker';
 import { NumberField } from './NumberField';
 
 /**
@@ -195,6 +196,14 @@ export function SettingsDialog() {
             <h3 id="appearance-label">Appearance</h3>
             <div className="setting-controls">
               <ThemePicker />
+            </div>
+          </section>
+
+          <section className="setting">
+            <h3>Desk</h3>
+            <div className="setting-controls">
+              <DeskColorPicker />
+              <p className="help">Also in the desk's right-click menu.</p>
             </div>
           </section>
         </div>

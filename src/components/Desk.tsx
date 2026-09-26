@@ -1,6 +1,7 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import { bump, importPhotos, putOnNewSpread, putOnPage } from '../actions';
+import { DeskMenu } from './DeskMenu';
 import { isProjectFile, openProjectFile } from '../project';
 import { clearGhost, startDrag, trackGhost } from '../drag';
 import { intersects, resizeRect, type Corner, type Rect } from '../geometry';
@@ -23,6 +24,7 @@ export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
   const spaceHeld = useRef(false);
   const [marquee, setMarquee] = useState<Rect | null>(null);
   const [panning, setPanning] = useState(false);
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
 
   useLayoutEffect(() => {
     deskGeometry.toDesk = (cx, cy) => {
@@ -217,6 +219,12 @@ export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
       className={`desk${panning ? ' panning' : ''}${hover ? ' drop-hover' : ''}`}
       data-drop="desk"
       onPointerDown={onBackgroundDown}
+      onContextMenu={(e) => {
+        // Photos keep the browser's menu; the desk background gets ours.
+        if ((e.target as HTMLElement).closest('.item, .zoom, .desk-empty .btn')) return;
+        e.preventDefault();
+        setMenu({ x: e.clientX, y: e.clientY });
+      }}
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
     >
@@ -253,6 +261,7 @@ export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
         </div>
       )}
       <ZoomControls />
+      {menu && <DeskMenu x={menu.x} y={menu.y} onClose={() => setMenu(null)} />}
     </div>
   );
 }

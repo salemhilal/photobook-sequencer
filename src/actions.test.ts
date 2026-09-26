@@ -10,6 +10,7 @@ import {
   putOnNewSpread,
   putOnPage,
   spreadLabel,
+  tidyPile,
 } from './actions';
 import { docStore, emptyDoc } from './store';
 import type { PhotoMeta } from './types';
@@ -152,5 +153,54 @@ describe('deleteFromProject', () => {
     expect(middle().items).toHaveLength(0);
     docStore.undo();
     expect(Object.keys(doc().photos)).toHaveLength(3);
+  });
+});
+
+describe('tidyPile', () => {
+  const place = (id: string, x: number, y: number) =>
+    docStore.apply((d) => {
+      const p = d.pile.find((q) => q.photoId === id)!;
+      p.x = x;
+      p.y = y;
+    });
+
+  it('lines photos up on a grid, keeping their reading order', () => {
+    place('land', 5.2, 0.9);
+    place('port', 0.3, 1.2);
+    place('sq', 2.6, 4.4);
+    tidyPile();
+    const byId = Object.fromEntries(doc().pile.map((p) => [p.photoId, p]));
+    // Row 1: port, land (left to right); row 2: sq.
+    expect(byId.port!.y).toBeLessThan(byId.sq!.y);
+    expect(byId.port!.x).toBeLessThan(byId.land!.x);
+    const centerY = (id: string) => byId[id]!.y + byId[id]!.h / 2;
+    expect(centerY('port')).toBeCloseTo(centerY('land'));
+    // Grid cells are the largest photo plus a small gap.
+    const centerX = (id: string) => byId[id]!.x + byId[id]!.w / 2;
+    expect(centerX('land') - centerX('port')).toBeCloseTo(2.3);
+    expect(centerX('sq')).toBeCloseTo(centerX('port'));
+  });
+
+  it('wraps rows that are wider than the visible desk', () => {
+    const extra = Array.from({ length: 12 }, (_, i) => ({ id: `x${i}`, name: `x${i}.jpg`, pxW: 1000, pxH: 1000 }));
+    addPhotosToPile(extra);
+    doc().pile.forEach((p, i) => place(p.photoId, i * 2.5, 1));
+    tidyPile();
+    // The default visible desk is 20" wide: 8 columns of 2.3" cells.
+    const rows = new Set(doc().pile.map((p) => Math.round(p.y + p.h / 2)));
+    expect(rows.size).toBe(2);
+  });
+
+  it('only tidies the selection when several photos are selected', () => {
+    const before = doc().pile.find((p) => p.photoId === 'sq');
+    tidyPile(['land', 'port']);
+    expect(doc().pile.find((p) => p.photoId === 'sq')).toEqual(before);
+  });
+
+  it('is one undoable step', () => {
+    const before = doc().pile;
+    tidyPile();
+    docStore.undo();
+    expect(doc().pile).toEqual(before);
   });
 });

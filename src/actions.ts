@@ -95,6 +95,57 @@ export function putInPile(d: Draft<Doc>, photoId: string, at?: { x: number; y: n
   d.pile.push({ photoId, x: c.x - w / 2, y: c.y - h / 2, w, h, z: d.nextZ++ });
 }
 
+const TIDY_GAP = 0.3;
+
+/**
+ * Arrange desk photos in a tidy grid, keeping their rough reading order
+ * (rows top to bottom, then left to right). Tidies `photoIds` if given,
+ * otherwise the whole pile. The grid starts at the photos' top-left corner;
+ * rows that are wider than the visible desk wrap.
+ */
+export function tidyPile(photoIds?: string[]): void {
+  const ids = photoIds && photoIds.length > 1 ? new Set(photoIds) : null;
+  const items = docStore.doc.pile.filter((p) => !ids || ids.has(p.photoId));
+  if (items.length < 2) return;
+
+  const cell = Math.max(...items.map((p) => Math.max(p.w, p.h))) + TIDY_GAP;
+  const cy = (p: Placement) => p.y + p.h / 2;
+  const cx = (p: Placement) => p.x + p.w / 2;
+
+  // Group into rows: a photo joins the current row if its center is within
+  // half a cell of the row's first photo.
+  const rows: Placement[][] = [];
+  for (const p of [...items].sort((a, b) => cy(a) - cy(b))) {
+    const row = rows.at(-1);
+    if (row && cy(p) - cy(row[0]!) < cell / 2) row.push(p);
+    else rows.push([p]);
+  }
+
+  const left = Math.min(...items.map((p) => p.x));
+  const top = Math.min(...items.map((p) => p.y));
+  const vis = deskGeometry.visible();
+  const cols = Math.max(1, Math.floor((vis.x + vis.w - left) / cell));
+
+  // Each existing row stays a row, wrapping if it's wider than the view.
+  const slot = new Map<string, { col: number; row: number }>();
+  let gridRow = 0;
+  for (const row of rows) {
+    row.sort((a, b) => cx(a) - cx(b)).forEach((p, i) => {
+      slot.set(p.photoId, { col: i % cols, row: gridRow + Math.floor(i / cols) });
+    });
+    gridRow += Math.ceil(row.length / cols);
+  }
+
+  docStore.apply((d) => {
+    for (const p of d.pile) {
+      const at = slot.get(p.photoId);
+      if (!at) continue;
+      p.x = left + at.col * cell + (cell - TIDY_GAP - p.w) / 2;
+      p.y = top + at.row * cell + (cell - TIDY_GAP - p.h) / 2;
+    }
+  });
+}
+
 export function deleteFromProject(photoIds: string[]): void {
   const ids = new Set(photoIds);
   docStore.apply((d) => {

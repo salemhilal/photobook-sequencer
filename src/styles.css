@@ -276,6 +276,57 @@ button {
   font: 11px var(--mono);
   color: var(--muted);
 }
+.context-menu {
+  position: fixed;
+  top: auto;
+  left: auto;
+  z-index: 60;
+}
+.menu-separator {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--border);
+}
+.menu-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px 8px 8px;
+}
+.swatches {
+  display: flex;
+  gap: 6px;
+}
+.swatch {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.swatch.on {
+  box-shadow:
+    0 0 0 2px var(--panel),
+    0 0 0 4px var(--accent);
+}
+.swatch.custom {
+  background: var(--fill);
+  color: var(--muted);
+}
+.swatch.custom .lucide {
+  width: 12px;
+  height: 12px;
+}
+.swatch input[type='color'] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
 .toolbar-divider {
   width: 1px;
   height: 20px;
@@ -483,6 +534,13 @@ button {
 }
 .desk-empty p {
   margin: 0;
+}
+:root[data-desk-tone='light'] .desk-empty {
+  color: rgba(0, 0, 0, 0.78);
+  text-shadow: none;
+}
+:root[data-desk-tone='light'] .desk-empty-title {
+  color: #111;
 }
 .desk-empty-title {
   font-size: 18px;

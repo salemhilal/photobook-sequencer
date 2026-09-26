@@ -10,6 +10,8 @@
       try {
         var t = localStorage.getItem('photobook-theme');
         if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+        var d = localStorage.getItem('photobook-desk');
+        if (d && /^#[0-9a-f]{6}$/i.test(d)) document.documentElement.style.setProperty('--desk', d);
       } catch (e) {}
     </script>
   </head>

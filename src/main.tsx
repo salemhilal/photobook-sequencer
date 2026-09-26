@@ -6,6 +6,10 @@ import '@fontsource/ibm-plex-mono/latin-400.css';
 import '@fontsource/ibm-plex-mono/latin-500.css';
 import './styles.css';
 import App from './App.tsx';
+import { applyDeskColor } from './deskColor';
+import { ui } from './ui';
+
+applyDeskColor(ui.get().deskColor);
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root');
