@@ -81,7 +81,7 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (isTyping(e) || e.metaKey || e.ctrlKey) return;
-      if (ui.get().settingsOpen || ui.get().previewOpen) return;
+      if (ui.get().settingsOpen || ui.get().previewOpen || ui.get().aboutOpen) return;
       const d = docStore.doc;
       const item = selected ? findItem(d, spreadId, selected) : null;
       if (e.key === 'Escape') {

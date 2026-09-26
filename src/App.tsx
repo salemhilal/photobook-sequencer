@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Download,
+  Info,
   FileText,
   FolderOpen,
   ImagePlus,
@@ -15,6 +16,7 @@ import { deleteFromProject, importPhotos } from './actions';
 import { savePdf } from './pdf';
 import { copyPhotos, duplicateAndSelect, isInternalPaste, pasteCopied } from './clipboard';
 import { openProjectFile, saveProjectFile } from './project';
+import { AboutDialog } from './components/AboutDialog';
 import { ContextMenus } from './components/ContextMenu';
 import { Desk } from './components/Desk';
 import { FileMenu } from './components/FileMenu';
@@ -42,6 +44,7 @@ export default function App() {
   const editing = ui.use((s) => s.editingSpreadId);
   const previewOpen = ui.use((s) => s.previewOpen);
   const settingsOpen = ui.use((s) => s.settingsOpen);
+  const aboutOpen = ui.use((s) => s.aboutOpen);
   const importing = ui.use((s) => s.importing);
   const notice = ui.use((s) => s.notice);
   const busy = ui.use((s) => s.busy);
@@ -105,6 +108,12 @@ export default function App() {
               icon: <FileText />,
               onSelect: () => void savePdf(),
               disabled: importing !== null || busy !== null,
+            },
+            {
+              label: 'About…',
+              icon: <Info />,
+              onSelect: () => ui.set({ aboutOpen: true, settingsOpen: false, previewOpen: false }),
+              separatorBefore: true,
             },
           ]}
         />
@@ -196,6 +205,7 @@ export default function App() {
         {editing && <SpreadEditor spreadId={editing} />}
       </main>
       {settingsOpen && <SettingsDialog />}
+      {aboutOpen && <AboutDialog />}
       {previewOpen && <Preview />}
       <ContextMenus />
       <DragGhost />
@@ -374,7 +384,7 @@ function usePasteImages(): void {
     const onPaste = (e: ClipboardEvent) => {
       if (isTyping(e) || ui.get().importing) return;
       const s = ui.get();
-      if (s.editingSpreadId || s.previewOpen || s.settingsOpen) return;
+      if (s.editingSpreadId || s.previewOpen || s.settingsOpen || s.aboutOpen) return;
       if (isInternalPaste(e.clipboardData)) {
         e.preventDefault();
         void pasteCopied();
@@ -418,7 +428,7 @@ function useGlobalKeys(): void {
 
       // Desk shortcuts only apply when no modal is open.
       const s = ui.get();
-      if (s.editingSpreadId || s.previewOpen || s.settingsOpen) return;
+      if (s.editingSpreadId || s.previewOpen || s.settingsOpen || s.aboutOpen) return;
       if (mod && key === 'a') {
         e.preventDefault();
         ui.set({ selection: docStore.doc.pile.map((p) => p.photoId) });

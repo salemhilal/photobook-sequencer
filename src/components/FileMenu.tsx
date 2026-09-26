@@ -3,10 +3,12 @@ import { ChevronDown } from 'lucide-react';
 
 export interface MenuItem {
   label: string;
-  shortcut: string;
+  shortcut?: string;
   icon: ReactNode;
   onSelect: () => void;
   disabled?: boolean;
+  /** Draw a divider above this item. */
+  separatorBefore?: boolean;
 }
 
 /** Toolbar dropdown for file actions. Closes on selection, outside click, or Escape. */
@@ -56,7 +58,8 @@ export function FileMenu({ items }: { items: MenuItem[] }) {
       </button>
       {open && (
         <div className="menu-list" role="menu">
-          {items.map((item) => (
+          {items.map((item) => [
+            item.separatorBefore && <div key={`${item.label}-sep`} className="menu-separator" />,
             <button
               key={item.label}
               className="menu-item"
@@ -69,9 +72,9 @@ export function FileMenu({ items }: { items: MenuItem[] }) {
             >
               {item.icon}
               <span className="menu-label">{item.label}</span>
-              <kbd className="menu-shortcut">{item.shortcut}</kbd>
-            </button>
-          ))}
+              {item.shortcut && <kbd className="menu-shortcut">{item.shortcut}</kbd>}
+            </button>,
+          ])}
         </div>
       )}
     </div>

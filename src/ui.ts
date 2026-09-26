@@ -36,6 +36,7 @@ export interface UiState {
   editingSpreadId: string | null;
   previewOpen: boolean;
   settingsOpen: boolean;
+  aboutOpen: boolean;
   view: DeskView;
   ghost: Ghost | null;
   /** `page:<spreadId>:<side>`, `desk`, or `strip` — for drop highlighting. */
@@ -65,6 +66,7 @@ export const ui = createStore<UiState>({
   editingSpreadId: null,
   previewOpen: false,
   settingsOpen: false,
+  aboutOpen: false,
   view: { panX: 40, panY: 40, zoom: 1 },
   ghost: null,
   hoverKey: null,
