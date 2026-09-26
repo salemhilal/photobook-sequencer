@@ -1,6 +1,6 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
-import { bump, importPhotos, putOnPage } from '../actions';
+import { bump, importPhotos, putOnNewSpread, putOnPage } from '../actions';
 import { isProjectFile, openProjectFile } from '../project';
 import { clearGhost, startDrag, trackGhost } from '../drag';
 import { intersects, resizeRect, type Corner, type Rect } from '../geometry';
@@ -127,14 +127,12 @@ export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
     const k = DESK_PPI * ui.get().view.zoom;
     const ghostW = Math.min(GHOST_MAX, p.w * k);
     const ghost = { photoId: p.photoId, count: ids.length, w: ghostW, h: (ghostW * p.h) / p.w };
-    const deskEl = ref.current;
 
     startDrag(e, {
       onStart: () => docStore.begin(),
       onMove: ({ e: ev, dx, dy }) => {
         const target = trackGhost(ev, null);
-        const overDesk = target?.kind === 'desk' || (deskEl?.contains(ev.target as Node) ?? false);
-        ui.set({ ghost: overDesk ? null : { ...ghost, clientX: ev.clientX, clientY: ev.clientY } });
+        ui.set({ ghost: target?.kind === 'desk' ? null : { ...ghost, clientX: ev.clientX, clientY: ev.clientY } });
         const set = new Set(ids);
         const ordered = [...docStore.doc.pile].sort((a, b) => a.z - b.z);
         docStore.preview((d) => {
@@ -163,6 +161,10 @@ export function Desk({ onAddPhotos }: { onAddPhotos: () => void }) {
         clearGhost();
         if (target?.kind === 'page') {
           docStore.preview((d) => putOnPage(d, ids, target.spreadId, target.side));
+          docStore.end();
+          ui.set({ selection: [] });
+        } else if (target?.kind === 'insert') {
+          docStore.preview((d) => putOnNewSpread(d, ids, target.index));
           docStore.end();
           ui.set({ selection: [] });
         } else if (target?.kind === 'desk') {

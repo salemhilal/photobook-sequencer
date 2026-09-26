@@ -1,6 +1,6 @@
 import { useRef, useState, type CSSProperties } from 'react';
 import { GripVertical, Plus, X } from 'lucide-react';
-import { deleteSpread, folioLabel, insertSpread, moveSpread, putInPile, putOnPage } from '../actions';
+import { deleteSpread, folioLabel, insertSpread, moveSpread, putInPile, putOnNewSpread, putOnPage } from '../actions';
 import { clearGhost, startDrag, trackGhost } from '../drag';
 import { docStore, useDoc } from '../store';
 import type { Placement, Settings, Spread } from '../types';
@@ -81,12 +81,26 @@ export function Sidebar() {
   );
 }
 
+/**
+ * The gap between two spreads: hover to add a spread there, or drop photos on it
+ * to add a spread holding them.
+ */
 function InsertGap({ index, active }: { index: number; active: boolean }) {
+  const dropHover = ui.use((s) => s.hoverKey === `insert:${index}`);
+  const photoDrag = ui.use((s) => s.ghost !== null);
   return (
-    <div className={`insert-gap${active ? ' active' : ''}`}>
-      <button className="insert-btn" onClick={() => insertSpread(index)}>
-        + Add spread
-      </button>
+    <div
+      className={`insert-gap${active ? ' active' : ''}${dropHover ? ' drop-hover' : ''}${photoDrag ? ' photo-drag' : ''}`}
+      data-drop="insert"
+      data-index={index}
+    >
+      {dropHover ? (
+        <span className="insert-btn">Drop to add a spread</span>
+      ) : (
+        <button className="insert-btn" onClick={() => insertSpread(index)}>
+          + Add spread
+        </button>
+      )}
     </div>
   );
 }
@@ -129,6 +143,8 @@ function SpreadRow({ spread, index, total, settings, dragging, onHeaderDown }: R
         if (target?.kind === 'page') {
           if (target.spreadId === spread.id && target.side === fromSide) return;
           docStore.apply((d) => putOnPage(d, [p.photoId], target.spreadId, target.side));
+        } else if (target?.kind === 'insert') {
+          docStore.apply((d) => putOnNewSpread(d, [p.photoId], target.index));
         } else if (target?.kind === 'desk') {
           const at = deskGeometry.toDesk(ev.clientX, ev.clientY);
           docStore.apply((d) => putInPile(d, p.photoId, at));

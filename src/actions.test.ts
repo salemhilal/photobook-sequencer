@@ -7,6 +7,7 @@ import {
   insertSpread,
   moveSpread,
   putInPile,
+  putOnNewSpread,
   putOnPage,
   spreadLabel,
 } from './actions';
@@ -58,6 +59,23 @@ describe('putOnPage', () => {
     docStore.apply((d) => putOnPage(d, ['sq'], middle().id, 'left'));
     const item = middle().items[0]!;
     expect(item.x + item.w / 2).toBeCloseTo(-5);
+  });
+
+  it('adds a spread and places photos on its left page when dropped between spreads', () => {
+    docStore.apply((d) => putOnPage(d, ['sq'], middle(1).id, 'right'));
+    docStore.apply((d) => putOnNewSpread(d, ['sq', 'land'], 2));
+    expect(doc().spreads).toHaveLength(5);
+    const added = doc().spreads[2]!;
+    expect(added.kind).toBe('middle');
+    expect(added.items.map((i) => i.photoId)).toEqual(['sq', 'land']);
+    expect(added.items.every((i) => i.x + i.w / 2 < 0)).toBe(true);
+    expect(middle(1).items).toHaveLength(0);
+  });
+
+  it('never adds a spread before the first page or after the last', () => {
+    docStore.apply((d) => putOnNewSpread(d, ['sq'], 0));
+    expect(doc().spreads[0]!.kind).toBe('first');
+    expect(doc().spreads[1]!.items.map((i) => i.photoId)).toEqual(['sq']);
   });
 
   it('moves a photo between spreads without duplicating it', () => {

@@ -69,6 +69,14 @@ export function putOnPage(d: Draft<Doc>, photoIds: string[], spreadId: string, s
   }
 }
 
+/** Recipe: add a spread before `index` and put photos on its left page. */
+export function putOnNewSpread(d: Draft<Doc>, photoIds: string[], index: number): void {
+  const i = Math.min(Math.max(1, index), d.spreads.length - 1);
+  const id = newId();
+  d.spreads.splice(i, 0, { id, kind: 'middle', items: [] });
+  putOnPage(d, photoIds, id, 'left');
+}
+
 /** Recipe: return a photo to the pile, centered on a desk point (defaults to the visible center). */
 export function putInPile(d: Draft<Doc>, photoId: string, at?: { x: number; y: number }): void {
   const photo = d.photos[photoId];

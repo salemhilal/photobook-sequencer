@@ -601,6 +601,26 @@ button {
 .insert-btn:focus-visible {
   opacity: 1;
 }
+/* A taller invisible hit area, so the gap is easy to drop onto. */
+.insert-gap::after {
+  content: '';
+  position: absolute;
+  inset: -7px 0;
+}
+/* While dragging a photo, plain hovering over a gap shows nothing... */
+.insert-gap.photo-drag:not(.drop-hover)::before,
+.insert-gap.photo-drag:not(.drop-hover) .insert-btn {
+  opacity: 0;
+}
+/* ...until it's the drop target. */
+.insert-gap.drop-hover::before {
+  opacity: 1;
+}
+.insert-gap.drop-hover .insert-btn {
+  opacity: 1;
+  background: var(--accent);
+  color: var(--on-accent);
+}
 
 /* Spread canvas */
 .spread-canvas {

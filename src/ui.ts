@@ -22,6 +22,8 @@ export type DropTarget =
   | { kind: 'page'; spreadId: string; side: PageSide }
   | { kind: 'desk' }
   | { kind: 'strip' }
+  /** The gap before spread `index` in the sidebar: dropping there adds a spread. */
+  | { kind: 'insert'; index: number }
   | null;
 
 export interface UiState {
@@ -86,7 +88,9 @@ export const DESK_PPI = 48;
 
 export function targetKey(t: DropTarget): string | null {
   if (!t) return null;
-  return t.kind === 'page' ? `page:${t.spreadId}:${t.side}` : t.kind;
+  if (t.kind === 'page') return `page:${t.spreadId}:${t.side}`;
+  if (t.kind === 'insert') return `insert:${t.index}`;
+  return t.kind;
 }
 
 /** Resolve the drop target under a client point via `data-drop` attributes. */
@@ -101,6 +105,10 @@ export function hitTest(clientX: number, clientY: number): DropTarget {
     }
     if (kind === 'desk') return { kind: 'desk' };
     if (kind === 'strip') return { kind: 'strip' };
+    if (kind === 'insert') {
+      const index = Number(el.dataset.index);
+      if (Number.isInteger(index)) return { kind: 'insert', index };
+    }
     // A modal blocks targets beneath it.
     if (el.dataset.modal !== undefined) return null;
   }
