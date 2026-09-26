@@ -2,7 +2,7 @@ import { getImage, putImage } from './db';
 import { setUrl, thumbFromBlob } from './images';
 import { docStore, migrateDoc } from './store';
 import type { Doc } from './types';
-import { ask, ui } from './ui';
+import { ask, MOD_LABEL, ui } from './ui';
 import { createZip, readZip, type ZipInput } from './zip';
 
 /**
@@ -191,7 +191,8 @@ export async function openProjectFile(file: File): Promise<void> {
       title: 'Replace your current project?',
       message:
         `“${file.name}” will replace the project you're working on (${photoCount} photo${photoCount === 1 ? '' : 's'}). ` +
-        'You can undo this until you reload the page. To keep a copy, export it first.',
+        `You can bring it back with ${MOD_LABEL}Z, but not after you reload or close the page. ` +
+        'To keep a copy, export it first.',
       actions: [
         { label: 'Cancel', value: 'cancel' },
         { label: 'Export current first', value: 'export' },
