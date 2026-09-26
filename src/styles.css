@@ -29,6 +29,7 @@
   --font: 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   color-scheme: light dark;
+  accent-color: var(--accent);
   font-family: var(--font);
   font-size: 13px;
   color: var(--text);
@@ -339,9 +340,36 @@ button {
   cursor: grab;
   touch-action: none;
 }
-.item.selected {
-  outline: calc(2px * var(--inv, 1)) solid var(--accent);
-  outline-offset: calc(1px * var(--inv, 1));
+/* Photos on the desk read as prints: a thin white border around the image. */
+.desk .item {
+  box-shadow:
+    0 0 0 var(--print-border) var(--print),
+    var(--shadow);
+}
+/* Selection: amber crop marks just outside the photo (and its print border). */
+.item.selected::after {
+  /* Sit just outside the print border (which scales with zoom); the marks themselves don't. */
+  --gap: calc(var(--print-border, 0px) + 6px * var(--inv, 1));
+  --len: calc(16px * var(--inv, 1));
+  --w: calc(3px * var(--inv, 1));
+  content: '';
+  position: absolute;
+  inset: calc(var(--gap) * -1);
+  pointer-events: none;
+  filter: drop-shadow(0 0 calc(1px * var(--inv, 1)) rgba(0, 0, 0, 0.9));
+  background:
+    linear-gradient(var(--accent), var(--accent)) top left / var(--len) var(--w),
+    linear-gradient(var(--accent), var(--accent)) top left / var(--w) var(--len),
+    linear-gradient(var(--accent), var(--accent)) top right / var(--len) var(--w),
+    linear-gradient(var(--accent), var(--accent)) top right / var(--w) var(--len),
+    linear-gradient(var(--accent), var(--accent)) bottom left / var(--len) var(--w),
+    linear-gradient(var(--accent), var(--accent)) bottom left / var(--w) var(--len),
+    linear-gradient(var(--accent), var(--accent)) bottom right / var(--len) var(--w),
+    linear-gradient(var(--accent), var(--accent)) bottom right / var(--w) var(--len);
+  background-repeat: no-repeat;
+}
+.desk .item {
+  --print-border: 4px;
 }
 .photo {
   display: block;
@@ -354,14 +382,12 @@ button {
 .photo-loading {
   background: var(--border);
 }
+/* Resize handles are invisible hit areas over the crop-mark corners. */
 .handle {
-  --s: calc(10px * var(--inv, 1));
+  --s: calc(18px * var(--inv, 1));
   position: absolute;
   width: var(--s);
   height: var(--s);
-  background: #fff;
-  border: calc(1.5px * var(--inv, 1)) solid var(--accent);
-  border-radius: 2px;
   z-index: 1;
 }
 .handle-nw {
@@ -537,7 +563,7 @@ button {
   z-index: 1;
   border: 1px solid var(--accent);
   background: var(--panel);
-  color: var(--accent);
+  color: var(--accent-ink);
   border-radius: 999px;
   font-size: 11px;
   padding: 1px 10px;
@@ -602,15 +628,14 @@ button {
 }
 .guide-v {
   width: 0;
-  border-left: 1px dashed var(--guide);
+  border-left: 1px solid var(--guide);
 }
 .guide-h {
   height: 0;
-  border-top: 1px dashed var(--guide);
+  border-top: 1px solid var(--guide);
 }
 .guide.hit {
   border-color: var(--guide-hit);
-  border-style: solid;
 }
 
 /* Modals */
