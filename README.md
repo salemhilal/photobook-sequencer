@@ -2,6 +2,8 @@
 
 Lay out photos on book spreads, in inches.
 
+**Try it:** https://photobook-sequencer.netlify.app
+
 ## Run locally
 
 ```bash
