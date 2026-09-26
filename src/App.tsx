@@ -159,11 +159,12 @@ export default function App() {
           <ShortcutHint k={SHORTCUTS.preview} />
         </button>
         <button
-          className="btn has-hint"
+          className="btn icon has-hint"
+          aria-label="Settings"
           onClick={() => ui.set({ settingsOpen: true, previewOpen: false })}
           title={`Settings (${MOD_LABEL}${SHORTCUTS.settings})`}
         >
-          Settings
+          <GearIcon />
           <ShortcutHint k={SHORTCUTS.settings} />
         </button>
       </header>
@@ -263,6 +264,25 @@ function useShortcuts(actions: { addPhotos: () => void; importProject: () => voi
       window.removeEventListener('blur', hide);
     };
   }, []);
+}
+
+function GearIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M10.33 4.32c.43-1.76 2.91-1.76 3.34 0a1.72 1.72 0 0 0 2.57 1.07c1.54-.94 3.3.82 2.37 2.37a1.72 1.72 0 0 0 1.06 2.57c1.76.43 1.76 2.93 0 3.35a1.72 1.72 0 0 0-1.07 2.57c.94 1.54-.82 3.3-2.37 2.37a1.72 1.72 0 0 0-2.57 1.06c-.43 1.76-2.93 1.76-3.35 0a1.72 1.72 0 0 0-2.57-1.07c-1.54.94-3.3-.82-2.37-2.37a1.72 1.72 0 0 0-1.06-2.57c-1.76-.43-1.76-2.93 0-3.35a1.72 1.72 0 0 0 1.07-2.57c-.94-1.54.82-3.3 2.37-2.37 1 .6 2.3.07 2.57-1.06z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
 }
 
 function DragGhost() {
