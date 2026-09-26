@@ -1,5 +1,5 @@
 import { useRef, useState, type CSSProperties } from 'react';
-import { GripVertical, X } from 'lucide-react';
+import { GripVertical, Plus, X } from 'lucide-react';
 import { deleteSpread, insertSpread, moveSpread, putInPile, putOnPage, spreadLabel } from '../actions';
 import { clearGhost, startDrag, trackGhost } from '../drag';
 import { docStore, useDoc } from '../store';
@@ -17,7 +17,9 @@ export function Sidebar() {
   const [reorder, setReorder] = useState<{ id: string; dropIndex: number } | null>(null);
   const { spreads, settings } = doc;
 
-  const onGripDown = (e: React.PointerEvent, spread: Spread) => {
+  /** Dragging a middle spread's header reorders it; clicking it opens the spread. */
+  const onHeaderDown = (e: React.PointerEvent, spread: Spread) => {
+    if (e.button !== 0) return;
     e.stopPropagation();
     const from = spreads.findIndex((s) => s.id === spread.id);
     let dropIndex = from;
@@ -37,7 +39,8 @@ export function Sidebar() {
       },
       onEnd: (_, moved) => {
         setReorder(null);
-        if (!moved || dropIndex === from || dropIndex === from + 1) return;
+        if (!moved) return ui.set({ editingSpreadId: spread.id });
+        if (dropIndex === from || dropIndex === from + 1) return;
         moveSpread(spread.id, dropIndex > from ? dropIndex - 1 : dropIndex);
       },
       onCancel: () => setReorder(null),
@@ -48,6 +51,15 @@ export function Sidebar() {
     <aside className="sidebar">
       <div className="sidebar-head">
         <span>Spreads</span>
+        <button
+          className="btn icon small"
+          aria-label="Add spread at the end"
+          title="Add a spread before the back page"
+          onClick={() => insertSpread(spreads.length - 1)}
+        >
+          <Plus />
+        </button>
+        <span className="spacer" />
         <span className="muted">{spreads.length * 2 - 2} pages</span>
       </div>
       <div className="sidebar-list" ref={listRef}>
@@ -60,7 +72,7 @@ export function Sidebar() {
               total={spreads.length}
               settings={settings}
               dragging={reorder?.id === spread.id}
-              onGripDown={onGripDown}
+              onHeaderDown={onHeaderDown}
             />
           </div>
         ))}
@@ -85,10 +97,10 @@ interface RowProps {
   total: number;
   settings: Settings;
   dragging: boolean;
-  onGripDown: (e: React.PointerEvent, s: Spread) => void;
+  onHeaderDown: (e: React.PointerEvent, s: Spread) => void;
 }
 
-function SpreadRow({ spread, index, total, settings, dragging, onGripDown }: RowProps) {
+function SpreadRow({ spread, index, total, settings, dragging, onHeaderDown }: RowProps) {
   const editing = ui.use((s) => s.editingSpreadId === spread.id);
   const scale = THUMB_W / (2 * settings.pageW);
   const middle = spread.kind === 'middle';
@@ -137,16 +149,14 @@ function SpreadRow({ spread, index, total, settings, dragging, onGripDown }: Row
       className={`spread-row${editing ? ' editing' : ''}${dragging ? ' dragging' : ''}`}
       data-row-index={index}
     >
-      <div className="spread-row-head">
-        {middle ? (
-          <span className="grip" title="Drag to reorder" onPointerDown={(e) => onGripDown(e, spread)}>
-            <GripVertical />
-          </span>
-        ) : (
-          <span className="grip locked" title="First and last pages stay in place">
-            <GripVertical />
-          </span>
-        )}
+      <div
+        className={`spread-row-head${middle ? ' draggable' : ''}`}
+        title={middle ? 'Drag to reorder' : 'The first and last pages stay in place'}
+        onPointerDown={middle ? (e) => onHeaderDown(e, spread) : undefined}
+      >
+        <span className={`grip${middle ? '' : ' locked'}`} aria-hidden="true">
+          <GripVertical />
+        </span>
         <span className="spread-label">
           {index === 0 ? 'Page 1' : index === total - 1 ? `Page ${label}` : `Pages ${label}`}
         </span>
@@ -156,6 +166,7 @@ function SpreadRow({ spread, index, total, settings, dragging, onGripDown }: Row
             className="row-delete"
             aria-label={`Delete pages ${label}`}
             title="Delete spread (photos return to the desk)"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={() => deleteSpread(spread.id)}
           >
             <X />

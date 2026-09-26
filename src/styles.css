@@ -132,6 +132,10 @@ button {
 .btn:disabled .shortcut-hint {
   opacity: 0.55;
 }
+.btn.icon.small {
+  width: 24px;
+  height: 24px;
+}
 .btn.icon {
   width: 30px;
   padding: 0;
@@ -347,7 +351,8 @@ button {
 }
 .sidebar-head {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
   padding: 12px 16px 6px;
   font-weight: 500;
 }
@@ -378,14 +383,19 @@ button {
 }
 .grip {
   display: inline-flex;
-  cursor: grab;
   color: var(--muted);
   padding: 0 2px;
   touch-action: none;
 }
 .grip.locked {
-  cursor: default;
-  opacity: 0.3;
+  visibility: hidden;
+}
+.spread-row-head.draggable {
+  cursor: grab;
+  touch-action: none;
+}
+.spread-row-head.draggable:active {
+  cursor: grabbing;
 }
 .row-delete {
   display: inline-flex;
