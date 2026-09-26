@@ -135,6 +135,15 @@ export function moveSpread(spreadId: string, toIndex: number): void {
   });
 }
 
+/** Folio-style page labels, zero-padded like a book's: "01", "02–03", "08". */
+export function folioLabel(index: number, total: number): string {
+  const width = Math.max(2, String(total * 2).length);
+  return spreadLabel(index, total)
+    .split('–')
+    .map((n) => n.padStart(width, '0'))
+    .join('–');
+}
+
 /** Page labels, e.g. "1", "2–3", counting single first/last pages. */
 export function spreadLabel(index: number, total: number): string {
   if (index === 0) return '1';

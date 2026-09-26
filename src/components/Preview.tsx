@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { spreadLabel } from '../actions';
+import { folioLabel } from '../actions';
 import { savePdf } from '../pdf';
 import { useDoc } from '../store';
 import { ui } from '../ui';
@@ -50,14 +50,14 @@ export function Preview() {
 
   if (!spread) return null;
   const scale = Math.min((stage.w - 40) / (2 * settings.pageW), (stage.h - 40) / settings.pageH);
-  const label = spreadLabel(index, spreads.length);
+  const label = folioLabel(index, spreads.length);
 
   return (
     <div className="preview" data-modal>
       <header className="preview-head">
-        <span>
-          {index === 0 || index === spreads.length - 1 ? `Page ${label}` : `Pages ${label}`}
-          <span className="muted"> · {index + 1} of {spreads.length} spreads</span>
+        <span className="folio">{label}</span>
+        <span className="muted mono small">
+          {index + 1} / {spreads.length}
         </span>
         <span className="spacer" />
         <span className="hint">← → to turn pages · Esc to exit</span>

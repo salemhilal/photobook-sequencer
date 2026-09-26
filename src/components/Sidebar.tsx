@@ -1,6 +1,6 @@
 import { useRef, useState, type CSSProperties } from 'react';
 import { GripVertical, Plus, X } from 'lucide-react';
-import { deleteSpread, insertSpread, moveSpread, putInPile, putOnPage, spreadLabel } from '../actions';
+import { deleteSpread, folioLabel, insertSpread, moveSpread, putInPile, putOnPage } from '../actions';
 import { clearGhost, startDrag, trackGhost } from '../drag';
 import { docStore, useDoc } from '../store';
 import type { Placement, Settings, Spread } from '../types';
@@ -50,9 +50,9 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-head">
-        <span>Spreads</span>
+        <span className="caps">Spreads</span>
         <button
-          className="btn icon small"
+          className="btn ghost icon small"
           aria-label="Add spread at the end"
           title="Add a spread before the back page"
           onClick={() => insertSpread(spreads.length - 1)}
@@ -60,7 +60,7 @@ export function Sidebar() {
           <Plus />
         </button>
         <span className="spacer" />
-        <span className="muted">{spreads.length * 2 - 2} pages</span>
+        <span className="caps muted">{spreads.length * 2 - 2} pp</span>
       </div>
       <div className="sidebar-list" ref={listRef}>
         {spreads.map((spread, i) => (
@@ -104,7 +104,7 @@ function SpreadRow({ spread, index, total, settings, dragging, onHeaderDown }: R
   const editing = ui.use((s) => s.editingSpreadId === spread.id);
   const scale = THUMB_W / (2 * settings.pageW);
   const middle = spread.kind === 'middle';
-  const label = spreadLabel(index, total);
+  const label = folioLabel(index, total);
 
   const open = () => ui.set({ editingSpreadId: spread.id });
 
@@ -158,9 +158,9 @@ function SpreadRow({ spread, index, total, settings, dragging, onHeaderDown }: R
           <GripVertical />
         </span>
         <span className="spread-label">
-          {index === 0 ? 'Page 1' : index === total - 1 ? `Page ${label}` : `Pages ${label}`}
+          {label}
         </span>
-        <span className="muted">{spread.items.length ? `${spread.items.length} photo${spread.items.length === 1 ? '' : 's'}` : ''}</span>
+        <span className="muted mono">{spread.items.length ? `${spread.items.length} photo${spread.items.length === 1 ? '' : 's'}` : ''}</span>
         {middle && (
           <button
             className="row-delete"

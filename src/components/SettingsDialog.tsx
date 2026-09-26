@@ -93,7 +93,7 @@ export function SettingsDialog() {
         <header className="modal-head">
           <div className="modal-title">Settings</div>
           <span className="spacer" />
-          <button className="btn icon" aria-label="Close" onClick={close}>
+          <button className="btn ghost icon" aria-label="Close" onClick={close}>
             <X />
           </button>
         </header>

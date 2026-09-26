@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { bump, putInPile, putOnPage, spreadLabel } from '../actions';
+import { bump, folioLabel, putInPile, putOnPage } from '../actions';
 import { clearGhost, startDrag, trackGhost } from '../drag';
 import {
   fitCentered,
@@ -203,24 +203,23 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
     </div>
   );
 
-  const label = spreadLabel(index, doc.spreads.length);
+  const label = folioLabel(index, doc.spreads.length);
 
   return (
     <div className="modal-backdrop" data-modal onPointerDown={(e) => e.target === e.currentTarget && close()}>
       <div className="modal editor" data-modal>
         <header className="modal-head">
-          <button className="btn icon" aria-label="Previous spread" disabled={index === 0} onClick={() => go(-1)}>
+          <button className="btn ghost icon" aria-label="Previous spread" disabled={index === 0} onClick={() => go(-1)}>
             <ChevronLeft />
           </button>
           <div className="modal-title">
-            {index === 0 || index === doc.spreads.length - 1 ? `Page ${label}` : `Pages ${label}`}
-            <span className="muted">
-              {' '}
-              · {fmt(settings.pageW)} × {fmt(settings.pageH)} in
+            <span className="folio">{label}</span>
+            <span className="muted mono small">
+              {fmt(settings.pageW)} × {fmt(settings.pageH)} in
             </span>
           </div>
           <button
-            className="btn icon"
+            className="btn ghost icon"
             aria-label="Next spread"
             disabled={index === doc.spreads.length - 1}
             onClick={() => go(1)}
@@ -229,7 +228,7 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
           </button>
           <span className="spacer" />
           <span className="hint">Shift: free resize · Alt: no snapping · Arrows nudge</span>
-          <button className="btn icon" aria-label="Close" onClick={close}>
+          <button className="btn ghost icon" aria-label="Close" onClick={close}>
             <X />
           </button>
         </header>
@@ -386,8 +385,8 @@ function PileStrip({ spreadId }: { spreadId: string }) {
 
   return (
     <div className={`strip${hover ? ' drop-hover' : ''}`} data-drop="strip">
-      <div className="strip-label">
-        Desk <span className="muted">· {pile.length}</span>
+      <div className="strip-label caps">
+        Desk · {pile.length}
       </div>
       <div className="strip-items">
         {pile.length === 0 ? (

@@ -91,6 +91,10 @@ button {
   font: inherit;
   color: inherit;
 }
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
 .muted {
   color: var(--muted);
 }
@@ -99,6 +103,23 @@ button {
 }
 .warn {
   color: var(--warn);
+}
+.mono {
+  font-family: var(--mono);
+}
+/* Small monospace caps, for section labels and counts. */
+.caps {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+/* Page numbers, set like a book's folios. */
+.folio {
+  font-family: var(--mono);
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 .spacer {
   flex: 1;
@@ -239,8 +260,7 @@ button {
   flex: 1;
 }
 .menu-shortcut {
-  font: inherit;
-  font-size: 12px;
+  font: 11px var(--mono);
   color: var(--muted);
 }
 .toolbar-divider {
@@ -470,8 +490,7 @@ button {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 12px 16px 6px;
-  font-weight: 500;
+  padding: 10px 16px 4px 20px;
 }
 .sidebar-list {
   flex: 1;
@@ -496,7 +515,12 @@ button {
   font-size: 12px;
 }
 .spread-label {
+  font-family: var(--mono);
   font-weight: 500;
+  font-size: 11px;
+}
+.spread-row-head .mono {
+  font-size: 10.5px;
 }
 .grip {
   display: inline-flex;
@@ -671,6 +695,9 @@ button {
   border-bottom: 1px solid var(--border);
 }
 .modal-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
   font-weight: 500;
   padding: 0 6px;
 }
@@ -738,6 +765,7 @@ button {
 }
 .num-label {
   color: var(--muted);
+  font-family: var(--mono);
   min-width: 12px;
 }
 .num-field input {
@@ -772,10 +800,9 @@ button {
   user-select: none;
 }
 .strip-label {
-  padding: 6px 12px 0;
-  font-size: 11px;
-  font-weight: 500;
+  padding: 7px 12px 0;
   line-height: 14px;
+  color: var(--muted);
 }
 .strip-items {
   flex: 1;
@@ -807,9 +834,13 @@ button {
   overflow-y: auto;
 }
 .settings h3 {
-  font-size: 14px;
+  font-family: var(--mono);
+  font-size: 10.5px;
   font-weight: 500;
-  margin: 16px 0 4px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 18px 0 6px;
 }
 .settings p {
   margin: 0 0 8px;
