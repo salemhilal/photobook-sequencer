@@ -2,11 +2,12 @@
 
 export const DEFAULT_DESK = '#787876';
 
+/** Darkest to lightest. */
 export const DESK_PRESETS: { value: string; label: string }[] = [
+  { value: '#121211', label: 'Black' },
+  { value: '#3b3b3a', label: 'Dark gray' },
   { value: DEFAULT_DESK, label: 'Neutral gray' },
   { value: '#b3b3b0', label: 'Light gray' },
-  { value: '#3b3b3a', label: 'Dark gray' },
-  { value: '#121211', label: 'Black' },
   { value: '#f4f3f0', label: 'White' },
 ];
 
