@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { spreadLabel } from '../actions';
+import { savePdf } from '../pdf';
 import { useDoc } from '../store';
 import { ui } from '../ui';
 import { SpreadCanvas } from './SpreadCanvas';
@@ -13,6 +14,7 @@ export function Preview() {
   const [dir, setDir] = useState<'next' | 'prev'>('next');
   const stageRef = useRef<HTMLDivElement>(null);
   const [stage, setStage] = useState({ w: 900, h: 600 });
+  const busy = ui.use((s) => s.busy);
   const { spreads, settings } = doc;
   const spread = spreads[Math.min(index, spreads.length - 1)];
 
@@ -58,6 +60,9 @@ export function Preview() {
         </span>
         <span className="spacer" />
         <span className="hint">← → to turn pages · Esc to exit</span>
+        <button className="btn" onClick={() => void savePdf()} disabled={busy !== null}>
+          {busy ?? 'Download PDF'}
+        </button>
         <button className="btn" onClick={close}>
           Exit preview
         </button>

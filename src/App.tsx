@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { deleteFromProject, importPhotos } from './actions';
+import { savePdf } from './pdf';
 import { openProjectFile, saveProjectFile } from './project';
 import { Desk } from './components/Desk';
 import { PhotoImg } from './components/PhotoImg';
@@ -19,6 +20,7 @@ const HINT_DELAY = 250;
 const SHORTCUTS = { addPhotos: 'O', preview: 'P', settings: ',', export: 'S', import: 'I' } as const;
 const UNDO_LABEL = `${MOD_LABEL}Z`;
 const REDO_LABEL = isMac ? '⇧⌘Z' : 'Ctrl+Y';
+const PDF_LABEL = isMac ? '⇧⌘P' : 'Ctrl+Shift+P';
 
 export default function App() {
   const { doc, canUndo, canRedo } = useDoc();
@@ -138,6 +140,15 @@ export default function App() {
           Export
           <ShortcutHint k={SHORTCUTS.export} />
         </button>
+        <button
+          className="btn has-hint"
+          onClick={() => void savePdf()}
+          disabled={importing !== null || busy !== null}
+          title={`Download the book as a PDF (${PDF_LABEL})`}
+        >
+          Save PDF
+          <ShortcutHint label={PDF_LABEL} />
+        </button>
         <span className="toolbar-divider" />
         <button
           className="btn has-hint"
@@ -214,6 +225,11 @@ function useShortcuts(actions: { addPhotos: () => void; importProject: () => voi
         return;
       }
       hide();
+      if (hasMod(e) && e.shiftKey && !e.altKey && e.key.toUpperCase() === 'P') {
+        e.preventDefault();
+        void savePdf();
+        return;
+      }
       if (!hasMod(e) || e.shiftKey || e.altKey) return;
       const key = e.key.toUpperCase();
       if (key === SHORTCUTS.addPhotos) {

@@ -25,6 +25,7 @@ npm run build  # → dist/
 | Settings     | ⌘,    | Ctrl+,  |
 | Import       | ⌘I    | Ctrl+I  |
 | Export       | ⌘S    | Ctrl+S  |
+| Save PDF     | ⇧⌘P   | Ctrl+Shift+P |
 | Undo         | ⌘Z    | Ctrl+Z  |
 | Redo         | ⇧⌘Z   | Ctrl+Y  |
 
