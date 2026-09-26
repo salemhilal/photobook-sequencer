@@ -387,8 +387,7 @@ function PileStrip({ spreadId }: { spreadId: string }) {
   return (
     <div className={`strip${hover ? ' drop-hover' : ''}`} data-drop="strip">
       <div className="strip-label">
-        <span>Desk</span>
-        <span className="muted">{pile.length}</span>
+        Desk <span className="muted">· {pile.length}</span>
       </div>
       <div className="strip-items">
         {pile.length === 0 ? (
