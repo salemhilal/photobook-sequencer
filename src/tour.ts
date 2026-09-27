@@ -38,12 +38,12 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     title: 'The desk',
-    body: 'Add photos, or drop them here. Scroll or hold Space and drag to pan, pinch to zoom, and tap Space to see selected photos full-size. Right-click to tidy up.',
+    body: 'Add photos by importing them, or just drop them here. Scroll or hold space and drag to pan, and pinch to zoom. Tap space to see a full-size preview of a selected photo. Right-click the desk to tidy up your photos or change the desk’s color.',
     target: '.desk',
   },
   {
     title: 'Spreads',
-    body: 'Drag photos from the desk onto a page; they’re sized to fit its guides. Drag a spread’s handle to reorder it, or + to add one.',
+    body: 'Drag photos from the desk onto a page; they’re sized to fit its guides. Drag a spread’s handle to reorder it, or click “+” to add one.',
     target: '.sidebar',
   },
   {
