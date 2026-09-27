@@ -418,12 +418,19 @@ button {
 /* Mac app: the toolbar is the title bar, with the traffic lights at its left. */
 .native-app .toolbar {
   position: relative;
-  padding-left: 80px;
+  /* The lights end 74 pt in; content starts 20 pt after them. */
+  padding-left: 94px;
 }
-/* Full-window views sit under the traffic lights too. */
+/*
+ * Full-window views sit under the traffic lights too: their headers are the toolbar's
+ * height, so the lights sit in line with the text and buttons, not above them.
+ */
 .native-app .preview-head,
 .native-app .quick-look-head {
-  padding-left: 80px;
+  box-sizing: border-box;
+  height: 42px;
+  padding-block: 0;
+  padding-left: 94px;
 }
 .window-title {
   position: absolute;
