@@ -40,7 +40,7 @@ struct Saves {
 #[tauri::command]
 fn begin_save(saves: tauri::State<Saves>) -> Result<u32, String> {
   let id = saves.next.fetch_add(1, Ordering::Relaxed);
-  let temp = std::env::temp_dir().join(format!("photobook-save-{}-{id}.tmp", std::process::id()));
+  let temp = std::env::temp_dir().join(format!("sequence-save-{}-{id}.tmp", std::process::id()));
   let file = File::create(&temp).map_err(|e| e.to_string())?;
   saves.open.lock().unwrap().insert(id, (temp, file));
   Ok(id)
@@ -134,7 +134,7 @@ mod e2e {
   /// inside the app's container, where the test can read it (stdout doesn't reach it there).
   fn report(line: &str) {
     println!("{line}");
-    let file = std::env::temp_dir().join("photobook-e2e.log");
+    let file = std::env::temp_dir().join("sequence-e2e.log");
     if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(file) {
       let _ = writeln!(f, "{line}");
     }

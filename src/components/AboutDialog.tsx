@@ -19,7 +19,7 @@ export function AboutDialog() {
             <Mail />
             hi@sequence.photos
           </a>
-          <a href="https://github.com/salemhilal/photobook-sequencer" target="_blank" rel="noopener noreferrer">
+          <a href="https://github.com/salemhilal/sequence.photos" target="_blank" rel="noopener noreferrer">
             <CodeXml />
             Source on GitHub
           </a>

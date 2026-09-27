@@ -1,15 +1,15 @@
 [package]
-name = "photobook-sequencer"
+name = "sequence"
 version = "0.1.0"
 description = "A tool for playing with photo sequences"
 authors = ["Salem Hilal"]
 license = "MIT"
-repository = "https://github.com/salemhilal/photobook-sequencer"
+repository = "https://github.com/salemhilal/sequence.photos"
 edition = "2024"
 rust-version = "1.90"
 
 [lib]
-name = "photobook_sequencer_lib"
+name = "sequence_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

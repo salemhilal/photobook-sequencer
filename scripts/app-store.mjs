@@ -77,7 +77,7 @@ if (!team) fail(`Couldn't find the team ID in "${appIdentity}".`);
 const build =
   process.env.BUILD_NUMBER ?? execFileSync('git', ['rev-list', '--count', 'HEAD'], { encoding: 'utf8' }).trim();
 
-const work = mkdtempSync(join(tmpdir(), 'photobook-app-store-'));
+const work = mkdtempSync(join(tmpdir(), 'sequence-app-store-'));
 try {
   // The sandbox entitlements, plus the identifiers the App Store requires alongside the profile.
   const entitlements = join(work, 'AppStore.entitlements');
