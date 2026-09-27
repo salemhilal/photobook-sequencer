@@ -189,12 +189,14 @@ export function SettingsDialog() {
           </div>
         </section>
 
-        <section className="setting">
-          <h3>Storage</h3>
-          <div className="setting-controls">
-            <StorageRow />
-          </div>
-        </section>
+        {!__NATIVE_APP__ && (
+          <section className="setting">
+            <h3>Storage</h3>
+            <div className="setting-controls">
+              <StorageRow />
+            </div>
+          </section>
+        )}
       </div>
     </Dialog>
   );

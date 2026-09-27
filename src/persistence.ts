@@ -120,9 +120,12 @@ export function usePersistence(): boolean {
 
 let askedToKeep = false;
 
-/** Once the project has photos, ask (once per session) for the browser not to clear storage. */
+/**
+ * Once the project has photos, ask (once per session) for the browser not to clear
+ * storage. (A website concern; the Mac app's storage isn't the browser's.)
+ */
 function keepStorage(): void {
-  if (askedToKeep || !Object.keys(docStore.doc.photos).length) return;
+  if (__NATIVE_APP__ || askedToKeep || !Object.keys(docStore.doc.photos).length) return;
   askedToKeep = true;
   void requestPersistence();
 }

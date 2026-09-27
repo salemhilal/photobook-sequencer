@@ -41,7 +41,7 @@ export async function exportIndesign(): Promise<void> {
     const date = new Date().toISOString().slice(0, 10);
     const idml = await createZip(buildIdml(doc, links));
     const zip = await createZip([{ name: `photo-book-${date}.idml`, data: idml }, ...files]);
-    download(zip, `photo-book-${date}-indesign.zip`);
+    await download(zip, `photo-book-${date}-indesign.zip`);
     if (links.size < placed.length) ui.set({ notice: "Some photos' images were missing, so their frames are empty." });
   } catch {
     ui.set({ notice: "Couldn't export for InDesign." });

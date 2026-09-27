@@ -49,7 +49,7 @@ export async function savePdf(): Promise<void> {
   ui.set({ busy: 'Rendering PDF…' });
   try {
     const blob = await renderPdf((done, total) => ui.set({ busy: `Rendering PDF ${done} of ${total}…` }));
-    download(blob, `photo-book-${new Date().toISOString().slice(0, 10)}.pdf`);
+    await download(blob, `photo-book-${new Date().toISOString().slice(0, 10)}.pdf`);
   } catch {
     ui.set({ notice: "Couldn't make the PDF." });
   } finally {
