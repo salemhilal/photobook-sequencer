@@ -32,6 +32,8 @@ storage is kept apart from the real app's and deleted afterwards.
 npm run build  # → dist/
 ```
 
+The site's domain is set in `.env` (`VITE_SITE_DOMAIN`); links to it and its pages use it.
+
 Netlify runs `npm test && npm run build` for production, pull-request previews, and branch deploys (see `netlify.toml`).
 
 ## Shortcuts
