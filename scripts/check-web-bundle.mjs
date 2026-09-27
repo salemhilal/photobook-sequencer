@@ -1,5 +1,6 @@
 // Fails if the website's build (dist/) contains any of the Mac app's code. The app's
-// code is reachable only from its own build (see src/platform/); this makes sure it stays that way.
+// code is only reachable from its own build (see src/platform/types.ts); this makes sure
+// it stays that way.
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';

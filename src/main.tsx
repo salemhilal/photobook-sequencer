@@ -8,16 +8,10 @@ import './styles.css';
 import App from './App.tsx';
 import { applyDeskColor } from './deskColor';
 import { ui } from './ui';
-import { startOfflineSupport } from './update';
+import { platform } from '#platform';
 
 applyDeskColor(ui.get().deskColor);
-// The website works offline through a service worker; the Mac app has everything built in.
-if (!__NATIVE_APP__) startOfflineSupport();
-else {
-  // Before the first paint, so the toolbar never shows without room for the traffic lights.
-  document.documentElement.classList.add('native-app');
-  void import('./native').then((m) => m.startNative());
-}
+platform.start();
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root');

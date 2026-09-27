@@ -1,0 +1,35 @@
+/**
+ * What differs between the website and the Mac app. Shared code imports `platform`
+ * from '#platform', which each build points at its own implementation (see
+ * vite.config.ts): ./browser.ts for the website, ./macos/ for the app. So the app's
+ * code is never part of the website, and anything added here must be implemented by
+ * both. Wording that differs is written where it's used, switching on `kind`.
+ */
+export interface Platform {
+  kind: 'browser' | 'macos';
+
+  /** Set up what this platform needs at startup. */
+  start(): void;
+
+  /**
+   * Save a file the app makes, once `make` has made it. The Mac app asks where first
+   * (so nothing is made if that's cancelled); the website downloads it when it's done.
+   * Resolves to whether it was saved.
+   */
+  saveFile(filename: string, make: () => Promise<Blob>): Promise<boolean>;
+
+  /** Keep the project: export a copy (website) or save it to its file (Mac app). Resolves to whether it was kept. */
+  keepProject(): Promise<boolean>;
+
+  /** Save As, where there are project files to save to (the Mac app). */
+  keepProjectAs?: () => Promise<boolean>;
+
+  /** Choose a project file and open it. */
+  openProject(): void;
+
+  /** Whether replacing the project now would lose nothing (it's all saved to its file). */
+  projectIsSafe(): boolean;
+
+  /** The project was replaced: by a new, empty one, or by one opened without a file behind it. */
+  projectReplaced(): void;
+}

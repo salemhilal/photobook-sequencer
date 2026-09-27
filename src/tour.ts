@@ -1,9 +1,10 @@
+import { platform } from '#platform';
 import { produce } from 'immer';
 import { putOnPage } from './actions';
 import { DESK_PPI } from './deskGeometry';
 import { pileSize } from './geometry';
 import { showUrl } from './images';
-import { isMac } from './platform';
+import { isMac } from './input';
 import { tourSeenPref } from './prefs';
 import { docStore, emptyDoc } from './store';
 import type { Doc, PhotoMeta } from './types';
@@ -64,7 +65,7 @@ export const TOUR_STEPS: TourStep[] = [
     target: '[data-tour="preview"]',
   },
   {
-    ...(__NATIVE_APP__
+    ...(platform.kind === 'macos'
       ? {
           title: 'Save your book',
           body: 'File → Save keeps your book, photos and all, in one file. Double-click it to pick up where you left off. Hold ⌘ to see every shortcut.',

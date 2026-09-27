@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { deleteImage, imageIds, loadDoc, saveDoc } from './db';
 import { forgetUrl } from './images';
 import { migrateDoc, NewerProjectError, schemaVersionOf } from './schema';
-import { requestPersistence } from './storage';
 import { docStore, emptyDoc } from './store';
 import { claimEditor } from './tabLock';
 import { CURRENT_SCHEMA, type Doc } from './types';
@@ -71,7 +70,6 @@ export function usePersistence(): boolean {
       if (result === 'newer') return unsubscribe();
       if (result === 'saved') {
         await collectGarbage();
-        keepStorage();
       }
     };
 
@@ -91,7 +89,6 @@ export function usePersistence(): boolean {
       setLoaded(true);
       markLoaded();
       void collectGarbage();
-      keepStorage();
       let last = docStore.doc;
       unsubscribe = docStore.subscribe(() => {
         if (docStore.doc === last) return;
@@ -122,18 +119,6 @@ export function usePersistence(): boolean {
   }, []);
 
   return loaded;
-}
-
-let askedToKeep = false;
-
-/**
- * Once the project has photos, ask (once per session) for the browser not to clear
- * storage. (A website concern; the Mac app's storage isn't the browser's.)
- */
-function keepStorage(): void {
-  if (__NATIVE_APP__ || askedToKeep || !Object.keys(docStore.doc.photos).length) return;
-  askedToKeep = true;
-  void requestPersistence();
 }
 
 /**

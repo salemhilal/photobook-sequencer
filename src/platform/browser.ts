@@ -1,0 +1,59 @@
+import { download, pickFiles } from '../files';
+import { buildProjectFile, openProjectFile, PROJECT_ACCEPT, PROJECT_EXTENSION } from '../project';
+import { requestPersistence } from '../storage';
+import { docStore } from '../store';
+import { ui } from '../ui';
+import { startOfflineSupport } from '../update';
+import { ZipTooLargeError } from '../zip';
+import type { Platform } from './types';
+
+/**
+ * The website. Work lives in the browser's storage; exporting a project file is how
+ * you keep a copy, and opening one replaces what's there.
+ */
+export const platform: Platform = {
+  kind: 'browser',
+
+  start() {
+    startOfflineSupport();
+    keepStorageOnceThereAreFiles();
+  },
+
+  async saveFile(filename, make) {
+    download(await make(), filename);
+    return true;
+  },
+
+  async keepProject() {
+    if (ui.get().busy || ui.get().importing) return false;
+    if (!Object.keys(docStore.doc.photos).length) {
+      ui.set({ notice: 'Add some photos before exporting.' });
+      return false;
+    }
+    try {
+      const file = await buildProjectFile();
+      download(file, `photo-book-${new Date().toISOString().slice(0, 10)}${PROJECT_EXTENSION}`);
+      return true;
+    } catch (e) {
+      ui.set({ notice: e instanceof ZipTooLargeError ? e.message : "Couldn't export the project." });
+      return false;
+    }
+  },
+
+  openProject() {
+    if (ui.get().importing) return;
+    pickFiles(PROJECT_ACCEPT, false, ([file]) => file && void openProjectFile(file));
+  },
+
+  projectIsSafe: () => false,
+  projectReplaced() {},
+};
+
+/** Once the project has photos, ask (once) for the browser not to clear its storage. */
+function keepStorageOnceThereAreFiles(): void {
+  const stop = docStore.subscribe(() => {
+    if (!Object.keys(docStore.doc.photos).length) return;
+    stop();
+    void requestPersistence();
+  });
+}

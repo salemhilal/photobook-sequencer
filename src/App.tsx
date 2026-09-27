@@ -16,7 +16,8 @@ import {
   X,
 } from 'lucide-react';
 import { usePasteHandler } from './clipboard';
-import { runCommand, shortcutLabel, useCommandShortcuts, type CommandId } from './commands';
+import { platform } from '#platform';
+import { commandTitle, runCommand, shortcutLabel, useCommandShortcuts, type CommandId } from './commands';
 import { AboutDialog } from './components/AboutDialog';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { ContextMenus } from './components/ContextMenu';
@@ -79,8 +80,8 @@ export default function App() {
     ? `Importing ${importing.done} of ${importing.total}…`
     : (busy ?? (importing ? 'Importing…' : `${doc.pile.length} on desk · ${placed} placed`));
 
-  const fileItem = (id: CommandId, label: string, icon: React.ReactNode, disabled = working) => ({
-    label,
+  const fileItem = (id: CommandId, icon: React.ReactNode, disabled = working) => ({
+    label: commandTitle(id),
     icon,
     shortcut: shortcutLabel(id),
     disabled,
@@ -98,19 +99,19 @@ export default function App() {
           </div>
         )}
         {/* The Mac app has these in its menu bar (and its title bar says whose it is). */}
-        {!__NATIVE_APP__ && (
+        {platform.kind === 'browser' && (
           <>
             <span className="wordmark">SEQUENCER</span>
             <FileMenu
               items={[
-                fileItem('newProject', 'New project…', <FilePlus />),
-                { ...fileItem('addPhotos', 'Add photos…', <ImagePlus />, importing !== null), separatorBefore: true },
-                fileItem('importProject', 'Import project…', <FolderOpen />),
-                fileItem('exportProject', 'Export project', <Download />),
-                fileItem('savePdf', 'Save PDF', <FileText />),
-                fileItem('exportIndesign', 'Export for InDesign', <Package />),
-                { ...fileItem('tour', 'Take the tour', <Compass />), separatorBefore: true },
-                fileItem('about', 'About…', <Info />, false),
+                fileItem('newProject', <FilePlus />),
+                { ...fileItem('addPhotos', <ImagePlus />, importing !== null), separatorBefore: true },
+                fileItem('importProject', <FolderOpen />),
+                fileItem('exportProject', <Download />),
+                fileItem('savePdf', <FileText />),
+                fileItem('exportIndesign', <Package />),
+                { ...fileItem('tour', <Compass />), separatorBefore: true },
+                fileItem('about', <Info />, false),
               ]}
             />
             <div className="btn-joined has-hint">

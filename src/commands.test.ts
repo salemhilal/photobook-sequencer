@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { commands, shortcutAccelerator, shortcutLabel } from './commands';
-import { isMac } from './platform';
+import { commands, commandTitle, shortcutAccelerator, shortcutLabel } from './commands';
+import { titleCase } from './platform/macos/menu';
+import { isMac } from './input';
 
 describe('commands', () => {
   it('never bind the same key combination twice', () => {
@@ -31,5 +32,22 @@ describe('commands', () => {
     expect(shortcutAccelerator('settings')).toBe('CmdOrCtrl+,');
     expect(shortcutAccelerator('deleteSelection')).toBeUndefined();
     expect(shortcutAccelerator('newProject')).toBeUndefined();
+  });
+
+  it('names commands for the platform, in sentence case', () => {
+    expect(commandTitle('exportProject')).toBe('Export project');
+    expect(commandTitle('importProject')).toBe('Import project…');
+    expect(commandTitle('addPhotos')).toBe('Add photos…');
+  });
+
+  it('gives the website no Save As', () => {
+    expect(commands.saveAs.bindings).toEqual([]);
+  });
+
+  it('title-cases names for the Mac menu bar', () => {
+    expect(titleCase('Add photos…')).toBe('Add Photos…');
+    expect(titleCase('Take the tour')).toBe('Take the Tour');
+    expect(titleCase('Export for InDesign…')).toBe('Export for InDesign…');
+    expect(titleCase('Save as…')).toBe('Save As…');
   });
 });

@@ -1,4 +1,4 @@
-/** Platform and input helpers. */
+/** Keyboard and input helpers. */
 
 export const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
