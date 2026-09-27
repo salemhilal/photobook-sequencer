@@ -2,7 +2,7 @@
 
 A tool for playing with photo sequences.
 
-**Try it:** https://sequence.photos · [Privacy policy](https://sequence.photos/privacy/)
+**Try it:** https://sequence.photos/app/ · [Privacy policy](https://sequence.photos/privacy/)
 
 ![Photos on the desk, with the book's spreads in the sidebar](docs/screenshot.jpg)
 
@@ -13,6 +13,9 @@ nvm use        # Node 24 (needs ≥ 20.19)
 npm install
 npm run dev    # → http://localhost:5173
 ```
+
+The site has three pages: the landing page (`index.html`, at `/`), the app
+(`app/index.html`, at `/app/`), and the privacy policy (`privacy/index.html`).
 
 ## Test
 
@@ -95,8 +98,8 @@ does the same in CI, after the tests, when a GitHub release is published (tagged
 
 ## Offline and install
 
-The deployed app works offline once it has loaded: a service worker keeps a copy of
-the whole app, and your work stays in the browser. To use it like a desktop app,
+The deployed app works offline once it has loaded: a service worker (scoped to `/app/`)
+keeps a copy of the whole app, and your work stays in the browser. To use it like a desktop app,
 install it from the browser (Chrome/Edge: install icon in the address bar; Safari:
 File → Add to Dock). Installing also makes the browser less likely to clear stored
 work; Settings → Storage shows whether it's protected. Export to keep a backup.

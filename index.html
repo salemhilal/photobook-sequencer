@@ -2,23 +2,18 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <meta name="theme-color" content="#151514" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sequence</title>
-    <script>
-      // Apply a saved light/dark choice before first paint (see src/theme.ts).
-      try {
-        var t = localStorage.getItem('photobook-theme');
-        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
-        var d = localStorage.getItem('photobook-desk');
-        if (d && /^#[0-9a-f]{6}$/i.test(d)) document.documentElement.style.setProperty('--desk', d);
-      } catch (e) {}
-    </script>
+    <meta name="description" content="A tool for playing with photo sequences." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <!-- The landing page, to come. -->
+    <main>
+      <h1>Sequence</h1>
+      <p>A tool for playing with photo sequences.</p>
+      <p><a href="/app/">Open Sequence</a> · <a href="/privacy/">Privacy policy</a></p>
+    </main>
   </body>
 </html>

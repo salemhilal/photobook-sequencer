@@ -13,6 +13,7 @@
     "windows": [
       {
         "label": "main",
+        "url": "app/index.html",
         "title": "Sequence",
         "width": 1440,
         "height": 900,
