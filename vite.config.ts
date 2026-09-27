@@ -23,6 +23,9 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,woff,woff2}'],
         // Don't cache old builds' leftovers.
         cleanupOutdatedCaches: true,
+        // The first install takes control of open pages right away, so they work
+        // offline without a second load. Updates still wait (see src/update.ts).
+        clientsClaim: true,
       },
       manifest: {
         name: 'Photobook Sequencer',
