@@ -109,7 +109,7 @@ button {
  *   Inter Tight — words: buttons, menu items, options, descriptions, hints.
  *   IBM Plex Mono — data and labels: numbers, units, measurements, counts,
  *   page numbers, shortcuts, file names, and field and section labels.
- * Exception: the empty-desk message is set in mono, as a label on the desk itself.
+ * Exception: the empty desk's heading is set in mono, as a label on the desk itself.
  * Mono sizes: 10.5px uppercase labels (.caps, tags), 11px data (.data),
  * 12px input fields, shortcut badges, and settings titles; 13px page numbers
  * in headings.
@@ -680,25 +680,23 @@ button {
   gap: 4px;
   /* The desk is middle gray in both themes, so text is always light. */
   color: rgba(255, 255, 255, 0.9);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
   pointer-events: none;
   text-align: center;
   padding: 16px;
 }
 .desk-empty p {
   margin: 0;
-  font: 12px/1.6 var(--mono);
+  font: 13px/1.5 var(--font);
 }
 :root[data-desk-tone='light'] .desk-empty {
   color: rgba(0, 0, 0, 0.78);
-  text-shadow: none;
 }
 :root[data-desk-tone='light'] .desk-empty-title {
   color: #111;
 }
 .desk-empty .desk-empty-title {
-  font-size: 15px;
-  font-weight: 500;
+  margin-bottom: 2px;
+  font: 500 15px/1.6 var(--mono);
   color: #fff;
 }
 /* A new project's page-size card, on the empty desk. */
