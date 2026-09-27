@@ -1,5 +1,7 @@
 import type { Doc } from './types';
 
+// Named for the app's old name (Photobook Sequencer), as are the `photobook-*` prefs: renaming
+// them would lose everyone's saved work.
 const DB_NAME = 'photobook';
 const DB_VERSION = 1;
 const STATE = 'state';

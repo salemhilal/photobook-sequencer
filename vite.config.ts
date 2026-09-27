@@ -36,8 +36,8 @@ export default defineConfig(({ mode }) => {
           clientsClaim: true,
         },
         manifest: {
-          name: 'Photobook Sequencer',
-          short_name: 'Sequencer',
+          name: 'Sequence',
+          short_name: 'Sequence',
           description: 'A tool for prototyping photo sequences',
           start_url: '/',
           scope: '/',

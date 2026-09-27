@@ -16,7 +16,7 @@ export async function renderPdf(onProgress: (done: number, total: number) => voi
   const { pageW, pageH } = doc.settings;
   const pdf = await PDFDocument.create();
   pdf.setTitle('Photo book');
-  pdf.setCreator('Photobook Sequencer');
+  pdf.setCreator('Sequence');
 
   for (const [i, spread] of doc.spreads.entries()) {
     const sides = pageSides(spread.kind);

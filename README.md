@@ -1,8 +1,8 @@
-# Photobook Sequencer
+# Sequence
 
 A tool for prototyping photo sequences.
 
-**Try it:** https://photobook-sequencer.netlify.app · [Privacy policy](https://photobook-sequencer.netlify.app/privacy/)
+**Try it:** https://sequence.photos · [Privacy policy](https://sequence.photos/privacy/)
 
 ![Photos on the desk, with the book's spreads in the sidebar](docs/screenshot.jpg)
 

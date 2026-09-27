@@ -101,7 +101,7 @@ export default function App() {
         {/* The Mac app has these in its menu bar (and its title bar says whose it is). */}
         {platform.kind === 'browser' && (
           <>
-            <span className="wordmark">SEQUENCER</span>
+            <span className="wordmark">SEQUENCE</span>
             <FileMenu
               items={[
                 fileItem('newProject', <FilePlus />),
@@ -227,8 +227,8 @@ function ShortcutHint({ label, below }: { label: string; below?: boolean }) {
 function ElsewhereScreen() {
   return (
     <div className="screen-message" role="alert">
-      <span className="wordmark">SEQUENCER</span>
-      <h1>Photobook Sequencer is open in another window.</h1>
+      <span className="wordmark">SEQUENCE</span>
+      <h1>Sequence is open in another window.</h1>
       <p>To keep your work safe, only one window can edit at a time. Using it here stops the other one.</p>
       <button className="btn primary" onClick={takeOver}>
         Use it here
@@ -242,8 +242,8 @@ function OutdatedScreen() {
   useEffect(checkForUpdate, []);
   return (
     <div className="screen-message" role="alert">
-      <span className="wordmark">SEQUENCER</span>
-      <h1>This project was saved by a newer version of Photobook Sequencer.</h1>
+      <span className="wordmark">SEQUENCE</span>
+      <h1>This project was saved by a newer version of Sequence.</h1>
       <p>Reload to update. Your saved project hasn't been changed.</p>
       <button className="btn primary" onClick={reloadToUpdate}>
         Reload

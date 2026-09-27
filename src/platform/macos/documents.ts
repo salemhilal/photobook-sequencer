@@ -82,14 +82,14 @@ let shownTitle = '';
 function showState(): void {
   // During the tour, the sample project is showing; the user's file is untouched.
   const touring = ui.get().tour !== null;
-  const title = touring ? 'Photobook Sequencer' : `${name()}${edited() ? ' — Edited' : ''}`;
+  const title = touring ? 'Sequence' : `${name()}${edited() ? ' — Edited' : ''}`;
   if (title === shownTitle) return;
   shownTitle = title;
   // The window's own title is hidden (the toolbar shows it), but the Window menu,
   // Mission Control and the Dock still use it.
   void getCurrentWindow().setTitle(title);
   ui.set({
-    windowTitle: touring ? { name: 'Photobook Sequencer', edited: false } : { name: name(), edited: edited() },
+    windowTitle: touring ? { name: 'Sequence', edited: false } : { name: name(), edited: edited() },
   });
   if (ui.get().tour === null) remember();
 }
@@ -144,7 +144,7 @@ export async function openWithDialog(): Promise<void> {
   const chosen = await openDialog({
     multiple: false,
     directory: false,
-    filters: [{ name: 'Photobook Sequencer project', extensions: [PROJECT_EXTENSION.slice(1)] }],
+    filters: [{ name: 'Sequence project', extensions: [PROJECT_EXTENSION.slice(1)] }],
   });
   if (typeof chosen === 'string') await openPath(chosen);
 }

@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Photobook Sequencer",
+  "productName": "Sequence",
   "version": "0.1.0",
   "identifier": "io.salem.PhotobookSequencer",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Photobook Sequencer",
+        "title": "Sequence",
         "width": 1440,
         "height": 900,
         "minWidth": 900,
@@ -57,7 +57,7 @@
     "fileAssociations": [
       {
         "ext": ["photo-sequence"],
-        "name": "Photobook Sequencer Project",
+        "name": "Sequence Project",
         "role": "Editor",
         "rank": "Owner",
         "mimeType": "application/x-photo-sequence",

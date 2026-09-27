@@ -14,6 +14,7 @@ import { platform } from '#platform';
  *   images/<name>     — original files, as imported
  *   thumbs/<id>.jpg   — display copies (optional; regenerated on import if missing)
  */
+// From the app's old name (Photobook Sequencer); project files carry it, so it stays.
 const FORMAT = 'photo-sequencer-project';
 const VERSION = 1;
 const MANIFEST = 'project.json';
@@ -71,13 +72,13 @@ export async function importProject(file: File): Promise<void> {
   ui.set({ busy: 'Opening project…', importing: { done: 0, total: 0 } });
   try {
     const zip = await readZip(file).catch(() => {
-      throw new ProjectFileError(`“${file.name}” isn't a Photo Sequencer project.`);
+      throw new ProjectFileError(`“${file.name}” isn't a Sequence project.`);
     });
     const manifestEntry = zip.get(MANIFEST);
-    if (!manifestEntry) throw new ProjectFileError(`“${file.name}” isn't a Photo Sequencer project.`);
+    if (!manifestEntry) throw new ProjectFileError(`“${file.name}” isn't a Sequence project.`);
     const manifest = parseManifest(await (await manifestEntry.blob()).text());
     const newer = new ProjectFileError(
-      'This project was made by a newer version of Photobook Sequencer. Reload to update, then try again.',
+      'This project was made by a newer version of Sequence. Reload to update, then try again.',
     );
     // `version` is the file's layout; the project inside has its own schema version.
     if (manifest.version > VERSION) throw newer;
@@ -146,7 +147,7 @@ function parseManifest(text: string): Manifest {
     throw new ProjectFileError('The project file is damaged.');
   }
   if (!isRecord(m) || m.format !== FORMAT || typeof m.version !== 'number' || !isRecord(m.files)) {
-    throw new ProjectFileError("This file isn't a Photo Sequencer project.");
+    throw new ProjectFileError("This file isn't a Sequence project.");
   }
   const d = m.doc;
   if (

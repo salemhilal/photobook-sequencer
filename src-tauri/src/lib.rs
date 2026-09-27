@@ -204,7 +204,7 @@ pub fn run() {
     .manage(Saves::default())
     .invoke_handler(handlers())
     .build(tauri::generate_context!())
-    .expect("error while building Photobook Sequencer");
+    .expect("error while building Sequence");
 
   app.run(|handle, event| {
     #[cfg(any(target_os = "macos", target_os = "ios"))]

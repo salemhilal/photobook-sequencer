@@ -34,8 +34,8 @@ export interface TourStep {
 
 export const TOUR_STEPS: TourStep[] = [
   {
-    title: 'Welcome to Photobook Sequencer',
-    body: 'Photobook Sequencer is a tool for prototyping photo sequences. Here’s a quick look around, using a few sample photos. Your own work will remain unchanged.',
+    title: 'Welcome to Sequence',
+    body: 'Sequence is a tool for prototyping photo sequences. Here’s a quick look around, using a few sample photos. Your own work will remain unchanged.',
   },
   {
     title: 'The desk',

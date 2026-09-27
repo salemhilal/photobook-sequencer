@@ -68,7 +68,7 @@ async function savedDoc(path) {
  * without a file, when only its bookmark can get it access again.
  */
 const SANDBOX_ID = 'io.salem.PhotobookSequencer.e2e-sandbox';
-const SANDBOX_APP = join(TARGET, 'release/bundle/macos/Photobook Sequencer Sandbox Test.app');
+const SANDBOX_APP = join(TARGET, 'release/bundle/macos/Sequence Sandbox Test.app');
 // Sandboxed, the app can't write to our log; it reports to a file in its container instead.
 const SANDBOX_REPORT = join(homedir(), 'Library/Containers', SANDBOX_ID, 'Data/tmp/photobook-e2e.log');
 
@@ -76,7 +76,7 @@ async function sandboxed(dir) {
   console.log('\nBuilding the sandboxed test app…');
   const config = {
     identifier: SANDBOX_ID,
-    productName: 'Photobook Sequencer Sandbox Test',
+    productName: 'Sequence Sandbox Test',
     // Not a handler for project files: it mustn't take over double-clicks.
     bundle: { fileAssociations: null },
   };
