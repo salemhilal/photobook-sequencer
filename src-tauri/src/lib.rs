@@ -78,6 +78,40 @@ fn finish_save(id: u32, path: Option<String>, saves: tauri::State<Saves>) -> Res
   result
 }
 
+/// The end-to-end test's hooks (npm run test:app; see src/e2e.ts). Not in the real app.
+#[cfg(feature = "e2e")]
+mod e2e {
+  /// Where the test's fixtures are, when the app was started to run it.
+  #[tauri::command]
+  pub fn e2e_dir() -> Option<String> {
+    std::env::var("PBS_E2E").ok()
+  }
+
+  #[tauri::command]
+  pub fn e2e_finish(ok: bool, report: String) {
+    println!("{report}");
+    std::process::exit(if ok { 0 } else { 1 });
+  }
+}
+
+#[cfg(not(feature = "e2e"))]
+fn handlers() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
+  tauri::generate_handler![take_opened_files, read_project, begin_save, append_save, finish_save]
+}
+
+#[cfg(feature = "e2e")]
+fn handlers() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
+  tauri::generate_handler![
+    take_opened_files,
+    read_project,
+    begin_save,
+    append_save,
+    finish_save,
+    e2e::e2e_dir,
+    e2e::e2e_finish
+  ]
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   let app = tauri::Builder::default()
@@ -86,7 +120,7 @@ pub fn run() {
     .plugin(tauri_plugin_opener::init())
     .manage(OpenedFiles::default())
     .manage(Saves::default())
-    .invoke_handler(tauri::generate_handler![take_opened_files, read_project, begin_save, append_save, finish_save])
+    .invoke_handler(handlers())
     .build(tauri::generate_context!())
     .expect("error while building Photobook Sequencer");
 

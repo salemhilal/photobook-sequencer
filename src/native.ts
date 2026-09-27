@@ -30,6 +30,7 @@ export async function saveFile(blob: Blob, filename: string): Promise<boolean> {
 export function startNative(): void {
   void setUpMenu();
   void startDocuments();
+  if (__E2E__) void import('./e2e').then((m) => m.runE2E());
 
   // Links to websites and email open in the user's browser and mail app, not in the app's window.
   document.addEventListener('click', (e) => {

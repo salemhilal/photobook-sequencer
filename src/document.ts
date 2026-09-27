@@ -59,10 +59,16 @@ function remember(): void {
 let shownTitle = '';
 function showState(): void {
   // During the tour, the sample project is showing; the user's file is untouched.
-  const title = ui.get().tour !== null ? 'Photobook Sequencer' : `${name()}${edited() ? ' — Edited' : ''}`;
+  const touring = ui.get().tour !== null;
+  const title = touring ? 'Photobook Sequencer' : `${name()}${edited() ? ' — Edited' : ''}`;
   if (title === shownTitle) return;
   shownTitle = title;
+  // The window's own title is hidden (the toolbar shows it), but the Window menu,
+  // Mission Control and the Dock still use it.
   void getCurrentWindow().setTitle(title);
+  ui.set({
+    windowTitle: touring ? { name: 'Photobook Sequencer', edited: false } : { name: name(), edited: edited() },
+  });
   if (ui.get().tour === null) remember();
 }
 
@@ -79,9 +85,9 @@ export async function save(): Promise<boolean> {
   return path ? writeTo(path) : saveAs();
 }
 
-/** Save to a new file, asking where first. */
-export async function saveAs(): Promise<boolean> {
-  const chosen = await saveDialog({ defaultPath: `${name()}${PROJECT_EXTENSION}`, filters: FILTERS });
+/** Save to a new file, asking where first (`target` skips asking; the end-to-end test uses it). */
+export async function saveAs(target?: string): Promise<boolean> {
+  const chosen = target ?? (await saveDialog({ defaultPath: `${name()}${PROJECT_EXTENSION}`, filters: FILTERS }));
   return chosen ? writeTo(chosen) : false;
 }
 
@@ -137,7 +143,8 @@ export async function openPath(target: string, launching = false): Promise<void>
     if (hasWork && !(await confirmReplace('Open another project?', `“${name(target)}”`, 'Open'))) return;
   }
   try {
-    const bytes = await invoke<ArrayBuffer>('read_project', { path: target });
+    ui.set({ busy: 'Opening project…' });
+    const bytes = await invoke<ArrayBuffer>('read_project', { path: target }).finally(() => ui.set({ busy: null }));
     await importProject(new File([bytes], target.split('/').pop() ?? 'project'));
     // Undo shouldn't lead back into a different file's project.
     docStore.reset(docStore.doc);

@@ -53,7 +53,12 @@ export default defineConfig(({ mode }) => {
     // can load it against a second copy of React ("Invalid hook call").
     optimizeDeps: { include: ['lucide-react'] },
     // Inlined at build time; see src/env.d.ts.
-    define: { __APP_VERSION__: JSON.stringify(version), __NATIVE_APP__: JSON.stringify(app) },
+    define: {
+      __APP_VERSION__: JSON.stringify(version),
+      __NATIVE_APP__: JSON.stringify(app),
+      // The Mac app's end-to-end test build (npm run test:app).
+      __E2E__: JSON.stringify(process.env.PBS_E2E_BUILD === '1'),
+    },
     // Tauri's dev server output reads better without Vite clearing the terminal.
     clearScreen: false,
     test: {

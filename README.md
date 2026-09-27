@@ -19,7 +19,12 @@ npm run dev    # → http://localhost:5173
 ```bash
 npm test             # run once
 npm run test:watch   # re-run on save
+npm run test:app     # Mac app, end to end: open, Save, Save As, relaunch (needs Rust)
 ```
+
+`test:app` builds a test version of the Mac app and runs it on fixture projects (its
+window shows for a few seconds), then checks the saved files from outside the app. Its
+storage is kept apart from the real app's and deleted afterwards.
 
 ## Build
 
