@@ -52,6 +52,22 @@ Right-click the desk to tidy photos into a grid or change the desk color.
 
 File → Take the tour walks through the app with a few sample photos (it also runs on your first visit). Your own project is set aside while it runs and comes back when it ends.
 
+## Mac app
+
+The same app also builds as a native Mac app with [Tauri](https://tauri.app): a menu
+bar, Save dialogs, and projects as documents. `.photo-sequence` files open in it with a
+double-click, File → Save keeps the project in its file, and the window's title shows
+when there are unsaved changes.
+
+```bash
+npm run app         # run it, reloading on changes (needs Rust: https://rustup.rs)
+npm run app:build   # → src-tauri/target/release/bundle/macos/
+```
+
+The website and the app share all their code; `__NATIVE_APP__` (set by `vite --mode app`)
+switches the few places they differ, and the app-only code lives in `src/native.ts`,
+`src/nativeMenu.ts` and `src/document.ts`.
+
 ## Offline and install
 
 The deployed app works offline once it has loaded: a service worker keeps a copy of

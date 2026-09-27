@@ -28,8 +28,8 @@ interface Manifest {
 
 export class ProjectFileError extends Error {}
 
-/** Export the project to a file; resolves to whether it was saved. */
-export async function exportProject(): Promise<boolean> {
+/** The project as a .photo-sequence file (a ZIP), reporting progress in the UI. */
+export async function buildProjectFile(verb = 'Exporting'): Promise<Blob> {
   const doc = docStore.doc;
   const ids = Object.keys(doc.photos);
   const entries: ZipInput[] = [];
@@ -38,7 +38,7 @@ export async function exportProject(): Promise<boolean> {
 
   const setBusy = (busy: string | null) => ui.set({ busy });
   try {
-    setBusy('Preparing export…');
+    setBusy(`${verb}…`);
     for (const id of ids) {
       const img = await getImage(id);
       const meta = doc.photos[id];
@@ -56,16 +56,19 @@ export async function exportProject(): Promise<boolean> {
 
     const photoCount = Object.keys(files).length;
     const zip = await createZip(entries, (done) =>
-      setBusy(`Exporting ${Math.min(photoCount, Math.floor(done / 2))} of ${photoCount}…`),
+      setBusy(`${verb} ${Math.min(photoCount, Math.floor(done / 2))} of ${photoCount}…`),
     );
     // A .photo-sequence file is a ZIP; the octet-stream type keeps browsers from renaming it to .zip.
-    return await download(
-      new Blob([zip], { type: 'application/octet-stream' }),
-      `photo-book-${new Date().toISOString().slice(0, 10)}${PROJECT_EXTENSION}`,
-    );
+    return new Blob([zip], { type: 'application/octet-stream' });
   } finally {
     setBusy(null);
   }
+}
+
+/** Export the project to a file; resolves to whether it was saved. */
+export async function exportProject(): Promise<boolean> {
+  const file = await buildProjectFile();
+  return download(file, `photo-book-${new Date().toISOString().slice(0, 10)}${PROJECT_EXTENSION}`);
 }
 
 /** Replace the current project with one from a file. Undoable. */
@@ -195,23 +198,26 @@ function mimeFor(path: string): string {
   return types[ext] ?? '';
 }
 
-/** Import with confirmation and user-facing errors. */
 /**
- * Before replacing the current project, confirm (offering an export first).
+ * Before replacing the current project, confirm (offering to keep a copy first).
  * Resolves to whether to go ahead. `what` finishes "…will replace the project you're working on".
  */
-async function confirmReplace(title: string, what: string, confirmLabel: string): Promise<boolean> {
+export async function confirmReplace(title: string, what: string, confirmLabel: string): Promise<boolean> {
+  // In the Mac app, a project saved to its file can't be lost.
+  if (__NATIVE_APP__ && (await import('./document')).isSaved()) return true;
   const photoCount = Object.keys(docStore.doc.photos).length;
   const choice = await ask({
     title,
     message:
       `${what} will replace the project you're working on` +
       (photoCount ? ` (${photoCount} photo${photoCount === 1 ? '' : 's'}). ` : '. ') +
-      `You can bring it back with ${MOD_LABEL}Z, but not after you reload or close the page. ` +
-      'To keep a copy, export it first.',
+      (__NATIVE_APP__
+        ? `You can bring it back with ${MOD_LABEL}Z until you quit. To keep it, save it first.`
+        : `You can bring it back with ${MOD_LABEL}Z, but not after you reload or close the page. ` +
+          'To keep a copy, export it first.'),
     actions: [
       { label: 'Cancel', value: 'cancel' },
-      ...(photoCount ? [{ label: 'Export current first', value: 'export' }] : []),
+      ...(photoCount ? [{ label: __NATIVE_APP__ ? 'Save first' : 'Export current first', value: 'export' }] : []),
       { label: confirmLabel, value: 'replace', primary: true },
     ],
   });
@@ -224,6 +230,8 @@ export async function openProjectFile(file: File): Promise<void> {
   if (hasWork && !(await confirmReplace('Replace your current project?', `“${file.name}”`, 'Replace'))) return;
   try {
     await importProject(file);
+    // Dropped or picked in the page, it has no place on disk to save back to.
+    if (__NATIVE_APP__) (await import('./document')).forgetFile();
   } catch (e) {
     ui.set({ notice: e instanceof ProjectFileError ? e.message : `Couldn't open “${file.name}”.` });
   }
@@ -234,10 +242,15 @@ export async function newProject(): Promise<void> {
   if (!(await confirmReplace('Start a new project?', 'A new, empty project', 'New project'))) return;
   docStore.replace(emptyDoc());
   ui.set({ selection: [], editingSpreadId: null, modal: null });
+  if (__NATIVE_APP__) (await import('./document')).forgetFile();
 }
 
-/** Export with user-facing errors. Resolves to whether the export succeeded. */
+/**
+ * Keep the project: in the Mac app, save it to its file; on the website, export a copy.
+ * Resolves to whether it was saved.
+ */
 export async function saveProjectFile(): Promise<boolean> {
+  if (__NATIVE_APP__) return (await import('./document')).save();
   if (ui.get().busy || ui.get().importing) return false;
   if (!Object.keys(docStore.doc.photos).length) {
     ui.set({ notice: 'Add some photos before exporting.' });
@@ -249,4 +262,10 @@ export async function saveProjectFile(): Promise<boolean> {
     ui.set({ notice: e instanceof ZipTooLargeError ? e.message : "Couldn't export the project." });
     return false;
   }
+}
+
+/** Save to a new file (Save As) in the Mac app; export a copy on the website. */
+export async function saveProjectFileAs(): Promise<boolean> {
+  if (__NATIVE_APP__) return (await import('./document')).saveAs();
+  return saveProjectFile();
 }

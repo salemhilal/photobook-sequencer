@@ -1,7 +1,16 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "What the app's window may do: save files where the user chooses, and open links in the browser.",
+  "description": "What the app's window may do: open and save files the user chooses, set its title, close, and open links in the browser.",
   "windows": ["main"],
-  "permissions": ["core:default", "dialog:allow-save", "fs:allow-write-file", "opener:default"]
+  "permissions": [
+    "core:default",
+    "core:window:allow-set-title",
+    "core:window:allow-close",
+    "core:window:allow-destroy",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "fs:allow-write-file",
+    "opener:default"
+  ]
 }

@@ -4,7 +4,7 @@ import { exportIndesign } from './indesign';
 import { copyPhotos, duplicateAndSelect } from './clipboard';
 import { savePdf } from './pdf';
 import { hasMod, isMac, isTextField, isTyping, MOD_LABEL } from './platform';
-import { newProject, openProjectFile, PROJECT_ACCEPT, saveProjectFile } from './project';
+import { newProject, openProjectFile, PROJECT_ACCEPT, saveProjectFile, saveProjectFileAs } from './project';
 import { docStore } from './store';
 import { startTour } from './tour';
 import { deskCovered, openModal, toggleModal, toggleSidebar, ui } from './ui';
@@ -64,6 +64,7 @@ export function addPhotos(): void {
 
 export function importProject(): void {
   if (ui.get().importing) return;
+  if (__NATIVE_APP__) return void import('./document').then((m) => m.openWithDialog());
   pickFiles(PROJECT_ACCEPT, false, ([file]) => file && void openProjectFile(file));
 }
 
@@ -105,6 +106,13 @@ export const commands = {
     scope: 'app',
     inFields: true,
     run: () => void saveProjectFile(),
+  },
+  // In the Mac app, Save As; on the website, the same as exporting.
+  saveAs: {
+    bindings: [{ key: 's', mod: true, shift: true }],
+    scope: 'app',
+    inFields: true,
+    run: () => void saveProjectFileAs(),
   },
   savePdf: {
     bindings: [{ key: 'p', mod: true, shift: true }],
