@@ -1,6 +1,6 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
-import { bump, dropPhotos, importPhotos } from '../actions';
+import { bump, dropPhotos, importPhotos, raise } from '../actions';
 import { addPhotos } from '../commands';
 import { isProjectFile, openProjectFile } from '../project';
 import { clearGhost, startDrag, trackGhost } from '../drag';
@@ -191,7 +191,7 @@ export function Desk() {
           else if (!toggle) ui.set({ selection: [p.photoId] });
           docStore.silent((d) => {
             const item = d.pile.find((i) => i.photoId === p.photoId);
-            if (item) bump(d, item);
+            if (item) raise(d, d.pile, item);
           });
           return;
         }

@@ -72,8 +72,13 @@ function showState(): void {
   if (ui.get().tour === null) remember();
 }
 
-/** Forget the file (after starting a new project, or importing one without a known location). */
+/**
+ * Forget the file (after starting a new project, or importing one without a known
+ * location). Like opening a file, this starts fresh history: undo can't lead back into a
+ * project whose file is no longer attached.
+ */
 export function forgetFile(): void {
+  docStore.reset(docStore.doc);
   path = null;
   saved = null;
   showState();
@@ -129,12 +134,38 @@ export async function openWithDialog(): Promise<void> {
   if (typeof chosen === 'string') await openPath(chosen);
 }
 
+/** Resolves once nothing is being imported, saved or opened. */
+function idle(): Promise<void> {
+  const quiet = () => !ui.get().importing && !ui.get().busy;
+  if (quiet()) return Promise.resolve();
+  return new Promise((resolve) => {
+    const stop = ui.subscribe(() => {
+      if (!quiet()) return;
+      stop();
+      resolve();
+    });
+  });
+}
+
+/** Opens run one at a time, each after anything else in progress. */
+let opening = Promise.resolve();
+
 /**
  * Open a project file (from File → Open, or Finder). `launching`: this file is why the
  * app started, so it takes over from the last session's project without asking.
  */
-export async function openPath(target: string, launching = false): Promise<void> {
-  if (ui.get().importing) return;
+export function openPath(target: string, launching = false): Promise<void> {
+  opening = opening
+    .then(async () => {
+      await idle();
+      await open(target, launching);
+    })
+    // One failed open mustn't stop the ones after it.
+    .catch(() => {});
+  return opening;
+}
+
+async function open(target: string, launching: boolean): Promise<void> {
   // Opened from Finder mid-tour: the tour gives way.
   endTour();
   if (!launching) {
@@ -161,7 +192,9 @@ export async function openPath(target: string, launching = false): Promise<void>
 
 /** Before the window closes with changes the file doesn't have, offer to save them. */
 async function confirmClose(): Promise<boolean> {
-  if (!edited() || ui.get().tour !== null) return true;
+  // Mid-tour, the sample project is showing; bring back the user's before judging it.
+  endTour();
+  if (!edited()) return true;
   const choice = await ask({
     title: `Save changes to “${name()}”?`,
     message: "Unsaved changes are kept in the app for next time, but they're only safe once they're in a file.",
@@ -177,10 +210,11 @@ async function confirmClose(): Promise<boolean> {
 
 export async function startDocuments(): Promise<void> {
   await projectLoaded;
-  // Launched by opening a file: show that. Otherwise, pick up the last session's project.
+  // Pick up the last session's project; a file the app was launched to open replaces it
+  // below (and if that file can't be opened, the last session's stays, file and all).
   const launchedWith = (await invoke<string[]>('take_opened_files')).at(-1);
   const remembered = filePref.load();
-  if (remembered && !launchedWith) {
+  if (remembered) {
     path = remembered.path;
     saved = remembered.clean ? docStore.doc : null;
   }

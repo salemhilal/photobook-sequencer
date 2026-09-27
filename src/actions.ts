@@ -96,6 +96,14 @@ export function bump(d: Draft<Doc>, p: Placement): void {
   p.z = d.nextZ++;
 }
 
+/**
+ * Bring a clicked photo to the front of `among` (the desk, or its page), unless it's
+ * already there: a click alone shouldn't count as a change to the project.
+ */
+export function raise(d: Draft<Doc>, among: Placement[], p: Placement): void {
+  if (among.some((o) => o !== p && o.z > p.z)) bump(d, p);
+}
+
 function removeFromSpreads(d: Draft<Doc>, photoId: string): void {
   for (const s of d.spreads) s.items = s.items.filter((i) => i.photoId !== photoId);
 }

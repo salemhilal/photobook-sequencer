@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { produce } from 'immer';
 import {
   addPhotosToPile,
   folioLabel,
@@ -10,6 +11,7 @@ import {
   moveSpread,
   putInPile,
   putOnNewSpread,
+  raise,
   putOnPage,
   spreadLabel,
   tidyPile,
@@ -238,3 +240,27 @@ describe('dropPhotos', () => {
     expect(doc()).toBe(before);
   });
 });
+
+describe('raise', () => {
+  it('brings a photo to the front, and leaves the one already there alone', () => {
+    const doc = produce(sampleDocForRaise(), (d) => {
+      raise(d, d.pile, d.pile[0]!);
+    });
+    expect(doc.pile[0]!.z).toBe(3);
+    const again = produce(doc, (d) => {
+      raise(d, d.pile, d.pile[0]!);
+    });
+    // Unchanged, so a click on the front photo isn't an edit.
+    expect(again).toBe(doc);
+  });
+});
+
+function sampleDocForRaise() {
+  const doc = emptyDoc();
+  doc.pile = [
+    { photoId: 'a', x: 0, y: 0, w: 1, h: 1, z: 1 },
+    { photoId: 'b', x: 0, y: 0, w: 1, h: 1, z: 2 },
+  ];
+  doc.nextZ = 3;
+  return doc;
+}

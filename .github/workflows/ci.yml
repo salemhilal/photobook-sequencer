@@ -24,3 +24,6 @@ jobs:
       - run: npm test
       # Type-checks everything (including tests) and builds the site.
       - run: npm run build
+      - run: node scripts/check-web-bundle.mjs
+      # The Mac app's web side (its native side needs macOS; see npm run test:app).
+      - run: npm run build:app
