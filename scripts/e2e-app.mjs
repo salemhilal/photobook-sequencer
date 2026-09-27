@@ -1,5 +1,5 @@
 // End-to-end test of the Mac app's projects (npm run test:app). Makes fixture
-// projects, runs a test build of the real app on them (see src/e2e.ts), then checks
+// projects, runs a test build of the real app on them (see src/platform/macos/e2e.ts), then checks
 // the files it saved from outside the app too.
 //
 // The test build keeps its storage apart from the real app's and the dev build's,

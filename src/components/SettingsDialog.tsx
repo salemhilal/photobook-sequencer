@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Plus, X } from 'lucide-react';
+import { platform } from '#platform';
 import { Dialog } from './Dialog';
 import { formatBytes, readStorageStatus, requestPersistence, type StorageStatus } from '../storage';
 import { docStore, useDoc } from '../store';
@@ -189,7 +190,8 @@ export function SettingsDialog() {
           </div>
         </section>
 
-        {!__NATIVE_APP__ && (
+        {/* A browser concern: the Mac app's storage isn't the browser's. */}
+        {platform.kind === 'browser' && (
           <section className="setting">
             <h3>Storage</h3>
             <div className="setting-controls">

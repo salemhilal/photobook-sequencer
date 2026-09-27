@@ -1,18 +1,21 @@
 import { useEffect } from 'react';
+import type { Platform } from './platform/types';
 import { deleteFromProject, importPhotos } from './actions';
 import { exportIndesign } from './indesign';
 import { copyPhotos, duplicateAndSelect } from './clipboard';
 import { savePdf } from './pdf';
-import { hasMod, isMac, isTextField, isTyping, MOD_LABEL } from './platform';
-import { newProject, openProjectFile, PROJECT_ACCEPT, saveProjectFile, saveProjectFileAs } from './project';
+import { hasMod, isMac, isTextField, isTyping, MOD_LABEL } from './input';
+import { platform } from '#platform';
+import { pickFiles } from './files';
+import { newProject } from './project';
 import { docStore } from './store';
 import { startTour } from './tour';
 import { deskCovered, openModal, toggleModal, toggleSidebar, ui } from './ui';
 
 /**
- * Every keyboard shortcut in one table. Each command has its bindings, when it
- * applies, and what it does; the key handler, the hold-⌘ hints, and menus all read
- * from here, so adding a shortcut is one entry.
+ * Every command in one table. Each has its name, bindings, when it applies, and what
+ * it does; the key handler, the hold-⌘ hints, and both menus (the website's File menu,
+ * the Mac app's menu bar) read from here, so adding a command is one entry.
  *
  * (The spread editor, preview, and open menus handle their own keys while they're open.)
  */
@@ -42,30 +45,16 @@ interface Command {
   run: (e?: KeyboardEvent) => void | false;
   /** Overrides the label derived from the first binding. */
   label?: string;
-}
-
-/** Opens the system file picker; must be called from a user gesture. */
-function pickFiles(accept: string, multiple: boolean, onPick: (files: File[]) => void): void {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = accept;
-  input.multiple = multiple;
-  input.onchange = () => {
-    const files = [...(input.files ?? [])];
-    if (files.length) onPick(files);
-  };
-  input.click();
+  /**
+   * Its name in menus, in sentence case (the Mac app's menu bar title-cases it). Give
+   * both where the website and the app word it differently.
+   */
+  title?: string | Record<Platform['kind'], string>;
 }
 
 export function addPhotos(): void {
   if (ui.get().importing) return;
   pickFiles('image/*', true, (files) => void importPhotos(files));
-}
-
-export function importProject(): void {
-  if (ui.get().importing) return;
-  if (__NATIVE_APP__) return void import('./document').then((m) => m.openWithDialog());
-  pickFiles(PROJECT_ACCEPT, false, ([file]) => file && void openProjectFile(file));
 }
 
 const NUDGE = 1 / 8;
@@ -98,34 +87,68 @@ const withSelection = (fn: (ids: string[]) => void) => (): void | false => {
 
 export const commands = {
   // No shortcut: browsers reserve ⌘N / Ctrl+N for a new window.
-  newProject: { bindings: [], scope: 'app', run: () => void newProject() },
-  addPhotos: { bindings: [{ key: 'i', mod: true }], scope: 'app', inFields: true, run: addPhotos },
-  importProject: { bindings: [{ key: 'o', mod: true }], scope: 'app', inFields: true, run: importProject },
+  newProject: { title: 'New project…', bindings: [], scope: 'app', run: () => void newProject() },
+  addPhotos: {
+    title: 'Add photos…',
+    bindings: [{ key: 'i', mod: true }],
+    scope: 'app',
+    inFields: true,
+    run: addPhotos,
+  },
+  importProject: {
+    title: { browser: 'Import project…', macos: 'Open…' },
+    bindings: [{ key: 'o', mod: true }],
+    scope: 'app',
+    inFields: true,
+    run: () => platform.openProject(),
+  },
   exportProject: {
+    title: { browser: 'Export project', macos: 'Save' },
     bindings: [{ key: 's', mod: true }],
     scope: 'app',
     inFields: true,
-    run: () => void saveProjectFile(),
+    run: () => void platform.keepProject(),
   },
-  // Mac app only: the website exports instead of saving.
+  // Only where there are project files to save to (the Mac app).
   saveAs: {
-    bindings: __NATIVE_APP__ ? [{ key: 's', mod: true, shift: true }] : [],
+    title: 'Save as…',
+    bindings: platform.keepProjectAs ? [{ key: 's', mod: true, shift: true }] : [],
     scope: 'app',
     inFields: true,
-    run: () => void saveProjectFileAs(),
+    run: () => void platform.keepProjectAs?.(),
   },
   savePdf: {
+    // The Mac app asks where to save it first.
+    title: { browser: 'Save PDF', macos: 'Save PDF…' },
     bindings: [{ key: 'p', mod: true, shift: true }],
     scope: 'app',
     inFields: true,
     run: () => void savePdf(),
   },
-  exportIndesign: { bindings: [], scope: 'app', run: () => void exportIndesign() },
-  preview: { bindings: [{ key: 'p', mod: true }], scope: 'app', inFields: true, run: () => toggleModal('preview') },
-  settings: { bindings: [{ key: ',', mod: true }], scope: 'app', inFields: true, run: () => toggleModal('settings') },
+  exportIndesign: {
+    title: { browser: 'Export for InDesign', macos: 'Export for InDesign…' },
+    bindings: [],
+    scope: 'app',
+    run: () => void exportIndesign(),
+  },
+  preview: {
+    title: 'Preview book',
+    bindings: [{ key: 'p', mod: true }],
+    scope: 'app',
+    inFields: true,
+    run: () => toggleModal('preview'),
+  },
+  settings: {
+    title: 'Settings…',
+    bindings: [{ key: ',', mod: true }],
+    scope: 'app',
+    inFields: true,
+    run: () => toggleModal('settings'),
+  },
   toggleSidebar: { bindings: [{ key: 'b', mod: true }], scope: 'app', inFields: true, run: toggleSidebar },
-  undo: { bindings: [{ key: 'z', mod: true }], scope: 'app', run: () => docStore.undo() },
+  undo: { title: 'Undo', bindings: [{ key: 'z', mod: true }], scope: 'app', run: () => docStore.undo() },
   redo: {
+    title: 'Redo',
     bindings: [
       { key: 'z', mod: true, shift: true },
       { key: 'y', mod: true },
@@ -135,6 +158,7 @@ export const commands = {
     run: () => docStore.redo(),
   },
   selectAll: {
+    title: 'Select all',
     bindings: [{ key: 'a', mod: true }],
     scope: 'desk',
     run: () => ui.set({ selection: docStore.doc.pile.map((p) => p.photoId) }),
@@ -146,11 +170,13 @@ export const commands = {
     run: withSelection((ids) => void copyPhotos(ids).catch(() => {})),
   },
   duplicate: {
+    title: 'Duplicate',
     bindings: [{ key: 'd', mod: true }],
     scope: 'desk',
     run: withSelection((ids) => void duplicateAndSelect(ids)),
   },
   deleteSelection: {
+    title: 'Delete',
     bindings: [{ key: 'delete' }, { key: 'backspace' }],
     scope: 'desk',
     run: withSelection((ids) => deleteFromProject(ids)),
@@ -161,11 +187,22 @@ export const commands = {
     scope: 'desk',
     run: nudgeSelection,
   },
-  about: { bindings: [], scope: 'app', run: () => openModal('about') },
-  tour: { bindings: [], scope: 'app', run: startTour },
+  about: {
+    title: { browser: 'About…', macos: 'About Photobook Sequencer' },
+    bindings: [],
+    scope: 'app',
+    run: () => openModal('about'),
+  },
+  tour: { title: 'Take the tour', bindings: [], scope: 'app', run: startTour },
 } satisfies Record<string, Command>;
 
 export type CommandId = keyof typeof commands;
+
+/** A command's name for menus on this platform (sentence case). */
+export function commandTitle(id: CommandId): string {
+  const t = (commands[id] as Command).title ?? id;
+  return typeof t === 'string' ? t : t[platform.kind];
+}
 
 /** Run a command from a menu or button. */
 export function runCommand(id: CommandId): void {

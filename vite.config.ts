@@ -1,6 +1,7 @@
 /// <reference types="vitest/config" />
 import react from '@vitejs/plugin-react';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
@@ -49,13 +50,21 @@ export default defineConfig(({ mode }) => {
         },
       }),
     ],
+    // Where the website and the Mac app differ (see src/platform/types.ts): each build
+    // gets its own implementation, so the app's code is never part of the website.
+    resolve: {
+      alias: {
+        '#platform': fileURLToPath(
+          new URL(app ? './src/platform/macos/index.ts' : './src/platform/browser.ts', import.meta.url),
+        ),
+      },
+    },
     // Pre-bundle lucide-react with React up front; discovering it mid-session
     // can load it against a second copy of React ("Invalid hook call").
     optimizeDeps: { include: ['lucide-react'] },
     // Inlined at build time; see src/env.d.ts.
     define: {
       __APP_VERSION__: JSON.stringify(version),
-      __NATIVE_APP__: JSON.stringify(app),
       // The Mac app's end-to-end test build (npm run test:app).
       __E2E__: JSON.stringify(process.env.PBS_E2E_BUILD === '1'),
     },

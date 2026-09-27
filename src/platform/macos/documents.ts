@@ -1,14 +1,15 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { open as openDialog, save as saveDialog } from '@tauri-apps/plugin-dialog';
-import { projectLoaded } from './persistence';
-import { createPref } from './prefs';
-import { buildProjectFile, confirmReplace, importProject, PROJECT_EXTENSION, ProjectFileError } from './project';
-import { docStore } from './store';
-import { endTour } from './tour';
-import type { Doc } from './types';
-import { ask, ui } from './ui';
+import { open as openDialog } from '@tauri-apps/plugin-dialog';
+import { projectLoaded } from '../../persistence';
+import { createPref } from '../../prefs';
+import { buildProjectFile, confirmReplace, importProject, PROJECT_EXTENSION, ProjectFileError } from '../../project';
+import { docStore } from '../../store';
+import { endTour } from '../../tour';
+import type { Doc } from '../../types';
+import { ask, ui } from '../../ui';
+import { chooseSaveLocation, writeFile } from './files';
 
 /**
  * The Mac app's documents. The project is saved to a .photo-sequence file (the same
@@ -16,8 +17,6 @@ import { ask, ui } from './ui';
  * opens it here. Between saves, the working copy is kept in the app (as on the website),
  * so unsaved changes survive quitting; the window's title says when there are some.
  */
-
-const FILTERS = [{ name: 'Photobook Sequencer project', extensions: [PROJECT_EXTENSION.slice(1)] }];
 
 /** The open project's file, and the doc as it was last saved there (or opened from it). */
 let path: string | null = null;
@@ -92,29 +91,17 @@ export async function save(): Promise<boolean> {
 
 /** Save to a new file, asking where first (`target` skips asking; the end-to-end test uses it). */
 export async function saveAs(target?: string): Promise<boolean> {
-  const chosen = target ?? (await saveDialog({ defaultPath: `${name()}${PROJECT_EXTENSION}`, filters: FILTERS }));
+  const chosen = target ?? (await chooseSaveLocation(`${name()}${PROJECT_EXTENSION}`));
   return chosen ? writeTo(chosen) : false;
 }
-
-/** Pieces a save is sent to the app in (see begin_save in src-tauri/src/lib.rs). */
-const CHUNK = 8 * 1024 * 1024;
 
 async function writeTo(target: string): Promise<boolean> {
   if (ui.get().busy || ui.get().importing || ui.get().tour !== null) return false;
   const doc = docStore.doc;
-  let id: number | null = null;
   try {
     const file = await buildProjectFile('Saving');
-    id = await invoke<number>('begin_save');
-    for (let at = 0; at < file.size; at += CHUNK) {
-      ui.set({ busy: `Saving… ${Math.round((at / file.size) * 100)}%` });
-      const piece = new Uint8Array(await file.slice(at, at + CHUNK).arrayBuffer());
-      await invoke('append_save', piece, { headers: { save: String(id) } });
-    }
-    ui.set({ busy: 'Saving…' });
-    await invoke('finish_save', { id, path: target });
+    await writeFile(target, file, (f) => ui.set({ busy: `Saving… ${Math.round(f * 100)}%` }));
   } catch (e) {
-    if (id !== null) void invoke('finish_save', { id, path: null }).catch(() => {});
     ui.set({ notice: `Couldn't save “${name(target)}”${typeof e === 'string' ? `: ${e}` : '.'}` });
     return false;
   } finally {
@@ -130,7 +117,11 @@ async function writeTo(target: string): Promise<boolean> {
 
 /** File → Open. */
 export async function openWithDialog(): Promise<void> {
-  const chosen = await openDialog({ multiple: false, directory: false, filters: FILTERS });
+  const chosen = await openDialog({
+    multiple: false,
+    directory: false,
+    filters: [{ name: 'Photobook Sequencer project', extensions: [PROJECT_EXTENSION.slice(1)] }],
+  });
   if (typeof chosen === 'string') await openPath(chosen);
 }
 

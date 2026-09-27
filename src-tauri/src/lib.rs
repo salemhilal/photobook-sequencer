@@ -1,5 +1,5 @@
 // The Mac app: a native window around the same web app as the website, plus what
-// browsers can't do: the plugins (see src/native.ts) and project files (src/document.ts).
+// browsers can't do: the plugins and project files (see src/platform/macos/).
 
 use std::collections::HashMap;
 use std::fs::File;
@@ -78,7 +78,7 @@ fn finish_save(id: u32, path: Option<String>, saves: tauri::State<Saves>) -> Res
   result
 }
 
-/// The end-to-end test's hooks (npm run test:app; see src/e2e.ts). Not in the real app.
+/// The end-to-end test's hooks (npm run test:app; see src/platform/macos/e2e.ts). Not in the real app.
 #[cfg(feature = "e2e")]
 mod e2e {
   /// Where the test's fixtures are, when the app was started to run it.
@@ -116,7 +116,6 @@ fn handlers() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
 pub fn run() {
   let app = tauri::Builder::default()
     .plugin(tauri_plugin_dialog::init())
-    .plugin(tauri_plugin_fs::init())
     .plugin(tauri_plugin_opener::init())
     .manage(OpenedFiles::default())
     .manage(Saves::default())

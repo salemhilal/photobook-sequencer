@@ -1,6 +1,6 @@
 import { getImage } from './db';
 import { pageSides } from './geometry';
-import { download } from './download';
+import { platform } from '#platform';
 import { docStore } from './store';
 import { ui } from './ui';
 
@@ -48,13 +48,14 @@ export async function renderPdf(onProgress: (done: number, total: number) => voi
   return new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'application/pdf' });
 }
 
-/** Render and download the PDF, reporting progress and errors in the UI. */
+/** Render and save the PDF, reporting progress and errors in the UI. */
 export async function savePdf(): Promise<void> {
   if (ui.get().busy || ui.get().importing) return;
-  ui.set({ busy: 'Rendering PDF…' });
   try {
-    const blob = await renderPdf((done, total) => ui.set({ busy: `Rendering PDF ${done} of ${total}…` }));
-    await download(blob, `photo-book-${new Date().toISOString().slice(0, 10)}.pdf`);
+    await platform.saveFile(`photo-book-${new Date().toISOString().slice(0, 10)}.pdf`, () => {
+      ui.set({ busy: 'Rendering PDF…' });
+      return renderPdf((done, total) => ui.set({ busy: `Rendering PDF ${done} of ${total}…` }));
+    });
   } catch {
     ui.set({ notice: "Couldn't make the PDF." });
   } finally {

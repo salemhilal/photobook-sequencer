@@ -69,9 +69,11 @@ npm run app         # run it, reloading on changes (needs Rust: https://rustup.r
 npm run app:build   # → src-tauri/target/release/bundle/macos/
 ```
 
-The website and the app share all their code; `__NATIVE_APP__` (set by `vite --mode app`)
-switches the few places they differ, and the app-only code lives in `src/native.ts`,
-`src/nativeMenu.ts` and `src/document.ts`.
+The website and the app share all their code except what `src/platform/types.ts`
+describes: each build imports `#platform`, which points at `src/platform/browser.ts` for
+the website and `src/platform/macos/` for the app (see `vite.config.ts`). So the app's
+code is never part of the website (CI checks), and anything added there has to be
+implemented for both.
 
 ## Offline and install
 

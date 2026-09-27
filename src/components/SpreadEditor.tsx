@@ -17,7 +17,7 @@ import {
 } from '../geometry';
 import { docStore, useDoc } from '../store';
 import type { Doc, Placement } from '../types';
-import { isTyping } from '../platform';
+import { isTyping } from '../input';
 import { openPhotoMenu, ui } from '../ui';
 import { useWindowEvent } from '../hooks';
 import { NumberField } from './NumberField';

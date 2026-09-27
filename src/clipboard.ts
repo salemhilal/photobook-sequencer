@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { duplicatePhotos, importPhotos } from './actions';
 import { photoAsPng } from './images';
 import { docStore, newId } from './store';
-import { isTyping } from './platform';
+import { isTyping } from './input';
 import { deskCovered, ui } from './ui';
 
 /**

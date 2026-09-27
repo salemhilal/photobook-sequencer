@@ -1,10 +1,10 @@
 import { Menu, MenuItem, PredefinedMenuItem, Submenu } from '@tauri-apps/api/menu';
 import { openUrl } from '@tauri-apps/plugin-opener';
-import { runFromMenu, shortcutAccelerator, type CommandId } from './commands';
-import { quit } from './document';
-import { isTextField } from './platform';
-import { docStore } from './store';
-import { ui } from './ui';
+import { commandTitle, runFromMenu, shortcutAccelerator, type CommandId } from '../../commands';
+import { isTextField } from '../../input';
+import { docStore } from '../../store';
+import { ui } from '../../ui';
+import { quit } from './documents';
 
 /**
  * The Mac app's menu bar, built from the command table (so it always matches the
@@ -13,8 +13,17 @@ import { ui } from './ui';
 
 const REPO = 'https://github.com/salemhilal/photobook-sequencer';
 
+/** Menu bar items are in title case ("Add Photos…"); commands are named in sentence case. */
+const SMALL_WORDS = new Set(['a', 'an', 'and', 'for', 'in', 'of', 'on', 'or', 'the', 'to', 'with']);
+export function titleCase(s: string): string {
+  return s
+    .split(' ')
+    .map((w, i) => (i > 0 && SMALL_WORDS.has(w) ? w : w.charAt(0).toUpperCase() + w.slice(1)))
+    .join(' ');
+}
+
 /** A menu item for a command; `textFallback` edits the focused text field instead, when there is one. */
-function command(id: CommandId, text: string, textFallback?: () => void) {
+function command(id: CommandId, textFallback?: () => void, text = titleCase(commandTitle(id))) {
   return MenuItem.new({
     id,
     text,
@@ -30,9 +39,10 @@ const predefined = (item: 'Cut' | 'Copy' | 'Paste' | 'Minimize' | 'Maximize' | '
 const inField = (cmd: 'undo' | 'redo' | 'selectAll') => () => void document.execCommand(cmd);
 
 export async function setUpMenu(): Promise<void> {
-  const undo = await command('undo', 'Undo', inField('undo'));
-  const redo = await command('redo', 'Redo', inField('redo'));
-  const sidebar = await command('toggleSidebar', 'Hide Spreads');
+  const undo = await command('undo', inField('undo'));
+  const redo = await command('redo', inField('redo'));
+  // Its wording follows the sidebar (see sync below).
+  const sidebar = await command('toggleSidebar', undefined, 'Hide Spreads');
 
   const menu = await Menu.new({
     items: [
@@ -40,9 +50,9 @@ export async function setUpMenu(): Promise<void> {
       await Submenu.new({
         text: 'Photobook Sequencer',
         items: [
-          await command('about', 'About Photobook Sequencer'),
+          await command('about'),
           await separator(),
-          await command('settings', 'Settings…'),
+          await command('settings'),
           await separator(),
           await PredefinedMenuItem.new({ item: 'Services' }),
           await separator(),
@@ -57,17 +67,17 @@ export async function setUpMenu(): Promise<void> {
       await Submenu.new({
         text: 'File',
         items: [
-          await command('newProject', 'New Project…'),
-          await command('importProject', 'Open…'),
+          await command('newProject'),
+          await command('importProject'),
           await separator(),
-          await command('addPhotos', 'Add Photos…'),
+          await command('addPhotos'),
           await separator(),
           await PredefinedMenuItem.new({ item: 'CloseWindow' }),
-          await command('exportProject', 'Save'),
-          await command('saveAs', 'Save As…'),
+          await command('exportProject'),
+          await command('saveAs'),
           await separator(),
-          await command('savePdf', 'Save PDF…'),
-          await command('exportIndesign', 'Export for InDesign…'),
+          await command('savePdf'),
+          await command('exportIndesign'),
         ],
       }),
       await Submenu.new({
@@ -80,15 +90,15 @@ export async function setUpMenu(): Promise<void> {
           await predefined('Cut'),
           await predefined('Copy'),
           await predefined('Paste'),
-          await command('duplicate', 'Duplicate'),
-          await command('deleteSelection', 'Delete'),
+          await command('duplicate'),
+          await command('deleteSelection'),
           await separator(),
-          await command('selectAll', 'Select All', inField('selectAll')),
+          await command('selectAll', inField('selectAll')),
         ],
       }),
       await Submenu.new({
         text: 'View',
-        items: [await command('preview', 'Preview Book'), sidebar, await separator(), await predefined('Fullscreen')],
+        items: [await command('preview'), sidebar, await separator(), await predefined('Fullscreen')],
       }),
       await Submenu.new({
         text: 'Window',
@@ -97,7 +107,7 @@ export async function setUpMenu(): Promise<void> {
       await Submenu.new({
         text: 'Help',
         items: [
-          await command('tour', 'Take the Tour'),
+          await command('tour'),
           await MenuItem.new({ text: 'Photobook Sequencer on GitHub', action: () => void openUrl(REPO) }),
         ],
       }),

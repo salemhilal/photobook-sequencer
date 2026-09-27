@@ -1,14 +1,14 @@
 import { invoke } from '@tauri-apps/api/core';
-import { getImage } from './db';
-import { openPath, save, saveAs } from './document';
-import { projectLoaded } from './persistence';
-import { tourSeenPref } from './prefs';
-import { docStore } from './store';
-import { endTour } from './tour';
-import { newProject } from './project';
-import type { Doc } from './types';
-import { ui } from './ui';
-import { readZip } from './zip';
+import { getImage } from '../../db';
+import { projectLoaded } from '../../persistence';
+import { tourSeenPref } from '../../prefs';
+import { newProject } from '../../project';
+import { docStore } from '../../store';
+import { endTour } from '../../tour';
+import type { Doc } from '../../types';
+import { ui } from '../../ui';
+import { readZip } from '../../zip';
+import { openPath, save, saveAs } from './documents';
 
 /**
  * End-to-end test of the Mac app's projects: opening, editing, Save, Save As and

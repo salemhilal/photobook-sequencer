@@ -13,7 +13,8 @@ vi.mock('./db', () => {
 
 import { putOnPage } from './actions';
 import { deleteImage, getImage, putImage } from './db';
-import { exportProject, importProject, isProjectFile, newProject, ProjectFileError } from './project';
+import { platform } from '#platform';
+import { importProject, isProjectFile, newProject, ProjectFileError } from './project';
 import { ui } from './ui';
 import { docStore, emptyDoc } from './store';
 import type { Doc } from './types';
@@ -62,7 +63,7 @@ describe('project files', () => {
     await putImage('a', { full: new Blob(['full-a'], { type: 'image/jpeg' }), thumb: new Blob(['thumb-a']) });
     await putImage('b', { full: new Blob(['full-b'], { type: 'image/jpeg' }), thumb: new Blob(['thumb-b']) });
 
-    const { blob, name } = await captureDownload(exportProject);
+    const { blob, name } = await captureDownload(() => platform.keepProject());
     expect(name).toMatch(/^photo-book-\d{4}-\d{2}-\d{2}\.photo-sequence$/);
 
     // Simulate opening the file on a fresh machine.
@@ -84,7 +85,7 @@ describe('project files', () => {
     docStore.reset(sampleDoc());
     await putImage('a', { full: new Blob(['a']), thumb: new Blob(['a']) });
     await putImage('b', { full: new Blob(['b']), thumb: new Blob(['b']) });
-    const { blob } = await captureDownload(exportProject);
+    const { blob } = await captureDownload(() => platform.keepProject());
     const { readZip } = await import('./zip');
     const names = [...(await readZip(blob)).keys()].filter((n) => n.startsWith('images/'));
     expect(names.sort()).toEqual(['images/beach (2).jpg', 'images/beach.jpg']);

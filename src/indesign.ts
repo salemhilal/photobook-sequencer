@@ -1,5 +1,5 @@
 import { getImage } from './db';
-import { download } from './download';
+import { platform } from '#platform';
 import { buildIdml, type LinkedImage } from './idml';
 import { readImageInfo } from './imageInfo';
 import { uniqueName } from './project';
@@ -21,28 +21,30 @@ export async function exportIndesign(): Promise<void> {
   const doc = docStore.doc;
   const placed = [...new Set(doc.spreads.flatMap((s) => s.items.map((i) => i.photoId)))];
   const setBusy = (busy: string | null) => ui.set({ busy });
+  const date = new Date().toISOString().slice(0, 10);
+  let missing = 0;
   try {
-    const links = new Map<string, LinkedImage>();
-    const files: ZipInput[] = [];
-    const used = new Set<string>();
-    for (const [i, id] of placed.entries()) {
-      setBusy(`Preparing photo ${i + 1} of ${placed.length}…`);
-      const img = await getImage(id);
-      const meta = doc.photos[id];
-      if (!img || !meta) continue;
-      const { data, format, ppi, size } = await linkable(img.full, img.thumb);
-      const base = meta.name.replace(/\.[^.]*$/, '') || id;
-      const path = `Links/${uniqueName(`${base}.${format === 'png' ? 'png' : 'jpg'}`, id, used)}`;
-      links.set(id, { path, format, ppi, pxW: size?.w ?? meta.pxW, pxH: size?.h ?? meta.pxH });
-      files.push({ name: path, data });
-    }
-
-    setBusy('Writing InDesign file…');
-    const date = new Date().toISOString().slice(0, 10);
-    const idml = await createZip(buildIdml(doc, links));
-    const zip = await createZip([{ name: `photo-book-${date}.idml`, data: idml }, ...files]);
-    await download(zip, `photo-book-${date}-indesign.zip`);
-    if (links.size < placed.length) ui.set({ notice: "Some photos' images were missing, so their frames are empty." });
+    const saved = await platform.saveFile(`photo-book-${date}-indesign.zip`, async () => {
+      const links = new Map<string, LinkedImage>();
+      const files: ZipInput[] = [];
+      const used = new Set<string>();
+      for (const [i, id] of placed.entries()) {
+        setBusy(`Preparing photo ${i + 1} of ${placed.length}…`);
+        const img = await getImage(id);
+        const meta = doc.photos[id];
+        if (!img || !meta) continue;
+        const { data, format, ppi, size } = await linkable(img.full, img.thumb);
+        const base = meta.name.replace(/\.[^.]*$/, '') || id;
+        const path = `Links/${uniqueName(`${base}.${format === 'png' ? 'png' : 'jpg'}`, id, used)}`;
+        links.set(id, { path, format, ppi, pxW: size?.w ?? meta.pxW, pxH: size?.h ?? meta.pxH });
+        files.push({ name: path, data });
+      }
+      missing = placed.length - links.size;
+      setBusy('Writing InDesign file…');
+      const idml = await createZip(buildIdml(doc, links));
+      return createZip([{ name: `photo-book-${date}.idml`, data: idml }, ...files]);
+    });
+    if (saved && missing) ui.set({ notice: "Some photos' images were missing, so their frames are empty." });
   } catch {
     ui.set({ notice: "Couldn't export for InDesign." });
   } finally {

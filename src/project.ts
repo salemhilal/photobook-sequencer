@@ -3,10 +3,10 @@ import { setUrl, thumbFromBlob } from './images';
 import { migrateDoc, NewerProjectError } from './schema';
 import { docStore, emptyDoc } from './store';
 import type { Doc } from './types';
-import { MOD_LABEL } from './platform';
+import { MOD_LABEL } from './input';
 import { ask, ui } from './ui';
-import { createZip, readZip, ZipTooLargeError, type ZipInput } from './zip';
-import { download } from './download';
+import { createZip, readZip, type ZipInput } from './zip';
+import { platform } from '#platform';
 
 /**
  * Project files are ZIP archives:
@@ -63,12 +63,6 @@ export async function buildProjectFile(verb = 'Exporting'): Promise<Blob> {
   } finally {
     setBusy(null);
   }
-}
-
-/** Export the project to a file; resolves to whether it was saved. */
-export async function exportProject(): Promise<boolean> {
-  const file = await buildProjectFile();
-  return download(file, `photo-book-${new Date().toISOString().slice(0, 10)}${PROJECT_EXTENSION}`);
 }
 
 /** Replace the current project with one from a file. Undoable. */
@@ -203,25 +197,25 @@ function mimeFor(path: string): string {
  * Resolves to whether to go ahead. `what` finishes "…will replace the project you're working on".
  */
 export async function confirmReplace(title: string, what: string, confirmLabel: string): Promise<boolean> {
-  // In the Mac app, a project saved to its file can't be lost.
-  if (__NATIVE_APP__ && (await import('./document')).isSaved()) return true;
+  if (platform.projectIsSafe()) return true;
+  const app = platform.kind === 'macos';
   const photoCount = Object.keys(docStore.doc.photos).length;
   const choice = await ask({
     title,
     message:
       `${what} will replace the project you're working on` +
       (photoCount ? ` (${photoCount} photo${photoCount === 1 ? '' : 's'}). ` : '. ') +
-      (__NATIVE_APP__
+      (app
         ? 'Changes that aren’t saved to its file will be lost. To keep them, save first.'
         : `You can bring it back with ${MOD_LABEL}Z, but not after you reload or close the page. ` +
           'To keep a copy, export it first.'),
     actions: [
       { label: 'Cancel', value: 'cancel' },
-      ...(photoCount ? [{ label: __NATIVE_APP__ ? 'Save first' : 'Export current first', value: 'export' }] : []),
+      ...(photoCount ? [{ label: app ? 'Save first' : 'Export current first', value: 'export' }] : []),
       { label: confirmLabel, value: 'replace', primary: true },
     ],
   });
-  if (choice === 'export') return saveProjectFile();
+  if (choice === 'export') return platform.keepProject();
   return choice === 'replace';
 }
 
@@ -231,7 +225,7 @@ export async function openProjectFile(file: File): Promise<void> {
   try {
     await importProject(file);
     // Dropped or picked in the page, it has no place on disk to save back to.
-    if (__NATIVE_APP__) (await import('./document')).forgetFile();
+    platform.projectReplaced();
   } catch (e) {
     ui.set({ notice: e instanceof ProjectFileError ? e.message : `Couldn't open “${file.name}”.` });
   }
@@ -242,30 +236,5 @@ export async function newProject(): Promise<void> {
   if (!(await confirmReplace('Start a new project?', 'A new, empty project', 'New project'))) return;
   docStore.replace(emptyDoc());
   ui.set({ selection: [], editingSpreadId: null, modal: null });
-  if (__NATIVE_APP__) (await import('./document')).forgetFile();
-}
-
-/**
- * Keep the project: in the Mac app, save it to its file; on the website, export a copy.
- * Resolves to whether it was saved.
- */
-export async function saveProjectFile(): Promise<boolean> {
-  if (__NATIVE_APP__) return (await import('./document')).save();
-  if (ui.get().busy || ui.get().importing) return false;
-  if (!Object.keys(docStore.doc.photos).length) {
-    ui.set({ notice: 'Add some photos before exporting.' });
-    return false;
-  }
-  try {
-    return await exportProject();
-  } catch (e) {
-    ui.set({ notice: e instanceof ZipTooLargeError ? e.message : "Couldn't export the project." });
-    return false;
-  }
-}
-
-/** Save to a new file (Save As) in the Mac app; export a copy on the website. */
-export async function saveProjectFileAs(): Promise<boolean> {
-  if (__NATIVE_APP__) return (await import('./document')).saveAs();
-  return saveProjectFile();
+  platform.projectReplaced();
 }

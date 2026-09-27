@@ -8,7 +8,7 @@ import { intersects, resizeRect, type Corner, type Rect } from '../geometry';
 import { docStore, useDoc } from '../store';
 import type { Placement } from '../types';
 import { DESK_PPI, deskGeometry } from '../deskGeometry';
-import { isTyping } from '../platform';
+import { isTyping } from '../input';
 import { deskCovered, openPhotoMenu, openModal, openQuickLook, ui } from '../ui';
 import { PageSizeFields } from './PageSizeFields';
 import { PhotoImg } from './PhotoImg';
