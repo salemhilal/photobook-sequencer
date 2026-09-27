@@ -6,10 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "dev:app": "vite --mode app --port 5176 --strictPort",
-    "build:app": "tsc -b && vite build --mode app",
+    "dev:web-ui-for-app": "vite --mode app --port 5176 --strictPort",
+    "build:web-ui-for-app": "tsc -b && vite build --mode app",
     "app": "tauri dev",
-    "app:build": "tauri build",
+    "build:app": "tauri build",
     "app:store": "node scripts/app-store.mjs",
     "lint": "oxlint",
     "preview": "vite preview",

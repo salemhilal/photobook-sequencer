@@ -68,7 +68,7 @@ when there are unsaved changes.
 
 ```bash
 npm run app         # run it, reloading on changes (needs Rust: https://rustup.rs)
-npm run app:build   # → src-tauri/target/release/bundle/macos/
+npm run build:app   # → src-tauri/target/release/bundle/macos/
 ```
 
 The website and the app share all their code except what `src/platform/types.ts`
