@@ -1,34 +1,47 @@
 /// <reference types="vitest/config" />
 import react from '@vitejs/plugin-react';
 import { readFileSync } from 'node:fs';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { fileURLToPath } from 'node:url';
-import { defineConfig } from 'vite';
-import { VitePWA } from 'vite-plugin-pwa';
+import { defineConfig, type ResolvedConfig } from 'vite';
+import { VitePWA, type VitePluginPWAAPI } from 'vite-plugin-pwa';
 
 const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
   version: string;
 };
 
+function appSlash(req: IncomingMessage, res: ServerResponse, next: () => void): void {
+  if (req.url !== '/app' && !req.url?.startsWith('/app?')) return next();
+  res.writeHead(301, { Location: `/app/${req.url.slice(4)}` });
+  res.end();
+}
+
 export default defineConfig(({ mode }) => {
   // `--mode app` builds for the native Mac app (see src-tauri), which has no service worker.
   const app = mode === 'app';
+  let resolved: ResolvedConfig;
   return {
     plugins: [
       react(),
       // Works offline: a service worker (production builds only) caches the whole app,
       // including lazily loaded chunks like the PDF library. Updates wait for the user
-      // to reload (see src/update.ts), so a new version never interrupts work.
+      // to reload (see src/update.ts), so a new version never interrupts work. It's the
+      // app's alone (/app/): the landing and privacy pages are plain web pages.
       VitePWA({
         // The Mac app has no service worker (its code is never started there; see main.tsx).
         disable: app,
         registerType: 'prompt',
         injectRegister: false,
+        filename: 'app/sw.js',
+        scope: '/app/',
         // The glob below already caches the icons.
         includeManifestIcons: false,
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,png,jpg,woff,woff2}'],
-          // The privacy policy is its own page, not a route in the app.
-          navigateFallbackDenylist: [/^\/privacy/],
+          globIgnores: ['index.html', 'privacy/**'],
+          // Its files are listed from the site's root, not from /app/ where it lives.
+          modifyURLPrefix: { '': '/' },
+          navigateFallback: '/app/index.html',
           // Don't cache old builds' leftovers.
           cleanupOutdatedCaches: true,
           // The first install takes control of open pages right away, so they work
@@ -39,8 +52,9 @@ export default defineConfig(({ mode }) => {
           name: 'Sequence',
           short_name: 'Sequence',
           description: 'A tool for playing with photo sequences',
-          start_url: '/',
-          scope: '/',
+          id: '/app/',
+          start_url: '/app/',
+          scope: '/app/',
           display: 'standalone',
           background_color: '#151514',
           theme_color: '#151514',
@@ -51,6 +65,27 @@ export default defineConfig(({ mode }) => {
           ],
         },
       }),
+      {
+        // modifyURLPrefix (above) misses the entries the PWA plugin adds itself (the web
+        // manifest); list those from the root too.
+        name: 'app-sw-root-urls',
+        configResolved(config) {
+          resolved = config;
+        },
+        // Not configResolved: the plugin's own options aren't resolved yet then.
+        buildStart() {
+          const pwa = resolved.plugins.find((p) => p.name === 'vite-plugin-pwa')?.api as VitePluginPWAAPI | undefined;
+          pwa?.extendManifestEntries((entries) =>
+            entries.map((e) => (typeof e === 'string' ? `/${e}` : { ...e, url: `/${e.url}` })),
+          );
+        },
+      },
+      {
+        // As on Netlify (netlify.toml): the app is at /app/, so /app goes there.
+        name: 'app-trailing-slash',
+        configureServer: (server) => void server.middlewares.use(appSlash),
+        configurePreviewServer: (server) => void server.middlewares.use(appSlash),
+      },
     ],
     // Where the website and the Mac app differ (see src/platform/types.ts): each build
     // gets its own implementation, so the app's code is never part of the website.
@@ -63,8 +98,9 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       rollupOptions: {
-        // The website also has a privacy policy page (the Mac app links to the website's).
-        input: app ? 'index.html' : { app: 'index.html', privacy: 'privacy/index.html' },
+        // The website: a landing page (/), the app (/app/), and a privacy policy (/privacy/,
+        // which the Mac app links to). The Mac app is just the app.
+        input: app ? 'app/index.html' : { landing: 'index.html', app: 'app/index.html', privacy: 'privacy/index.html' },
       },
     },
     // Pre-bundle lucide-react with React up front; discovering it mid-session

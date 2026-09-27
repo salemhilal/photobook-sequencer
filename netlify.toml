@@ -9,6 +9,12 @@
 
 # The service worker and app manifest must always be fetched fresh, so updates are noticed.
 [[headers]]
+  for = "/app/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+# Removes the service worker that used to live here (see public/sw.js).
+[[headers]]
   for = "/sw.js"
   [headers.values]
     Cache-Control = "no-cache"
@@ -17,3 +23,9 @@
   for = "/manifest.webmanifest"
   [headers.values]
     Cache-Control = "no-cache"
+
+# The app lives at /app/ (its service worker's scope), so /app goes there too.
+[[redirects]]
+  from = "/app"
+  to = "/app/"
+  status = 301
