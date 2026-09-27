@@ -1,6 +1,7 @@
 import { save } from '@tauri-apps/plugin-dialog';
 import { writeFile } from '@tauri-apps/plugin-fs';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { setUpMenu } from './nativeMenu';
 
 /**
  * The Mac app's side of things the website does with browser features. Loaded only
@@ -26,6 +27,8 @@ export async function saveFile(blob: Blob, filename: string): Promise<boolean> {
 }
 
 export function startNative(): void {
+  void setUpMenu();
+
   // Links to websites and email open in the user's browser and mail app, not in the app's window.
   document.addEventListener('click', (e) => {
     const a = (e.target as Element | null)?.closest?.('a[href]');
