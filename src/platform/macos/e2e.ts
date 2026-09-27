@@ -52,6 +52,14 @@ async function scenarios(dir: string): Promise<void> {
   }
   await pause(200);
   check('shows the title in the toolbar', document.querySelector('.window-title')?.textContent === 'Fixture A');
+  // What the app's content security policy has to allow.
+  const shown = document.querySelector<HTMLImageElement>('.desk img.photo');
+  if (shown && !shown.complete) await new Promise((r) => shown.addEventListener('load', r, { once: true }));
+  check('shows photos on the desk', (shown?.naturalWidth ?? 0) > 0);
+  await document.fonts.ready;
+  check('loads its fonts', document.fonts.check('13px "Inter Tight"') && document.fonts.check('12px "IBM Plex Mono"'));
+  // Checked after relaunching: set before first paint by index.html's inline script.
+  localStorage.setItem('photobook-theme', 'dark');
 
   // Save.
   docStore.apply((d) => void (d.settings.pageW = 11));
@@ -112,6 +120,7 @@ async function scenarios(dir: string): Promise<void> {
 async function afterRelaunch(): Promise<void> {
   await pause(500);
   check('reopens the last project', photoCount() === 1 && docStore.doc.settings.pageW === 9);
+  check('runs the page’s startup script (the saved theme)', document.documentElement.dataset.theme === 'dark');
   check(
     'remembers it has unsaved changes',
     title()?.name === 'Fixture B' && title()?.edited === true,

@@ -27,8 +27,10 @@ fn read_project(path: String) -> Result<Response, String> {
   std::fs::read(&path).map(Response::new).map_err(|e| e.to_string())
 }
 
-/// Saves in progress. The page sends a project in pieces (it can be hundreds of
-/// megabytes); they go to a temporary file, which then replaces the target in one step.
+/// Saves in progress. The page sends a file in pieces (a project can be hundreds of
+/// megabytes); they go to a temporary file, and the target is only touched once all of
+/// them have arrived. The finished file is then copied over the target: under the App
+/// Sandbox the app may write the file the user chose, but not rename files into its folder.
 #[derive(Default)]
 struct Saves {
   next: AtomicU32,
