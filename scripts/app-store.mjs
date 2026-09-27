@@ -16,7 +16,7 @@
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const APP = 'src-tauri/target/universal-apple-darwin/release/bundle/macos/Photobook Sequencer.app';
@@ -25,6 +25,22 @@ const version = JSON.parse(readFileSync('package.json', 'utf8')).version;
 function fail(message) {
   console.error(`\n${message}`);
   process.exit(1);
+}
+
+/**
+ * A universal build needs Rust's Apple silicon and Intel targets. Rust is found where
+ * rustup installs it even when the shell running this didn't put it on PATH.
+ */
+function ensureRustTargets() {
+  const cargoBin = join(process.env.CARGO_HOME ?? join(homedir(), '.cargo'), 'bin');
+  if (existsSync(cargoBin)) process.env.PATH = `${cargoBin}:${process.env.PATH}`;
+  const wanted = ['aarch64-apple-darwin', 'x86_64-apple-darwin'];
+  const installed = spawnSync('rustup', ['target', 'list', '--installed'], { encoding: 'utf8' });
+  if (installed.error) fail(`Couldn’t run rustup (${installed.error.message}). Is Rust installed? https://rustup.rs`);
+  const missing = wanted.filter((t) => !installed.stdout.split('\n').includes(t));
+  if (!missing.length) return;
+  const add = spawnSync('rustup', ['target', 'add', ...missing], { stdio: 'inherit' });
+  if (add.status !== 0) fail(`Couldn’t add the Rust targets for a universal build (${missing.join(', ')}); see above.`);
 }
 
 /** The upload tool comes with Xcode, not the Command Line Tools; use Xcode's if those are active. */
@@ -85,10 +101,7 @@ try {
   };
 
   console.log(`Building Photobook Sequencer ${version} (${build}) for the App Store…`);
-  const rust = spawnSync('rustup', ['target', 'add', 'x86_64-apple-darwin', 'aarch64-apple-darwin'], {
-    stdio: 'inherit',
-  });
-  if (rust.status !== 0) fail('Couldn’t add the Rust targets for a universal build.');
+  ensureRustTargets();
   const tauri = spawnSync(
     'npx',
     ['tauri', 'build', '--bundles', 'app', '--target', 'universal-apple-darwin', '--config', JSON.stringify(config)],
