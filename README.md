@@ -1,4 +1,4 @@
-# Photo Sequencer
+# Photobook Sequencer
 
 A tool for prototyping photo sequences.
 
