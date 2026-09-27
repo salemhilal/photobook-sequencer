@@ -7,6 +7,8 @@ import { ui } from '../ui';
 const PAD = 6;
 /** Space between the highlight and the card, and the card and the window edge. */
 const GAP = 16;
+/** Keeps the highlight's outline (2px, drawn outside it) inside the window. */
+const EDGE = 4;
 
 interface Box {
   left: number;
@@ -46,12 +48,7 @@ function TourStepView({ index }: { index: number }) {
     true,
   );
 
-  const hole = target && {
-    left: target.left - PAD,
-    top: target.top - PAD,
-    width: target.width + 2 * PAD,
-    height: target.height + 2 * PAD,
-  };
+  const hole = target && padWithin(target, innerWidth, innerHeight);
   const pos = placeCard(hole, card);
 
   return (
@@ -91,6 +88,18 @@ function TourStepView({ index }: { index: number }) {
       </div>
     </div>
   );
+}
+
+/**
+ * The target plus some breathing room, kept inside the window: targets that reach the
+ * window's edge (the desk, the sidebar) are framed from just inside it instead.
+ */
+function padWithin(t: Box, vw: number, vh: number): Box {
+  const left = Math.max(EDGE, t.left - PAD);
+  const top = Math.max(EDGE, t.top - PAD);
+  const right = Math.min(vw - EDGE, t.left + t.width + PAD);
+  const bottom = Math.min(vh - EDGE, t.top + t.height + PAD);
+  return { left, top, width: right - left, height: bottom - top };
 }
 
 /** The target's box, kept current as things open, animate, and resize. */
