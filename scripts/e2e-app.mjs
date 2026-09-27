@@ -23,7 +23,7 @@ import { createZip, readZip } from '../src/zip.ts';
 const ID = 'io.salem.PhotobookSequencer.e2e';
 // Run outside an app bundle, WebKit keeps the app's storage under the executable's name,
 // so the test runs a copy under a name of its own (not the dev build's).
-const EXE = 'photobook-sequencer-e2e';
+const EXE = 'sequence-e2e';
 // Its own build folder, so switching between it and the real app doesn't rebuild everything.
 const TARGET = resolve('src-tauri/target/e2e');
 const TIMEOUT_MS = 120_000;
@@ -70,7 +70,7 @@ async function savedDoc(path) {
 const SANDBOX_ID = 'io.salem.PhotobookSequencer.e2e-sandbox';
 const SANDBOX_APP = join(TARGET, 'release/bundle/macos/Sequence Sandbox Test.app');
 // Sandboxed, the app can't write to our log; it reports to a file in its container instead.
-const SANDBOX_REPORT = join(homedir(), 'Library/Containers', SANDBOX_ID, 'Data/tmp/photobook-e2e.log');
+const SANDBOX_REPORT = join(homedir(), 'Library/Containers', SANDBOX_ID, 'Data/tmp/sequence-e2e.log');
 
 async function sandboxed(dir) {
   console.log('\nBuilding the sandboxed test app…');
@@ -128,7 +128,7 @@ async function sandboxed(dir) {
   }
 }
 
-const dir = mkdtempSync(join(tmpdir(), 'photobook-e2e-'));
+const dir = mkdtempSync(join(tmpdir(), 'sequence-e2e-'));
 let failed = false;
 try {
   writeFileSync(
@@ -144,7 +144,7 @@ try {
     { stdio: ['ignore', 'ignore', 'inherit'], env: { ...process.env, PBS_E2E_BUILD: '1', CARGO_TARGET_DIR: TARGET } },
   );
   if (build.status !== 0) throw new Error('The test app failed to build.');
-  copyFileSync(join(TARGET, 'release/photobook-sequencer'), join(TARGET, 'release', EXE));
+  copyFileSync(join(TARGET, 'release/sequence'), join(TARGET, 'release', EXE));
 
   forget();
   const run = async (phase) => {

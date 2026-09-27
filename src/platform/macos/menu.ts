@@ -11,7 +11,7 @@ import { quit } from './documents';
  * shortcuts), with the standard macOS items around it.
  */
 
-const REPO = 'https://github.com/salemhilal/photobook-sequencer';
+const REPO = 'https://github.com/salemhilal/sequence.photos';
 
 /** Menu bar items are in title case ("Add Photos…"); commands are named in sentence case. */
 const SMALL_WORDS = new Set(['a', 'an', 'and', 'for', 'in', 'of', 'on', 'or', 'the', 'to', 'with']);
