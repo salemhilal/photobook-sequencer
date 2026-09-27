@@ -7,6 +7,8 @@ const THUMB_MAX = 1400;
 
 const urls = new Map<string, string>();
 const loading = new Set<string>();
+/** Photos whose image isn't stored, or won't decode. */
+const missing = new Set<string>();
 const listeners = new Set<() => void>();
 
 function emit(): void {
@@ -23,6 +25,7 @@ export function setUrl(id: string, blob: Blob): void {
   const old = urls.get(id);
   if (old) URL.revokeObjectURL(old);
   urls.set(id, URL.createObjectURL(blob));
+  missing.delete(id);
   emit();
 }
 
@@ -38,6 +41,7 @@ async function load(id: string): Promise<void> {
   try {
     const img = await getImage(id);
     if (img) setUrl(id, img.thumb);
+    else markMissing(id);
   } finally {
     loading.delete(id);
   }
@@ -45,14 +49,27 @@ async function load(id: string): Promise<void> {
 
 export function usePhotoUrl(id: string): string | undefined {
   const url = useSyncExternalStore(subscribe, () => urls.get(id));
-  if (url === undefined) void load(id);
+  if (url === undefined && !missing.has(id)) void load(id);
   return url;
+}
+
+/** Whether a photo's image couldn't be found or read. */
+export function usePhotoMissing(id: string): boolean {
+  return useSyncExternalStore(subscribe, () => missing.has(id));
+}
+
+/** Record that a photo's image can't be shown (not stored, or it won't decode). */
+export function markMissing(id: string): void {
+  if (missing.has(id)) return;
+  missing.add(id);
+  emit();
 }
 
 export function forgetUrl(id: string): void {
   const url = urls.get(id);
   if (url) URL.revokeObjectURL(url);
   urls.delete(id);
+  missing.delete(id);
 }
 
 /**

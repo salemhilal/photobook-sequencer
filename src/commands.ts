@@ -99,17 +99,17 @@ const withSelection = (fn: (ids: string[]) => void) => (): void | false => {
 export const commands = {
   // No shortcut: browsers reserve ⌘N / Ctrl+N for a new window.
   newProject: { bindings: [], scope: 'app', run: () => void newProject() },
-  addPhotos: { bindings: [{ key: 'o', mod: true }], scope: 'app', inFields: true, run: addPhotos },
-  importProject: { bindings: [{ key: 'i', mod: true }], scope: 'app', inFields: true, run: importProject },
+  addPhotos: { bindings: [{ key: 'i', mod: true }], scope: 'app', inFields: true, run: addPhotos },
+  importProject: { bindings: [{ key: 'o', mod: true }], scope: 'app', inFields: true, run: importProject },
   exportProject: {
     bindings: [{ key: 's', mod: true }],
     scope: 'app',
     inFields: true,
     run: () => void saveProjectFile(),
   },
-  // In the Mac app, Save As; on the website, the same as exporting.
+  // Mac app only: the website exports instead of saving.
   saveAs: {
-    bindings: [{ key: 's', mod: true, shift: true }],
+    bindings: __NATIVE_APP__ ? [{ key: 's', mod: true, shift: true }] : [],
     scope: 'app',
     inFields: true,
     run: () => void saveProjectFileAs(),

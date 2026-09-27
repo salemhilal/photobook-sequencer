@@ -21,11 +21,12 @@ describe('commands', () => {
     const labels = ['addPhotos', 'savePdf', 'settings', 'redo', 'about'].map((id) =>
       shortcutLabel(id as keyof typeof commands),
     );
-    expect(labels).toEqual(isMac ? ['⌘O', '⇧⌘P', '⌘,', '⇧⌘Z', ''] : ['Ctrl+O', 'Ctrl+Shift+P', 'Ctrl+,', 'Ctrl+Y', '']);
+    expect(labels).toEqual(isMac ? ['⌘I', '⇧⌘P', '⌘,', '⇧⌘Z', ''] : ['Ctrl+I', 'Ctrl+Shift+P', 'Ctrl+,', 'Ctrl+Y', '']);
   });
 
   it('gives menu accelerators for modifier shortcuts, and none for plain keys', () => {
-    expect(shortcutAccelerator('addPhotos')).toBe('CmdOrCtrl+O');
+    expect(shortcutAccelerator('addPhotos')).toBe('CmdOrCtrl+I');
+    expect(shortcutAccelerator('importProject')).toBe('CmdOrCtrl+O');
     expect(shortcutAccelerator('savePdf')).toBe('CmdOrCtrl+Shift+P');
     expect(shortcutAccelerator('settings')).toBe('CmdOrCtrl+,');
     expect(shortcutAccelerator('deleteSelection')).toBeUndefined();

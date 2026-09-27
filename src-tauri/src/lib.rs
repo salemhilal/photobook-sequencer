@@ -1,6 +1,11 @@
 // The Mac app: a native window around the same web app as the website, plus what
 // browsers can't do: the plugins (see src/native.ts) and project files (src/document.ts).
 
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::Write;
+use std::path::PathBuf;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Mutex;
 use tauri::ipc::{InvokeBody, Request, Response};
 use tauri::{Emitter, Manager};
@@ -22,21 +27,55 @@ fn read_project(path: String) -> Result<Response, String> {
   std::fs::read(&path).map(Response::new).map_err(|e| e.to_string())
 }
 
-/// Write a project file: the raw bytes are the request body, the path a header.
+/// Saves in progress. The page sends a project in pieces (it can be hundreds of
+/// megabytes); they go to a temporary file, which then replaces the target in one step.
+#[derive(Default)]
+struct Saves {
+  next: AtomicU32,
+  open: Mutex<HashMap<u32, (PathBuf, File)>>,
+}
+
 #[tauri::command]
-fn write_project(request: Request) -> Result<(), String> {
+fn begin_save(saves: tauri::State<Saves>) -> Result<u32, String> {
+  let id = saves.next.fetch_add(1, Ordering::Relaxed);
+  let temp = std::env::temp_dir().join(format!("photobook-save-{}-{id}.tmp", std::process::id()));
+  let file = File::create(&temp).map_err(|e| e.to_string())?;
+  saves.open.lock().unwrap().insert(id, (temp, file));
+  Ok(id)
+}
+
+/// The next piece of a save: the raw bytes are the request body, the save's id a header.
+#[tauri::command]
+fn append_save(request: Request, saves: tauri::State<Saves>) -> Result<(), String> {
   let InvokeBody::Raw(bytes) = request.body() else {
     return Err("expected the file's contents".into());
   };
-  let path = request
+  let id: u32 = request
     .headers()
-    .get("path")
+    .get("save")
     .and_then(|v| v.to_str().ok())
-    .ok_or("missing path")?;
-  let path = percent_encoding::percent_decode_str(path)
-    .decode_utf8()
-    .map_err(|e| e.to_string())?;
-  std::fs::write(path.as_ref(), bytes).map_err(|e| e.to_string())
+    .and_then(|v| v.parse().ok())
+    .ok_or("missing save id")?;
+  let mut open = saves.open.lock().unwrap();
+  let (_, file) = open.get_mut(&id).ok_or("unknown save")?;
+  file.write_all(bytes).map_err(|e| e.to_string())
+}
+
+/// Put the finished file in place (or, without a path, abandon the save).
+#[tauri::command]
+fn finish_save(id: u32, path: Option<String>, saves: tauri::State<Saves>) -> Result<(), String> {
+  let (temp, file) = saves.open.lock().unwrap().remove(&id).ok_or("unknown save")?;
+  let result = match path {
+    Some(path) => file
+      .sync_all()
+      .and_then(|_| std::fs::copy(&temp, path))
+      .map(|_| ())
+      .map_err(|e| e.to_string()),
+    None => Ok(()),
+  };
+  drop(file);
+  let _ = std::fs::remove_file(&temp);
+  result
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -46,7 +85,8 @@ pub fn run() {
     .plugin(tauri_plugin_fs::init())
     .plugin(tauri_plugin_opener::init())
     .manage(OpenedFiles::default())
-    .invoke_handler(tauri::generate_handler![take_opened_files, read_project, write_project])
+    .manage(Saves::default())
+    .invoke_handler(tauri::generate_handler![take_opened_files, read_project, begin_save, append_save, finish_save])
     .build(tauri::generate_context!())
     .expect("error while building Photobook Sequencer");
 

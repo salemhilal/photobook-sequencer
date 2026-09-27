@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { getImage } from '../db';
 import { useWindowEvent } from '../hooks';
-import { usePhotoUrl } from '../images';
+import { markMissing, usePhotoMissing, usePhotoUrl } from '../images';
 import { useDoc } from '../store';
 import type { PhotoMeta } from '../types';
 import { closeQuickLook, ui } from '../ui';
@@ -96,6 +96,7 @@ interface Anchor {
 
 function QuickLookImage({ photo }: { photo: PhotoMeta }) {
   const thumb = usePhotoUrl(photo.id);
+  const missing = usePhotoMissing(photo.id);
   const full = useOriginalUrl(photo.id);
   const [fullFailed, setFullFailed] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -177,7 +178,8 @@ function QuickLookImage({ photo }: { photo: PhotoMeta }) {
       className={`quick-look-stage${zoomed ? ' zoomed' : ''}`}
       onPointerDown={(e) => !(e.target instanceof HTMLImageElement) && closeQuickLook()}
     >
-      {stage && src && (
+      {missing && <p className="quick-look-missing">This photo's image could no longer be found.</p>}
+      {stage && src && !missing && (
         <div className="quick-look-canvas" style={{ width: Math.max(w, stage.w), height: Math.max(h, stage.h) }}>
           <img
             src={src}
@@ -185,7 +187,7 @@ function QuickLookImage({ photo }: { photo: PhotoMeta }) {
             draggable={false}
             style={{ width: w, height: h }}
             onPointerDown={onPointerDown}
-            onError={() => src === full && setFullFailed(true)}
+            onError={() => (src === full ? setFullFailed(true) : markMissing(photo.id))}
           />
         </div>
       )}

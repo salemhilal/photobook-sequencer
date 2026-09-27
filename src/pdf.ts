@@ -27,7 +27,12 @@ export async function renderPdf(onProgress: (done: number, total: number) => voi
       const img = await getImage(p.photoId);
       if (!img) continue;
       // Display copies are always JPEG and already have EXIF orientation applied.
-      const embedded = await pdf.embedJpg(await img.thumb.arrayBuffer());
+      // An unreadable one is left out rather than failing the whole book.
+      const embedded = await img.thumb
+        .arrayBuffer()
+        .then((bytes) => pdf.embedJpg(bytes))
+        .catch(() => null);
+      if (!embedded) continue;
       page.drawImage(embedded, {
         x: (p.x - left) * PT_PER_INCH,
         // PDF's origin is the bottom-left corner.
