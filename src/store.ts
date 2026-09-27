@@ -53,6 +53,24 @@ class DocStore {
     return [...this.past, this.present, ...this.future, ...(this.gestureBase ? [this.gestureBase] : [])];
   }
 
+  /**
+   * Show `doc` in place of the project for a while (e.g. a demo), with its own history.
+   * Returns a function that brings back the project exactly as it was, history included.
+   */
+  swap(doc: Doc): () => void {
+    this.cancel();
+    const { past, future, present } = this;
+    this.reset(doc);
+    return () => {
+      this.cancel();
+      this.past = past;
+      this.future = future;
+      this.present = present;
+      this.lastCoalesce = null;
+      this.emit();
+    };
+  }
+
   reset(doc: Doc): void {
     this.past = [];
     this.future = [];

@@ -20,7 +20,7 @@ export default defineConfig({
       // The glob below already caches the icons.
       includeManifestIcons: false,
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,jpg,woff,woff2}'],
         // Don't cache old builds' leftovers.
         cleanupOutdatedCaches: true,
         // The first install takes control of open pages right away, so they work

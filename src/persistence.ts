@@ -10,10 +10,13 @@ import { ui } from './ui';
 
 const SAVE_DELAY = 400;
 
-/** Whether this tab may write to storage: it's the editing tab and its code isn't outdated. */
+/**
+ * Whether this tab may write to storage: it's the editing tab, its code isn't outdated,
+ * and it's showing the user's project (not the tour's sample one).
+ */
 function maySave(): boolean {
   const s = ui.get();
-  return !s.outdated && !s.elsewhere;
+  return !s.outdated && !s.elsewhere && s.tour === null;
 }
 
 /**

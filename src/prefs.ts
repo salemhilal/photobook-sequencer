@@ -62,3 +62,11 @@ export const sidebarWidthPref = createPref('photobook-sidebar-width', SIDEBAR_DE
   const n = Number(raw);
   return Number.isFinite(n) && n >= SIDEBAR_MIN_WIDTH ? n : undefined;
 });
+
+/** Whether this browser has been shown the product tour (it starts on its own only once). */
+export const tourSeenPref = createPref(
+  'photobook-tour',
+  false,
+  (raw) => raw === 'seen',
+  (seen) => (seen ? 'seen' : ''),
+);

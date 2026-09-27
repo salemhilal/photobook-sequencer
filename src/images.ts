@@ -26,6 +26,12 @@ export function setUrl(id: string, blob: Blob): void {
   emit();
 }
 
+/** Show an image that isn't stored in the project (e.g. the tour's sample photos). */
+export function showUrl(id: string, url: string): void {
+  urls.set(id, url);
+  emit();
+}
+
 async function load(id: string): Promise<void> {
   if (loading.has(id) || urls.has(id)) return;
   loading.add(id);

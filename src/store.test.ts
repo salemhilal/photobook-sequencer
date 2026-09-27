@@ -80,3 +80,23 @@ describe('replace and silent', () => {
     expect(docStore.getSnapshot().canUndo).toBe(false);
   });
 });
+
+describe('swap', () => {
+  it('shows another doc, then brings back the project with its history', () => {
+    setPageW(11);
+    setPageW(12);
+    docStore.undo();
+    const restore = docStore.swap({ ...emptyDoc(), nextZ: 42 });
+    expect(docStore.doc.nextZ).toBe(42);
+    expect(docStore.getSnapshot().canUndo).toBe(false);
+    setPageW(3);
+
+    restore();
+    expect(pageW()).toBe(11);
+    docStore.redo();
+    expect(pageW()).toBe(12);
+    docStore.undo();
+    docStore.undo();
+    expect(pageW()).toBe(10);
+  });
+});

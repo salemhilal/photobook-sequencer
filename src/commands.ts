@@ -5,6 +5,7 @@ import { savePdf } from './pdf';
 import { hasMod, isMac, isTyping, MOD_LABEL } from './platform';
 import { newProject, openProjectFile, PROJECT_ACCEPT, saveProjectFile } from './project';
 import { docStore } from './store';
+import { startTour } from './tour';
 import { deskCovered, openModal, toggleModal, toggleSidebar, ui } from './ui';
 
 /**
@@ -151,6 +152,7 @@ export const commands = {
     run: nudgeSelection,
   },
   about: { bindings: [], scope: 'app', run: () => openModal('about') },
+  tour: { bindings: [], scope: 'app', run: startTour },
 } satisfies Record<string, Command>;
 
 export type CommandId = keyof typeof commands;

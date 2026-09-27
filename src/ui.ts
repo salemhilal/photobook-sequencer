@@ -74,6 +74,8 @@ export interface UiState {
   saveFailed: boolean;
   /** Photos open in Quick Look, and which one is showing. */
   quickLook: { ids: string[]; index: number } | null;
+  /** The product tour's current step, while it's running (see tour.ts). */
+  tour: number | null;
 }
 
 export const ui = createStore<UiState>({
@@ -98,6 +100,7 @@ export const ui = createStore<UiState>({
   elsewhere: false,
   saveFailed: false,
   quickLook: null,
+  tour: null,
 });
 
 export function openModal(modal: Modal): void {
@@ -112,10 +115,10 @@ export function toggleModal(modal: Modal): void {
   ui.set((s) => ({ modal: s.modal === modal ? null : modal }));
 }
 
-/** Whether something covers the desk (a dialog, the spread editor, or Quick Look), pausing desk shortcuts. */
+/** Whether something covers the desk (a dialog, the spread editor, Quick Look, or the tour), pausing desk shortcuts. */
 export function deskCovered(): boolean {
   const s = ui.get();
-  return s.modal !== null || s.editingSpreadId !== null || s.quickLook !== null;
+  return s.modal !== null || s.editingSpreadId !== null || s.quickLook !== null || s.tour !== null;
 }
 
 /** Show photos full-size, starting with the first. */

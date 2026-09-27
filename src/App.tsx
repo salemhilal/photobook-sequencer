@@ -6,6 +6,7 @@ import {
   FolderOpen,
   ImagePlus,
   Info,
+  Compass,
   PanelRightClose,
   PanelRightOpen,
   Redo2,
@@ -26,7 +27,10 @@ import { QuickLook } from './components/QuickLook';
 import { SettingsDialog } from './components/SettingsDialog';
 import { Sidebar } from './components/Sidebar';
 import { SpreadEditor } from './components/SpreadEditor';
+import { Tour } from './components/Tour';
 import { usePersistence } from './persistence';
+import { tourSeenPref } from './prefs';
+import { startTour } from './tour';
 import { docStore, useDoc } from './store';
 import { openModal, toggleSidebar, ui } from './ui';
 import { takeOver } from './tabLock';
@@ -57,6 +61,12 @@ export default function App() {
     return () => clearTimeout(t);
   }, [notice]);
 
+  // The first time this browser opens the app to an empty project, show the tour.
+  const fresh = loaded && Object.keys(doc.photos).length === 0;
+  useEffect(() => {
+    if (fresh && !tourSeenPref.load()) startTour();
+  }, [fresh]);
+
   if (elsewhere) return <ElsewhereScreen />;
   if (outdated) return <OutdatedScreen />;
   if (!loaded) return <div className="loading">Opening your book…</div>;
@@ -86,7 +96,8 @@ export default function App() {
             fileItem('importProject', 'Import project…', <FolderOpen />),
             fileItem('exportProject', 'Export project', <Download />),
             fileItem('savePdf', 'Save PDF', <FileText />),
-            { ...fileItem('about', 'About…', <Info />, false), separatorBefore: true },
+            { ...fileItem('tour', 'Take the tour', <Compass />), separatorBefore: true },
+            fileItem('about', 'About…', <Info />, false),
           ]}
         />
         <div className="btn-joined has-hint">
@@ -114,6 +125,7 @@ export default function App() {
         <span className="status">{status}</span>
         <button
           className="btn accent has-hint"
+          data-tour="preview"
           onClick={() => openModal('preview')}
           title={`Preview book (${shortcutLabel('preview')})`}
         >
@@ -149,6 +161,7 @@ export default function App() {
       {modal === 'about' && <AboutDialog />}
       {modal === 'preview' && <Preview />}
       <QuickLook />
+      <Tour />
       <ConfirmDialog />
       <ContextMenus />
       <DragGhost />

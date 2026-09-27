@@ -1530,6 +1530,59 @@ body.col-resizing * {
   }
 }
 
+/* Product tour */
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+}
+.tour-hole {
+  position: fixed;
+  border-radius: 10px;
+  box-shadow: 0 0 0 200vmax rgba(0, 0, 0, 0.55);
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+  pointer-events: none;
+  transition:
+    left 0.3s ease,
+    top 0.3s ease,
+    width 0.3s ease,
+    height 0.3s ease;
+}
+.tour-hole.none {
+  outline: none;
+}
+.tour-card {
+  position: fixed;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  padding: 18px 18px 14px;
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+  transition:
+    left 0.3s ease,
+    top 0.3s ease;
+}
+.tour-card h2 {
+  margin: 4px 0 8px;
+  font-size: 15px;
+  font-weight: 500;
+}
+.tour-card p {
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+.tour-count {
+  font-size: 11px;
+}
+.tour-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* Drag feedback */
 .drag-ghost {
   position: fixed;

@@ -50,6 +50,8 @@ Hold ⌘ / Ctrl to see them on screen.
 
 Right-click the desk to tidy photos into a grid or change the desk color.
 
+File → Take the tour walks through the app with a few sample photos (it also runs on your first visit). Your own project is set aside while it runs and comes back when it ends.
+
 ## Offline and install
 
 The deployed app works offline once it has loaded: a service worker keeps a copy of
