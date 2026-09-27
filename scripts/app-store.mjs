@@ -10,8 +10,9 @@
 //
 // Optional environment:
 //   BUILD_NUMBER             CFBundleVersion; must increase with every upload (default: commit count)
-//   APP_STORE_API_KEY_ID     with APP_STORE_API_ISSUER, uploads the package; the key file
-//   APP_STORE_API_ISSUER     (AuthKey_<id>.p8) goes in ~/.appstoreconnect/private_keys/
+//   APP_STORE_API_KEY_ID     an App Store Connect API key (Users and Access → Integrations):
+//   APP_STORE_API_ISSUER     with these set, the package is uploaded too. The key file is
+//   APP_STORE_API_KEY_PATH   AuthKey_<id>.p8, here or in ~/.appstoreconnect/private_keys/
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -24,6 +25,14 @@ const version = JSON.parse(readFileSync('package.json', 'utf8')).version;
 function fail(message) {
   console.error(`\n${message}`);
   process.exit(1);
+}
+
+/** The upload tool comes with Xcode, not the Command Line Tools; use Xcode's if those are active. */
+function xcode() {
+  if (spawnSync('xcrun', ['--find', 'altool']).status === 0) return {};
+  const app = '/Applications/Xcode.app/Contents/Developer';
+  if (!existsSync(app)) fail('Uploading needs Xcode (for xcrun altool).');
+  return { DEVELOPER_DIR: app };
 }
 
 function identity(...kinds) {
@@ -97,14 +106,14 @@ try {
   if (product.status !== 0) fail('Couldn’t build the installer package.');
   console.log(`\nBuilt ${pkg}`);
 
-  const { APP_STORE_API_KEY_ID: key, APP_STORE_API_ISSUER: issuer } = process.env;
+  const { APP_STORE_API_KEY_ID: key, APP_STORE_API_ISSUER: issuer, APP_STORE_API_KEY_PATH: keyPath } = process.env;
   if (key && issuer) {
     console.log('Uploading to App Store Connect…');
-    const upload = spawnSync(
-      'xcrun',
-      ['altool', '--upload-package', pkg, '--type', 'macos', '--apiKey', key, '--apiIssuer', issuer],
-      { stdio: 'inherit' },
-    );
+    const auth = ['--api-key', key, '--api-issuer', issuer, ...(keyPath ? ['--p8-file-path', keyPath] : [])];
+    const upload = spawnSync('xcrun', ['altool', '--upload-package', pkg, ...auth], {
+      stdio: 'inherit',
+      env: { ...process.env, ...xcode() },
+    });
     if (upload.status !== 0) fail('The upload failed.');
     console.log('Uploaded. It shows up in App Store Connect → TestFlight once Apple has processed it.');
   } else {
