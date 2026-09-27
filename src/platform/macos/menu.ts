@@ -48,7 +48,7 @@ export async function setUpMenu(): Promise<void> {
     items: [
       // macOS titles the first menu with the app's name.
       await Submenu.new({
-        text: 'Photobook Sequencer',
+        text: 'Sequence',
         items: [
           await command('about'),
           await separator(),
@@ -56,12 +56,12 @@ export async function setUpMenu(): Promise<void> {
           await separator(),
           await PredefinedMenuItem.new({ item: 'Services' }),
           await separator(),
-          await PredefinedMenuItem.new({ item: 'Hide', text: 'Hide Photobook Sequencer' }),
+          await PredefinedMenuItem.new({ item: 'Hide', text: 'Hide Sequence' }),
           await PredefinedMenuItem.new({ item: 'HideOthers' }),
           await PredefinedMenuItem.new({ item: 'ShowAll' }),
           await separator(),
           // Not the standard Quit, so unsaved changes get the chance to be saved.
-          await MenuItem.new({ text: 'Quit Photobook Sequencer', accelerator: 'CmdOrCtrl+Q', action: quit }),
+          await MenuItem.new({ text: 'Quit Sequence', accelerator: 'CmdOrCtrl+Q', action: quit }),
         ],
       }),
       await Submenu.new({
@@ -108,7 +108,7 @@ export async function setUpMenu(): Promise<void> {
         text: 'Help',
         items: [
           await command('tour'),
-          await MenuItem.new({ text: 'Photobook Sequencer on GitHub', action: () => void openUrl(REPO) }),
+          await MenuItem.new({ text: 'Sequence on GitHub', action: () => void openUrl(REPO) }),
         ],
       }),
     ],

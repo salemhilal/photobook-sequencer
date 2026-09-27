@@ -4,10 +4,10 @@ import { Dialog } from './Dialog';
 
 export function AboutDialog() {
   return (
-    <Dialog title="About" label="About Photobook Sequencer" onClose={closeModal} className="about">
+    <Dialog title="About" label="About Sequence" onClose={closeModal} className="about">
       <div className="about-body">
-        <span className="wordmark">SEQUENCER</span>
-        <h2 className="about-name">Photobook Sequencer</h2>
+        <span className="wordmark">SEQUENCE</span>
+        <h2 className="about-name">Sequence</h2>
         <p className="about-version data muted">Version {__APP_VERSION__}</p>
         <p className="about-tagline">A tool for prototyping photo sequences</p>
         <div className="about-links">
@@ -15,9 +15,9 @@ export function AboutDialog() {
             <ExternalLink />
             salem.io
           </a>
-          <a href="mailto:sequencer@salem.io">
+          <a href="mailto:hi@sequence.photos">
             <Mail />
-            sequencer@salem.io
+            hi@sequence.photos
           </a>
           <a href="https://github.com/salemhilal/photobook-sequencer" target="_blank" rel="noopener noreferrer">
             <CodeXml />

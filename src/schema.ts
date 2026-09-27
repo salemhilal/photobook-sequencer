@@ -23,7 +23,7 @@ const migrations: Record<number, (doc: Raw) => Raw> = {
 
 export class NewerProjectError extends Error {
   constructor() {
-    super('This project was saved by a newer version of Photobook Sequencer.');
+    super('This project was saved by a newer version of Sequence.');
   }
 }
 

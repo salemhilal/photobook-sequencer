@@ -4,7 +4,7 @@ import { save } from '@tauri-apps/plugin-dialog';
 /** Files on the Mac: the Save dialog, and writing through the app's Rust side. */
 
 const FILE_TYPES: Record<string, string> = {
-  'photo-sequence': 'Photobook Sequencer project',
+  'photo-sequence': 'Sequence project',
   pdf: 'PDF',
   zip: 'ZIP archive',
 };

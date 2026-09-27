@@ -188,7 +188,7 @@ export const commands = {
     run: nudgeSelection,
   },
   about: {
-    title: { browser: 'About…', macos: 'About Photobook Sequencer' },
+    title: { browser: 'About…', macos: 'About Sequence' },
     bindings: [],
     scope: 'app',
     run: () => openModal('about'),

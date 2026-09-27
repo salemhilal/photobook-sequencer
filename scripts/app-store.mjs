@@ -19,7 +19,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { homedir, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
-const APP = 'src-tauri/target/universal-apple-darwin/release/bundle/macos/Photobook Sequencer.app';
+const APP = 'src-tauri/target/universal-apple-darwin/release/bundle/macos/Sequence.app';
 const version = JSON.parse(readFileSync('package.json', 'utf8')).version;
 
 function fail(message) {
@@ -100,7 +100,7 @@ try {
     },
   };
 
-  console.log(`Building Photobook Sequencer ${version} (${build}) for the App Store…`);
+  console.log(`Building Sequence ${version} (${build}) for the App Store…`);
   ensureRustTargets();
   const tauri = spawnSync(
     'npx',
@@ -112,7 +112,7 @@ try {
   const verify = spawnSync('codesign', ['--verify', '--deep', '--strict', APP], { stdio: 'inherit' });
   if (verify.status !== 0) fail('The app’s signature doesn’t verify.');
 
-  const pkg = `src-tauri/target/Photobook Sequencer ${version} (${build}).pkg`;
+  const pkg = `src-tauri/target/Sequence ${version} (${build}).pkg`;
   const product = spawnSync('productbuild', ['--sign', installerIdentity, '--component', APP, '/Applications', pkg], {
     stdio: 'inherit',
   });
