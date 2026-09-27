@@ -9,7 +9,8 @@ import { docStore, useDoc } from '../store';
 import type { Placement } from '../types';
 import { DESK_PPI, deskGeometry } from '../deskGeometry';
 import { isTyping } from '../platform';
-import { openPhotoMenu, ui } from '../ui';
+import { openPhotoMenu, openModal, ui } from '../ui';
+import { PageSizeFields } from './PageSizeFields';
 import { PhotoImg } from './PhotoImg';
 
 const CORNERS: Corner[] = ['nw', 'ne', 'sw', 'se'];
@@ -332,6 +333,24 @@ export function Desk() {
           <button className="btn primary" onPointerDown={(e) => e.stopPropagation()} onClick={addPhotos}>
             Add photos
           </button>
+          {Object.keys(doc.photos).length === 0 && (
+            // A new project: set the page size before placing anything.
+            <div
+              className="setup-card"
+              onPointerDown={(e) => e.stopPropagation()}
+              onContextMenu={(e) => e.stopPropagation()}
+            >
+              <span className="caps muted">Page size</span>
+              <PageSizeFields />
+              <p className="help">
+                You can change this anytime. Guides, appearance, and more are in{' '}
+                <button className="link" onClick={() => openModal('settings')}>
+                  Settings
+                </button>
+                .
+              </p>
+            </div>
+          )}
         </div>
       )}
       {fileDrop && (

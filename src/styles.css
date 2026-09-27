@@ -652,6 +652,46 @@ button {
   font-weight: 500;
   color: #fff;
 }
+/* A new project's page-size card, on the empty desk. */
+.setup-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 320px;
+  margin-top: 28px;
+  padding: 14px 18px 12px;
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  text-shadow: none;
+  box-shadow: var(--shadow);
+  pointer-events: auto;
+}
+.setup-card .inline {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.setup-card .num-field input {
+  width: 64px;
+}
+.setup-card .help {
+  margin: 0;
+  font: 12px/1.5 var(--font);
+  color: var(--muted);
+}
+/* A button that reads as an inline link. */
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-ink);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
 .desk-empty .btn {
   margin-top: 12px;
   pointer-events: auto;
@@ -956,6 +996,8 @@ body.col-resizing * {
   justify-content: center;
   padding: 24px;
   background: rgba(0, 0, 0, 0.28);
+  /* No manual -webkit- copy: the build adds prefixes itself, and a hand-written one
+     can replace the standard property when the CSS is minified. */
   backdrop-filter: blur(6px);
 }
 .app > .modal-backdrop {
@@ -995,8 +1037,6 @@ body.col-resizing * {
   display: flex;
   min-height: 0;
 }
-  /* No manual -webkit- copy: the build adds prefixes itself, and a hand-written one
-     can replace the standard property when the CSS is minified. */
 .editor-stage {
   position: relative;
   flex: 1;

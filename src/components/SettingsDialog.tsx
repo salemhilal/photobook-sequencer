@@ -1,22 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import { Dialog } from './Dialog';
-import { current } from 'immer';
-import { relayoutRect } from '../geometry';
 import { formatBytes, readStorageStatus, requestPersistence, type StorageStatus } from '../storage';
 import { docStore, useDoc } from '../store';
 import type { ThemePref } from '../theme';
-import type { Doc, Spread } from '../types';
 import { setTheme, closeModal, ui } from '../ui';
 import { DeskColorPicker } from './DeskColorPicker';
 import { NumberField } from './NumberField';
-
-/**
- * The layout that a run of page-size edits is computed from. Relaying out from
- * this fixed starting point (rather than from the previous size) keeps edits order-independent
- * and exactly reversible. It resets when anything else changes the spreads.
- */
-let resizeSession: { base: Doc; out: Spread[] } | null = null;
+import { PageSizeFields } from './PageSizeFields';
 
 const THEMES: { value: ThemePref; label: string }[] = [
   { value: 'system', label: 'System' },
@@ -85,34 +76,6 @@ export function SettingsDialog() {
   const { doc } = useDoc();
   const s = doc.settings;
 
-  // Each field edit is one undo step (a gesture from focus to blur), and every
-  // value typed is computed from the session base, so intermediate values don't distort photos.
-  const setPageSize = (dim: 'pageW' | 'pageH', n: number) => {
-    const start = docStore.gestureStart;
-    if (!resizeSession || (start.spreads !== resizeSession.out && start.spreads !== resizeSession.base.spreads)) {
-      resizeSession = { base: start, out: start.spreads };
-    }
-    const base = resizeSession.base;
-    docStore.preview((d) => {
-      d.settings[dim] = n;
-      if (!d.settings.keepRelative) return;
-      const to = current(d.settings);
-      for (const spread of d.spreads) {
-        const baseItems = base.spreads.find((s) => s.id === spread.id)?.items;
-        for (const item of spread.items) {
-          const from = baseItems?.find((i) => i.photoId === item.photoId);
-          if (from) Object.assign(item, relayoutRect(from, base.settings, to));
-        }
-      }
-    });
-    resizeSession.out = docStore.doc.spreads;
-  };
-  const pageSizeField = {
-    min: 1,
-    onBegin: () => docStore.begin(),
-    onEnd: () => docStore.end(),
-  };
-
   const maxBorder = Math.min(s.pageW, s.pageH) / 2 - 0.1;
   const dropGuide = Math.min(...s.borders);
 
@@ -122,23 +85,7 @@ export function SettingsDialog() {
         <section className="setting">
           <h3>Page size</h3>
           <div className="setting-controls">
-            <div className="inline">
-              <NumberField
-                label="W"
-                suffix=""
-                {...pageSizeField}
-                value={s.pageW}
-                onCommit={(n) => setPageSize('pageW', n)}
-              />
-              <NumberField
-                label="H"
-                suffix=""
-                {...pageSizeField}
-                value={s.pageH}
-                onCommit={(n) => setPageSize('pageH', n)}
-              />
-              <span className="muted data">in</span>
-            </div>
+            <PageSizeFields />
             <label className="check">
               <input
                 type="checkbox"
