@@ -826,10 +826,15 @@ body.col-resizing * {
   font: 500 11px var(--mono);
 }
 
+/*
+ * The handle's dots line up with the spread's left edge. The icon's own
+ * whitespace (8 of its 24 units, at 16px) is pulled back with a negative margin.
+ */
 .grip {
   display: inline-flex;
   color: var(--muted);
-  padding: 0 2px;
+  padding: 0;
+  margin-left: calc(-16px * 8 / 24);
   touch-action: none;
 }
 .grip.locked {
