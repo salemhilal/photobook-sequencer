@@ -1,6 +1,7 @@
 import { Menu, MenuItem, PredefinedMenuItem, Submenu } from '@tauri-apps/api/menu';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { runFromMenu, shortcutAccelerator, type CommandId } from './commands';
+import { quit } from './document';
 import { isTextField } from './platform';
 import { docStore } from './store';
 import { ui } from './ui';
@@ -49,21 +50,24 @@ export async function setUpMenu(): Promise<void> {
           await PredefinedMenuItem.new({ item: 'HideOthers' }),
           await PredefinedMenuItem.new({ item: 'ShowAll' }),
           await separator(),
-          await PredefinedMenuItem.new({ item: 'Quit', text: 'Quit Photobook Sequencer' }),
+          // Not the standard Quit, so unsaved changes get the chance to be saved.
+          await MenuItem.new({ text: 'Quit Photobook Sequencer', accelerator: 'CmdOrCtrl+Q', action: quit }),
         ],
       }),
       await Submenu.new({
         text: 'File',
         items: [
           await command('newProject', 'New Project…'),
-          await command('addPhotos', 'Add Photos…'),
-          await command('importProject', 'Import Project…'),
+          await command('importProject', 'Open…'),
           await separator(),
-          await command('exportProject', 'Export Project…'),
-          await command('savePdf', 'Save PDF…'),
-          await command('exportIndesign', 'Export for InDesign…'),
+          await command('addPhotos', 'Add Photos…'),
           await separator(),
           await PredefinedMenuItem.new({ item: 'CloseWindow' }),
+          await command('exportProject', 'Save'),
+          await command('saveAs', 'Save As…'),
+          await separator(),
+          await command('savePdf', 'Save PDF…'),
+          await command('exportIndesign', 'Export for InDesign…'),
         ],
       }),
       await Submenu.new({

@@ -36,6 +36,20 @@
     "shortDescription": "A tool for prototyping photo sequences",
     "macOS": {
       "minimumSystemVersion": "13.0"
-    }
+    },
+    "fileAssociations": [
+      {
+        "ext": ["photo-sequence"],
+        "name": "Photobook Sequencer Project",
+        "role": "Editor",
+        "rank": "Owner",
+        "mimeType": "application/x-photo-sequence",
+        "contentTypes": ["io.salem.PhotobookSequencer.project"],
+        "exportedType": {
+          "identifier": "io.salem.PhotobookSequencer.project",
+          "conformsTo": ["public.data", "public.content"]
+        }
+      }
+    ]
   }
 }

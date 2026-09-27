@@ -10,6 +10,10 @@ import { ui } from './ui';
 
 const SAVE_DELAY = 400;
 
+let markLoaded = () => {};
+/** Resolves once the saved project has been loaded (so replacing it now won't be overwritten). */
+export const projectLoaded = new Promise<void>((resolve) => (markLoaded = resolve));
+
 /**
  * Whether this tab may write to storage: it's the editing tab, its code isn't outdated,
  * and it's showing the user's project (not the tour's sample one).
@@ -85,6 +89,7 @@ export function usePersistence(): boolean {
         throw e;
       }
       setLoaded(true);
+      markLoaded();
       void collectGarbage();
       keepStorage();
       let last = docStore.doc;
@@ -100,6 +105,7 @@ export function usePersistence(): boolean {
       if (cancelled) return;
       ui.set({ notice: "Couldn't open saved work. Changes won't be saved in this browser." });
       setLoaded(true);
+      markLoaded();
     });
 
     // Best effort when leaving; the same checks apply.

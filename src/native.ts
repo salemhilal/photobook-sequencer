@@ -1,6 +1,7 @@
 import { save } from '@tauri-apps/plugin-dialog';
 import { writeFile } from '@tauri-apps/plugin-fs';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { startDocuments } from './document';
 import { setUpMenu } from './nativeMenu';
 
 /**
@@ -28,6 +29,7 @@ export async function saveFile(blob: Blob, filename: string): Promise<boolean> {
 
 export function startNative(): void {
   void setUpMenu();
+  void startDocuments();
 
   // Links to websites and email open in the user's browser and mail app, not in the app's window.
   document.addEventListener('click', (e) => {

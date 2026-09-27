@@ -64,9 +64,16 @@ export const TOUR_STEPS: TourStep[] = [
     target: '[data-tour="preview"]',
   },
   {
-    title: 'Keep a copy',
-    body: `Browsers can clear what sites store, so export your project now and then. It saves the photos and layout in one file. Hold ${isMac ? '⌘' : 'Ctrl'} to see every shortcut.`,
-    target: '.toolbar .menu > .btn',
+    ...(__NATIVE_APP__
+      ? {
+          title: 'Save your book',
+          body: 'File → Save keeps your book, photos and all, in one file. Double-click it to pick up where you left off. Hold ⌘ to see every shortcut.',
+        }
+      : {
+          title: 'Keep a copy',
+          body: `Browsers can clear what sites store, so export your project now and then. It saves the photos and layout in one file. Hold ${isMac ? '⌘' : 'Ctrl'} to see every shortcut.`,
+          target: '.toolbar .menu > .btn',
+        }),
   },
 ];
 
