@@ -1223,6 +1223,35 @@ body.col-resizing * {
   font: 500 10.5px var(--mono);
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  cursor: help;
+}
+
+/*
+ * Tooltips: `data-tip` on an element shows its text on hover or keyboard focus.
+ * They open below and toward the left, so they stay inside dialogs.
+ */
+[data-tip] {
+  position: relative;
+}
+[data-tip]:hover::after,
+[data-tip]:focus-visible::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 5;
+  width: max-content;
+  max-width: 240px;
+  padding: 6px 9px;
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: var(--shadow);
+  font: 400 12px/1.4 var(--font);
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: normal;
+  pointer-events: none;
 }
 
 /* Confirmation */

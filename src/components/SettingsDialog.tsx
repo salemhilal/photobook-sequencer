@@ -148,7 +148,11 @@ export function SettingsDialog() {
                   <X />
                 </button>
                 {b === dropGuide && (
-                  <span className="tag" title="New photos fit inside this guide">
+                  <span
+                    className="tag"
+                    tabIndex={0}
+                    data-tip="When you drop a photo onto a page, it's sized to fit inside this guide and centered."
+                  >
                     on drop
                   </span>
                 )}
