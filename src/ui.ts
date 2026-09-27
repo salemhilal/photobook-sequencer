@@ -74,6 +74,8 @@ export interface UiState {
   saveFailed: boolean;
   /** Photos open in Quick Look, and which one is showing. */
   quickLook: { ids: string[]; index: number } | null;
+  /** Mac app: the project's name and whether it has unsaved changes, shown centered in the toolbar. */
+  windowTitle: { name: string; edited: boolean } | null;
   /** The product tour's current step, while it's running (see tour.ts). */
   tour: number | null;
 }
@@ -100,6 +102,7 @@ export const ui = createStore<UiState>({
   elsewhere: false,
   saveFailed: false,
   quickLook: null,
+  windowTitle: null,
   tour: null,
 });
 

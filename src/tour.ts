@@ -109,7 +109,8 @@ let restoreProject: (() => void) | null = null;
 let before: Pick<UiState, 'view' | 'sidebarOpen'> | null = null;
 
 export function startTour(): void {
-  if (ui.get().tour !== null) return;
+  // Not over a project that's being opened (say, the file that launched the Mac app).
+  if (ui.get().tour !== null || ui.get().busy || ui.get().importing) return;
   tourSeenPref.save(true);
   for (const [name, url] of SAMPLES) showUrl(`tour-${name}`, url);
   const s = ui.get();

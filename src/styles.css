@@ -415,6 +415,23 @@ button {
   background: var(--panel);
   flex-shrink: 0;
 }
+/* Mac app: the toolbar is the title bar, with the traffic lights at its left. */
+.native-app .toolbar {
+  position: relative;
+  padding-left: 84px;
+}
+.window-title {
+  position: absolute;
+  left: 50%;
+  max-width: 40%;
+  transform: translateX(-50%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  /* Clicks fall through to the toolbar, which moves the window. */
+  pointer-events: none;
+}
 .wordmark {
   font-family: var(--mono);
   font-size: 11px;

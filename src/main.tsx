@@ -13,7 +13,11 @@ import { startOfflineSupport } from './update';
 applyDeskColor(ui.get().deskColor);
 // The website works offline through a service worker; the Mac app has everything built in.
 if (!__NATIVE_APP__) startOfflineSupport();
-else void import('./native').then((m) => m.startNative());
+else {
+  // Before the first paint, so the toolbar never shows without room for the traffic lights.
+  document.documentElement.classList.add('native-app');
+  void import('./native').then((m) => m.startNative());
+}
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root');

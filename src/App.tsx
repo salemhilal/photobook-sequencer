@@ -51,6 +51,7 @@ export default function App() {
   const updateReady = ui.use((s) => s.updateReady);
   const elsewhere = ui.use((s) => s.elsewhere);
   const saveFailed = ui.use((s) => s.saveFailed);
+  const windowTitle = ui.use((s) => s.windowTitle);
   const loaded = usePersistence();
 
   useCommandShortcuts();
@@ -88,8 +89,15 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="toolbar">
+      {/* In the Mac app this is also the window's title bar: drag it to move the window. */}
+      <header className="toolbar" data-tauri-drag-region>
         <span className="wordmark">SEQUENCER</span>
+        {windowTitle && (
+          <div className="window-title">
+            {windowTitle.name}
+            {windowTitle.edited && <span className="muted"> — Edited</span>}
+          </div>
+        )}
         {/* The Mac app has these in its menu bar. */}
         {!__NATIVE_APP__ && (
           <FileMenu
@@ -126,8 +134,10 @@ export default function App() {
           </button>
           <ShortcutHint label={`${shortcutLabel('undo')} · ${shortcutLabel('redo')}`} below />
         </div>
-        <span className="spacer" />
-        <span className="status">{status}</span>
+        <span className="spacer" data-tauri-drag-region />
+        <span className="status" data-tauri-drag-region>
+          {status}
+        </span>
         <button
           className="btn accent has-hint"
           data-tour="preview"
