@@ -91,49 +91,51 @@ export default function App() {
     <div className="app">
       {/* In the Mac app this is also the window's title bar: drag it to move the window. */}
       <header className="toolbar" data-tauri-drag-region>
-        <span className="wordmark">SEQUENCER</span>
         {windowTitle && (
           <div className="window-title">
             {windowTitle.name}
             {windowTitle.edited && <span className="muted"> — Edited</span>}
           </div>
         )}
-        {/* The Mac app has these in its menu bar. */}
+        {/* The Mac app has these in its menu bar (and its title bar says whose it is). */}
         {!__NATIVE_APP__ && (
-          <FileMenu
-            items={[
-              fileItem('newProject', 'New project…', <FilePlus />),
-              { ...fileItem('addPhotos', 'Add photos…', <ImagePlus />, importing !== null), separatorBefore: true },
-              fileItem('importProject', 'Import project…', <FolderOpen />),
-              fileItem('exportProject', 'Export project', <Download />),
-              fileItem('savePdf', 'Save PDF', <FileText />),
-              fileItem('exportIndesign', 'Export for InDesign', <Package />),
-              { ...fileItem('tour', 'Take the tour', <Compass />), separatorBefore: true },
-              fileItem('about', 'About…', <Info />, false),
-            ]}
-          />
+          <>
+            <span className="wordmark">SEQUENCER</span>
+            <FileMenu
+              items={[
+                fileItem('newProject', 'New project…', <FilePlus />),
+                { ...fileItem('addPhotos', 'Add photos…', <ImagePlus />, importing !== null), separatorBefore: true },
+                fileItem('importProject', 'Import project…', <FolderOpen />),
+                fileItem('exportProject', 'Export project', <Download />),
+                fileItem('savePdf', 'Save PDF', <FileText />),
+                fileItem('exportIndesign', 'Export for InDesign', <Package />),
+                { ...fileItem('tour', 'Take the tour', <Compass />), separatorBefore: true },
+                fileItem('about', 'About…', <Info />, false),
+              ]}
+            />
+            <div className="btn-joined has-hint">
+              <button
+                className="btn ghost icon"
+                aria-label="Undo"
+                title={`Undo (${shortcutLabel('undo')})`}
+                disabled={!canUndo}
+                onClick={() => docStore.undo()}
+              >
+                <Undo2 />
+              </button>
+              <button
+                className="btn ghost icon"
+                aria-label="Redo"
+                title={`Redo (${shortcutLabel('redo')})`}
+                disabled={!canRedo}
+                onClick={() => docStore.redo()}
+              >
+                <Redo2 />
+              </button>
+              <ShortcutHint label={`${shortcutLabel('undo')} · ${shortcutLabel('redo')}`} below />
+            </div>
+          </>
         )}
-        <div className="btn-joined has-hint">
-          <button
-            className="btn ghost icon"
-            aria-label="Undo"
-            title={`Undo (${shortcutLabel('undo')})`}
-            disabled={!canUndo}
-            onClick={() => docStore.undo()}
-          >
-            <Undo2 />
-          </button>
-          <button
-            className="btn ghost icon"
-            aria-label="Redo"
-            title={`Redo (${shortcutLabel('redo')})`}
-            disabled={!canRedo}
-            onClick={() => docStore.redo()}
-          >
-            <Redo2 />
-          </button>
-          <ShortcutHint label={`${shortcutLabel('undo')} · ${shortcutLabel('redo')}`} below />
-        </div>
         <span className="spacer" data-tauri-drag-region />
         <span className="status" data-tauri-drag-region>
           {status}

@@ -418,7 +418,7 @@ button {
 /* Mac app: the toolbar is the title bar, with the traffic lights at its left. */
 .native-app .toolbar {
   position: relative;
-  padding-left: 84px;
+  padding-left: 80px;
 }
 .window-title {
   position: absolute;
