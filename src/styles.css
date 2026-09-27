@@ -420,6 +420,11 @@ button {
   position: relative;
   padding-left: 80px;
 }
+/* Full-window views sit under the traffic lights too. */
+.native-app .preview-head,
+.native-app .quick-look-head {
+  padding-left: 80px;
+}
 .window-title {
   position: absolute;
   left: 50%;
