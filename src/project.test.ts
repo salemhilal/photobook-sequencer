@@ -13,7 +13,8 @@ vi.mock('./db', () => {
 
 import { putOnPage } from './actions';
 import { deleteImage, getImage, putImage } from './db';
-import { exportProject, importProject, isProjectFile, ProjectFileError } from './project';
+import { exportProject, importProject, isProjectFile, newProject, ProjectFileError } from './project';
+import { ui } from './ui';
 import { docStore, emptyDoc } from './store';
 import type { Doc } from './types';
 import { createZip } from './zip';
@@ -134,5 +135,21 @@ describe('project files', () => {
     const manifest = { format: 'photo-sequencer-project', version: 99, exportedAt: '', doc: sampleDoc(), files: {} };
     const zip = await createZip([{ name: 'project.json', data: new Blob([JSON.stringify(manifest)]) }]);
     await expect(importProject(new File([zip], 'future.zip'))).rejects.toThrow(/newer version/);
+  });
+
+  it('starts a new project only after confirming, and can be undone', async () => {
+    docStore.reset(sampleDoc());
+    const cancelled = newProject();
+    ui.get().confirm!.resolve('cancel');
+    await cancelled;
+    expect(Object.keys(docStore.doc.photos)).toHaveLength(2);
+
+    const confirmed = newProject();
+    expect(ui.get().confirm!.actions.map((a) => a.label)).toEqual(['Cancel', 'Export current first', 'New project']);
+    ui.get().confirm!.resolve('replace');
+    await confirmed;
+    expect(Object.keys(docStore.doc.photos)).toHaveLength(0);
+    docStore.undo();
+    expect(Object.keys(docStore.doc.photos)).toHaveLength(2);
   });
 });

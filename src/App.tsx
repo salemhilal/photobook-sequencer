@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import {
   Download,
+  FilePlus,
   FileText,
   FolderOpen,
   ImagePlus,
@@ -75,7 +76,8 @@ export default function App() {
         <span className="wordmark">SEQUENCER</span>
         <FileMenu
           items={[
-            fileItem('addPhotos', 'Add photos…', <ImagePlus />, importing !== null),
+            fileItem('newProject', 'New project…', <FilePlus />),
+            { ...fileItem('addPhotos', 'Add photos…', <ImagePlus />, importing !== null), separatorBefore: true },
             fileItem('importProject', 'Import project…', <FolderOpen />),
             fileItem('exportProject', 'Export project', <Download />),
             fileItem('savePdf', 'Save PDF', <FileText />),

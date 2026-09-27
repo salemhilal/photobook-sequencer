@@ -1,7 +1,7 @@
 import { getImage, putImage } from './db';
 import { setUrl, thumbFromBlob } from './images';
 import { migrateDoc, NewerProjectError } from './schema';
-import { docStore } from './store';
+import { docStore, emptyDoc } from './store';
 import type { Doc } from './types';
 import { MOD_LABEL } from './platform';
 import { ask, ui } from './ui';
@@ -194,32 +194,44 @@ function mimeFor(path: string): string {
 }
 
 /** Import with confirmation and user-facing errors. */
-export async function openProjectFile(file: File): Promise<void> {
+/**
+ * Before replacing the current project, confirm (offering an export first).
+ * Resolves to whether to go ahead. `what` finishes "…will replace the project you're working on".
+ */
+async function confirmReplace(title: string, what: string, confirmLabel: string): Promise<boolean> {
   const photoCount = Object.keys(docStore.doc.photos).length;
-  if (photoCount > 0) {
-    const choice = await ask({
-      title: 'Replace your current project?',
-      message:
-        `“${file.name}” will replace the project you're working on (${photoCount} photo${photoCount === 1 ? '' : 's'}). ` +
-        `You can bring it back with ${MOD_LABEL}Z, but not after you reload or close the page. ` +
-        'To keep a copy, export it first.',
-      actions: [
-        { label: 'Cancel', value: 'cancel' },
-        { label: 'Export current first', value: 'export' },
-        { label: 'Replace', value: 'replace', primary: true },
-      ],
-    });
-    if (choice === 'export') {
-      if (!(await saveProjectFile())) return;
-    } else if (choice !== 'replace') {
-      return;
-    }
-  }
+  const choice = await ask({
+    title,
+    message:
+      `${what} will replace the project you're working on` +
+      (photoCount ? ` (${photoCount} photo${photoCount === 1 ? '' : 's'}). ` : '. ') +
+      `You can bring it back with ${MOD_LABEL}Z, but not after you reload or close the page. ` +
+      'To keep a copy, export it first.',
+    actions: [
+      { label: 'Cancel', value: 'cancel' },
+      ...(photoCount ? [{ label: 'Export current first', value: 'export' }] : []),
+      { label: confirmLabel, value: 'replace', primary: true },
+    ],
+  });
+  if (choice === 'export') return saveProjectFile();
+  return choice === 'replace';
+}
+
+export async function openProjectFile(file: File): Promise<void> {
+  const hasWork = Object.keys(docStore.doc.photos).length > 0;
+  if (hasWork && !(await confirmReplace('Replace your current project?', `“${file.name}”`, 'Replace'))) return;
   try {
     await importProject(file);
   } catch (e) {
     ui.set({ notice: e instanceof ProjectFileError ? e.message : `Couldn't open “${file.name}”.` });
   }
+}
+
+/** Start over with an empty project, after confirming. Undoable. */
+export async function newProject(): Promise<void> {
+  if (!(await confirmReplace('Start a new project?', 'A new, empty project', 'New project'))) return;
+  docStore.replace(emptyDoc());
+  ui.set({ selection: [], editingSpreadId: null, modal: null });
 }
 
 /** Export with user-facing errors. Resolves to whether the export succeeded. */

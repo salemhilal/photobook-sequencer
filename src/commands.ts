@@ -3,7 +3,7 @@ import { deleteFromProject, importPhotos } from './actions';
 import { copyPhotos, duplicateAndSelect } from './clipboard';
 import { savePdf } from './pdf';
 import { hasMod, isMac, isTyping, MOD_LABEL } from './platform';
-import { openProjectFile, PROJECT_ACCEPT, saveProjectFile } from './project';
+import { newProject, openProjectFile, PROJECT_ACCEPT, saveProjectFile } from './project';
 import { docStore } from './store';
 import { deskCovered, openModal, toggleModal, toggleSidebar, ui } from './ui';
 
@@ -94,6 +94,8 @@ const withSelection = (fn: (ids: string[]) => void) => (): void | false => {
 };
 
 export const commands = {
+  // No shortcut: browsers reserve ⌘N / Ctrl+N for a new window.
+  newProject: { bindings: [], scope: 'app', run: () => void newProject() },
   addPhotos: { bindings: [{ key: 'o', mod: true }], scope: 'app', inFields: true, run: addPhotos },
   importProject: { bindings: [{ key: 'i', mod: true }], scope: 'app', inFields: true, run: importProject },
   exportProject: {
