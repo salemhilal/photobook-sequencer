@@ -1,8 +1,10 @@
 # Photo Sequencer
 
-Lay out photos on book spreads, in inches.
+A tool for prototyping photo sequences.
 
 **Try it:** https://photobook-sequencer.netlify.app
+
+![Photos on the desk, with the book's spreads in the sidebar](docs/screenshot.jpg)
 
 ## Run locally
 
