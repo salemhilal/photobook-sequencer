@@ -957,7 +957,6 @@ body.col-resizing * {
   padding: 24px;
   background: rgba(0, 0, 0, 0.28);
   backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
 }
 .app > .modal-backdrop {
   position: fixed;
@@ -996,6 +995,8 @@ body.col-resizing * {
   display: flex;
   min-height: 0;
 }
+  /* No manual -webkit- copy: the build adds prefixes itself, and a hand-written one
+     can replace the standard property when the CSS is minified. */
 .editor-stage {
   position: relative;
   flex: 1;
