@@ -23,7 +23,7 @@ export function AboutDialog() {
             <CodeXml />
             Source on GitHub
           </a>
-          <a href="https://photobook-sequencer.netlify.app/privacy/" target="_blank" rel="noopener noreferrer">
+          <a href={`https://${import.meta.env.VITE_SITE_DOMAIN}/privacy/`} target="_blank" rel="noopener noreferrer">
             <Shield />
             Privacy policy
           </a>

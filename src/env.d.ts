@@ -1,3 +1,8 @@
+interface ImportMetaEnv {
+  /** The website's domain (see .env). */
+  readonly VITE_SITE_DOMAIN: string;
+}
+
 /** The app's version from package.json, inlined by Vite at build time. */
 declare const __APP_VERSION__: string;
 

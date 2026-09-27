@@ -61,6 +61,12 @@ export default defineConfig(({ mode }) => {
         ),
       },
     },
+    build: {
+      rollupOptions: {
+        // The website also has a privacy policy page (the Mac app links to the website's).
+        input: app ? 'index.html' : { app: 'index.html', privacy: 'privacy/index.html' },
+      },
+    },
     // Pre-bundle lucide-react with React up front; discovering it mid-session
     // can load it against a second copy of React ("Invalid hook call").
     optimizeDeps: { include: ['lucide-react'] },
