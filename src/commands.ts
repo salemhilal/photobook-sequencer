@@ -3,7 +3,7 @@ import { deleteFromProject, importPhotos } from './actions';
 import { exportIndesign } from './indesign';
 import { copyPhotos, duplicateAndSelect } from './clipboard';
 import { savePdf } from './pdf';
-import { hasMod, isMac, isTyping, MOD_LABEL } from './platform';
+import { hasMod, isMac, isTextField, isTyping, MOD_LABEL } from './platform';
 import { newProject, openProjectFile, PROJECT_ACCEPT, saveProjectFile } from './project';
 import { docStore } from './store';
 import { startTour } from './tour';
@@ -162,6 +162,32 @@ export type CommandId = keyof typeof commands;
 /** Run a command from a menu or button. */
 export function runCommand(id: CommandId): void {
   (commands[id] as Command).run();
+}
+
+/**
+ * Run a command chosen from the Mac app's menu bar. Shortcuts reach the page first, so
+ * this runs for clicks, and for shortcuts the page left alone: those typed in a text
+ * field, which get the field's own editing (e.g. its undo) instead. Returns whether it ran.
+ */
+export function runFromMenu(id: CommandId, textFallback?: () => void): boolean {
+  const c: Command = commands[id];
+  if (isTextField(document.activeElement) && !c.inFields) {
+    textFallback?.();
+    return false;
+  }
+  if (c.scope === 'desk' && deskCovered()) return false;
+  c.run();
+  return true;
+}
+
+/** The shortcut as a native menu accelerator, e.g. "CmdOrCtrl+Shift+P"; none for plain keys like Delete. */
+export function shortcutAccelerator(id: CommandId): string | undefined {
+  const b = (commands[id] as Command).bindings[0];
+  // Menus would take plain keys (Delete, Escape, arrows) away from text fields.
+  if (!b?.mod) return undefined;
+  return ['CmdOrCtrl', b.shift === true && 'Shift', b.key.length === 1 ? b.key.toUpperCase() : b.key]
+    .filter(Boolean)
+    .join('+');
 }
 
 function matches(b: Binding, e: KeyboardEvent): boolean {

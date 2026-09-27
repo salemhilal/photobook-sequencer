@@ -11,6 +11,9 @@ export const MOD_LABEL = isMac ? '⌘' : 'Ctrl+';
 
 /** Whether a key event is aimed at a text field (so app shortcuts should stay out of the way). */
 export function isTyping(e: Event): boolean {
-  const t = e.target;
+  return isTextField(e.target);
+}
+
+export function isTextField(t: EventTarget | null): boolean {
   return t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement;
 }

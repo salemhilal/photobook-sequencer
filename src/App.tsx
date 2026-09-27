@@ -90,18 +90,21 @@ export default function App() {
     <div className="app">
       <header className="toolbar">
         <span className="wordmark">SEQUENCER</span>
-        <FileMenu
-          items={[
-            fileItem('newProject', 'New project…', <FilePlus />),
-            { ...fileItem('addPhotos', 'Add photos…', <ImagePlus />, importing !== null), separatorBefore: true },
-            fileItem('importProject', 'Import project…', <FolderOpen />),
-            fileItem('exportProject', 'Export project', <Download />),
-            fileItem('savePdf', 'Save PDF', <FileText />),
-            fileItem('exportIndesign', 'Export for InDesign', <Package />),
-            { ...fileItem('tour', 'Take the tour', <Compass />), separatorBefore: true },
-            fileItem('about', 'About…', <Info />, false),
-          ]}
-        />
+        {/* The Mac app has these in its menu bar. */}
+        {!__NATIVE_APP__ && (
+          <FileMenu
+            items={[
+              fileItem('newProject', 'New project…', <FilePlus />),
+              { ...fileItem('addPhotos', 'Add photos…', <ImagePlus />, importing !== null), separatorBefore: true },
+              fileItem('importProject', 'Import project…', <FolderOpen />),
+              fileItem('exportProject', 'Export project', <Download />),
+              fileItem('savePdf', 'Save PDF', <FileText />),
+              fileItem('exportIndesign', 'Export for InDesign', <Package />),
+              { ...fileItem('tour', 'Take the tour', <Compass />), separatorBefore: true },
+              fileItem('about', 'About…', <Info />, false),
+            ]}
+          />
+        )}
         <div className="btn-joined has-hint">
           <button
             className="btn ghost icon"

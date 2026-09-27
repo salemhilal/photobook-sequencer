@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { commands, shortcutLabel } from './commands';
+import { commands, shortcutAccelerator, shortcutLabel } from './commands';
 import { isMac } from './platform';
 
 describe('commands', () => {
@@ -22,5 +22,13 @@ describe('commands', () => {
       shortcutLabel(id as keyof typeof commands),
     );
     expect(labels).toEqual(isMac ? ['⌘O', '⇧⌘P', '⌘,', '⇧⌘Z', ''] : ['Ctrl+O', 'Ctrl+Shift+P', 'Ctrl+,', 'Ctrl+Y', '']);
+  });
+
+  it('gives menu accelerators for modifier shortcuts, and none for plain keys', () => {
+    expect(shortcutAccelerator('addPhotos')).toBe('CmdOrCtrl+O');
+    expect(shortcutAccelerator('savePdf')).toBe('CmdOrCtrl+Shift+P');
+    expect(shortcutAccelerator('settings')).toBe('CmdOrCtrl+,');
+    expect(shortcutAccelerator('deleteSelection')).toBeUndefined();
+    expect(shortcutAccelerator('newProject')).toBeUndefined();
   });
 });

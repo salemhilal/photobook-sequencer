@@ -210,6 +210,7 @@ export function createStore<T extends object>(initial: T) {
   };
   return {
     get: () => state,
+    subscribe,
     set(patch: Partial<T> | ((s: T) => Partial<T>)) {
       const p = typeof patch === 'function' ? patch(state) : patch;
       state = { ...state, ...p };
