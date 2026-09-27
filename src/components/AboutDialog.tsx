@@ -9,7 +9,7 @@ export function AboutDialog() {
         <span className="wordmark">SEQUENCE</span>
         <h2 className="about-name">Sequence</h2>
         <p className="about-version data muted">Version {__APP_VERSION__}</p>
-        <p className="about-tagline">A tool for prototyping photo sequences</p>
+        <p className="about-tagline">A tool for playing with photo sequences.</p>
         <div className="about-links">
           <a href="https://salem.io" target="_blank" rel="noopener noreferrer">
             <ExternalLink />
