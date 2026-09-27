@@ -60,12 +60,21 @@ interface DragHandlers {
 
 /**
  * Track a pointer drag from a React pointerdown. Movement under a few pixels counts as a click.
- * Escape cancels the gesture.
+ * Escape, or the window losing focus, cancels the gesture.
  */
 export function startDrag(down: React.PointerEvent, h: DragHandlers): void {
   const x0 = down.clientX;
   const y0 = down.clientY;
   let moved = false;
+  // Capture the pointer so the release is delivered even outside the window;
+  // otherwise a drag could be left hanging until the next click.
+  const el = down.currentTarget as Element;
+  const pointerId = down.pointerId;
+  try {
+    el.setPointerCapture(pointerId);
+  } catch {
+    // Not capturable (e.g. a synthetic event); window listeners still work.
+  }
 
   const move = (e: PointerEvent) => {
     const m = { e, dx: e.clientX - x0, dy: e.clientY - y0 };
@@ -81,6 +90,12 @@ export function startDrag(down: React.PointerEvent, h: DragHandlers): void {
     window.removeEventListener('pointerup', up);
     window.removeEventListener('pointercancel', cancel);
     window.removeEventListener('keydown', key, true);
+    window.removeEventListener('blur', cancel);
+    try {
+      if (el.hasPointerCapture(pointerId)) el.releasePointerCapture(pointerId);
+    } catch {
+      // Already released, or the element is gone.
+    }
   };
   const up = (e: PointerEvent) => {
     cleanup();
@@ -100,6 +115,7 @@ export function startDrag(down: React.PointerEvent, h: DragHandlers): void {
   window.addEventListener('pointerup', up);
   window.addEventListener('pointercancel', cancel);
   window.addEventListener('keydown', key, true);
+  window.addEventListener('blur', cancel);
 }
 
 /** Show the floating thumbnail and highlight the drop target under the pointer. */
