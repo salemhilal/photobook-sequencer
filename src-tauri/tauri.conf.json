@@ -50,7 +50,9 @@
     "copyright": "\u00a9 2026 Salem Hilal",
     "shortDescription": "A tool for prototyping photo sequences",
     "macOS": {
-      "minimumSystemVersion": "13.0"
+      "minimumSystemVersion": "13.0",
+      "entitlements": "Entitlements.plist",
+      "signingIdentity": "-"
     },
     "fileAssociations": [
       {

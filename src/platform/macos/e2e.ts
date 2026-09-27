@@ -134,19 +134,56 @@ async function afterRelaunch(): Promise<void> {
   }
 }
 
+/**
+ * Sandboxed, like the App Store build. Launched to open a file (the way Finder does,
+ * which grants access to it): it should open, and saving over it should work.
+ */
+async function sandboxOpen(): Promise<void> {
+  await until(() => title()?.name === 'Sandbox');
+  check(
+    'opens the file it was launched with, sandboxed',
+    photoCount() === 3,
+    `${JSON.stringify(title())} ${ui.get().notice}`,
+  );
+  // Without its file, saving would ask where (a dialog nobody's there to answer).
+  if (title()?.name !== 'Sandbox') return;
+  docStore.apply((d) => void (d.settings.pageW = 13));
+  check('saves over it, sandboxed', await save(), ui.get().notice ?? '');
+}
+
+/** Sandboxed, relaunched without a file: only the bookmark gives access to it now. */
+async function sandboxRelaunch(): Promise<void> {
+  await until(() => title()?.name === 'Sandbox');
+  check('remembers its file, sandboxed', title()?.name === 'Sandbox', JSON.stringify(title()));
+  if (title()?.name !== 'Sandbox') return;
+  docStore.apply((d) => void (d.settings.pageW = 14));
+  check('still saves over it after relaunching (bookmark)', await save(), ui.get().notice ?? '');
+}
+
+const PHASES: Record<string, (dir: string) => Promise<void>> = {
+  main: scenarios,
+  relaunch: afterRelaunch,
+  'sandbox-open': sandboxOpen,
+  'sandbox-relaunch': sandboxRelaunch,
+};
+
+async function until(ready: () => boolean, ms = 20_000): Promise<void> {
+  for (const start = Date.now(); !ready() && Date.now() - start < ms;) await pause(100);
+}
+
 export async function runE2E(): Promise<void> {
   const dir = await invoke<string | null>('e2e_dir');
   if (!dir) return;
-  const relaunched = await invoke('read_project', { path: `${dir}/relaunch` }).then(
-    () => true,
-    () => false,
-  );
+  const phase = (await invoke<string | null>('e2e_phase')) ?? 'main';
+  const progress = (message: string) => void invoke('e2e_log', { message });
+  progress(`started: ${phase}`);
   // A fresh app would start the tour; the test isn't about that.
   tourSeenPref.save(true);
   await projectLoaded;
+  progress('project loaded');
   endTour();
   try {
-    await (relaunched ? afterRelaunch() : scenarios(dir));
+    await PHASES[phase]?.(dir);
   } catch (e) {
     check('runs to the end', false, String(e));
   }
