@@ -33,10 +33,10 @@ Netlify runs `npm test && npm run build` for production, pull-request previews, 
 
 | Action              | Mac     | Windows         |
 | ------------------- | ------- | --------------- |
-| Add photos          | ⌘O      | Ctrl+O          |
+| Add photos          | ⌘I      | Ctrl+I          |
 | Preview             | ⌘P      | Ctrl+P          |
 | Settings            | ⌘,      | Ctrl+,          |
-| Import              | ⌘I      | Ctrl+I          |
+| Import project      | ⌘O      | Ctrl+O          |
 | Export              | ⌘S      | Ctrl+S          |
 | Save PDF            | ⇧⌘P     | Ctrl+Shift+P    |
 | Show/hide spreads   | ⌘B      | Ctrl+B          |

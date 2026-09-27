@@ -572,6 +572,38 @@ button {
 .photo-loading {
   background: var(--border);
 }
+/* A photo whose image can't be found: a grey stand-in with an alert icon (and a tooltip). */
+.photo-missing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--muted) 35%, var(--border));
+}
+.photo-missing-icon {
+  display: flex;
+  max-width: 60%;
+  color: var(--text);
+  opacity: 0.7;
+  pointer-events: auto;
+  cursor: help;
+  /* On the desk, counter its zoom so the icon and tooltip stay one size. */
+  transform: scale(var(--inv, 1));
+}
+/* Above neighboring photos while its tip shows. */
+.item:has(.photo-missing-icon:hover) {
+  z-index: 1;
+}
+/* Centered under the icon, which can sit anywhere, rather than right-aligned like other tips. */
+.photo-missing-icon[data-tip]::after {
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.photo-missing-icon .lucide {
+  width: 18px;
+  height: 18px;
+  max-width: 100%;
+}
 /* Resize handles sit on the frame's corners; they show when you hover a selected photo. */
 .handle {
   --s: calc(16px * var(--inv, 1));
@@ -1507,6 +1539,11 @@ body.col-resizing * {
 }
 .quick-look-stage.zoomed {
   overflow: auto;
+}
+.quick-look-missing {
+  margin: 20vh auto 0;
+  text-align: center;
+  color: #8d8a83;
 }
 .quick-look-canvas {
   display: flex;

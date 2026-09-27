@@ -21,10 +21,18 @@ const CRC_TABLE = (() => {
 async function crc32(blob: Blob): Promise<number> {
   let crc = 0xffffffff;
   for (let start = 0; start < blob.size; start += CHUNK) {
-    const bytes = new Uint8Array(await blob.slice(start, start + CHUNK).arrayBuffer());
-    for (const b of bytes) crc = (CRC_TABLE[(crc ^ b) & 0xff] ?? 0) ^ (crc >>> 8);
+    crc = crcUpdate(crc, new Uint8Array(await blob.slice(start, start + CHUNK).arrayBuffer()));
   }
   return (crc ^ 0xffffffff) >>> 0;
+}
+
+/**
+ * The byte loop, in a plain function of its own: WebKit barely optimizes long loops
+ * inside async functions, which made saving a large project in the Mac app take minutes.
+ */
+function crcUpdate(crc: number, bytes: Uint8Array): number {
+  for (let i = 0, n = bytes.length; i < n; i++) crc = CRC_TABLE[(crc ^ bytes[i]!) & 0xff]! ^ (crc >>> 8);
+  return crc;
 }
 
 function dosDateTime(d: Date): { time: number; date: number } {
@@ -158,7 +166,9 @@ export async function readZip(file: Blob): Promise<Map<string, ZipEntry>> {
         if (local.getUint32(0, true) !== 0x04034b50) throw new NotAZipError('The archive is damaged.');
         const start = localOffset + 30 + local.getUint16(26, true) + local.getUint16(28, true);
         const raw = file.slice(start, start + compressed, type);
-        if (method === 0) return raw;
+        // A copy, not the slice: stored in IndexedDB, WebKit keeps a slice's whole
+        // source (the entire project file) rather than just its bytes.
+        if (method === 0) return new Blob([await raw.arrayBuffer()], { type });
         if (method === 8) {
           const stream = raw.stream().pipeThrough(new DecompressionStream('deflate-raw'));
           return new Blob([await new Response(stream).arrayBuffer()], { type });

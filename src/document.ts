@@ -74,34 +74,37 @@ export function forgetFile(): void {
   remember();
 }
 
-/** Save to the project's file, or ask where if it has none. Resolves to whether it was saved. */
+/** Save over the project's file (or ask where, if it has none). Resolves to whether it was saved. */
 export async function save(): Promise<boolean> {
-  if (!path) return saveAs();
-  if (await writeTo(path)) return true;
-  // The file may have moved, or (sandboxed) this launch may not have access to it yet.
-  return saveAs();
+  return path ? writeTo(path) : saveAs();
 }
 
+/** Save to a new file, asking where first. */
 export async function saveAs(): Promise<boolean> {
   const chosen = await saveDialog({ defaultPath: `${name()}${PROJECT_EXTENSION}`, filters: FILTERS });
-  if (!chosen) return false;
-  if (!(await writeTo(chosen))) {
-    ui.set({ notice: `Couldn't save “${name(chosen)}”.` });
-    return false;
-  }
-  return true;
+  return chosen ? writeTo(chosen) : false;
 }
+
+/** Pieces a save is sent to the app in (see begin_save in src-tauri/src/lib.rs). */
+const CHUNK = 8 * 1024 * 1024;
 
 async function writeTo(target: string): Promise<boolean> {
   if (ui.get().busy || ui.get().importing || ui.get().tour !== null) return false;
   const doc = docStore.doc;
+  let id: number | null = null;
   try {
     const file = await buildProjectFile('Saving');
+    id = await invoke<number>('begin_save');
+    for (let at = 0; at < file.size; at += CHUNK) {
+      ui.set({ busy: `Saving… ${Math.round((at / file.size) * 100)}%` });
+      const piece = new Uint8Array(await file.slice(at, at + CHUNK).arrayBuffer());
+      await invoke('append_save', piece, { headers: { save: String(id) } });
+    }
     ui.set({ busy: 'Saving…' });
-    await invoke('write_project', new Uint8Array(await file.arrayBuffer()), {
-      headers: { path: encodeURIComponent(target) },
-    });
-  } catch {
+    await invoke('finish_save', { id, path: target });
+  } catch (e) {
+    if (id !== null) void invoke('finish_save', { id, path: null }).catch(() => {});
+    ui.set({ notice: `Couldn't save “${name(target)}”${typeof e === 'string' ? `: ${e}` : '.'}` });
     return false;
   } finally {
     ui.set({ busy: null });
@@ -120,14 +123,19 @@ export async function openWithDialog(): Promise<void> {
   if (typeof chosen === 'string') await openPath(chosen);
 }
 
-/** Open a project file (from File → Open, or Finder). */
-export async function openPath(target: string): Promise<void> {
+/**
+ * Open a project file (from File → Open, or Finder). `launching`: this file is why the
+ * app started, so it takes over from the last session's project without asking.
+ */
+export async function openPath(target: string, launching = false): Promise<void> {
   if (ui.get().importing) return;
   // Opened from Finder mid-tour: the tour gives way.
   endTour();
-  if (target === path && !edited()) return;
-  const hasWork = Object.keys(docStore.doc.photos).length > 0;
-  if (hasWork && !(await confirmReplace('Open another project?', `“${name(target)}”`, 'Open'))) return;
+  if (!launching) {
+    if (target === path && !edited()) return;
+    const hasWork = Object.keys(docStore.doc.photos).length > 0;
+    if (hasWork && !(await confirmReplace('Open another project?', `“${name(target)}”`, 'Open'))) return;
+  }
   try {
     const bytes = await invoke<ArrayBuffer>('read_project', { path: target });
     await importProject(new File([bytes], target.split('/').pop() ?? 'project'));
@@ -135,7 +143,8 @@ export async function openPath(target: string): Promise<void> {
     docStore.reset(docStore.doc);
     path = target;
     saved = docStore.doc;
-    ui.set({ selection: [], editingSpreadId: null, modal: null });
+    // The title bar names the file; the import's "undo to go back" no longer applies.
+    ui.set({ selection: [], editingSpreadId: null, modal: null, notice: null });
     showState();
     remember();
   } catch (e) {
@@ -161,8 +170,10 @@ async function confirmClose(): Promise<boolean> {
 
 export async function startDocuments(): Promise<void> {
   await projectLoaded;
+  // Launched by opening a file: show that. Otherwise, pick up the last session's project.
+  const launchedWith = (await invoke<string[]>('take_opened_files')).at(-1);
   const remembered = filePref.load();
-  if (remembered) {
+  if (remembered && !launchedWith) {
     path = remembered.path;
     saved = remembered.clean ? docStore.doc : null;
   }
@@ -176,13 +187,14 @@ export async function startDocuments(): Promise<void> {
     if (await confirmClose()) await win.destroy();
   });
 
-  // Files opened from Finder (or dropped on the Dock icon), including the one that launched the app.
+  // Files opened from Finder (or dropped on the Dock icon) while the app is running.
   const takeOpened = async () => {
     const paths = await invoke<string[]>('take_opened_files');
     const last = paths.at(-1);
     if (last) await openPath(last);
   };
   await listen('opened-files', () => void takeOpened());
+  if (launchedWith) await openPath(launchedWith, true);
   await takeOpened();
 }
 
