@@ -38,7 +38,7 @@ export default defineConfig(({ mode }) => {
         manifest: {
           name: 'Sequence',
           short_name: 'Sequence',
-          description: 'A tool for prototyping photo sequences',
+          description: 'A tool for playing with photo sequences',
           start_url: '/',
           scope: '/',
           display: 'standalone',
