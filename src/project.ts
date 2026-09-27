@@ -212,7 +212,7 @@ export async function confirmReplace(title: string, what: string, confirmLabel: 
       `${what} will replace the project you're working on` +
       (photoCount ? ` (${photoCount} photo${photoCount === 1 ? '' : 's'}). ` : '. ') +
       (__NATIVE_APP__
-        ? `You can bring it back with ${MOD_LABEL}Z until you quit. To keep it, save it first.`
+        ? 'Changes that aren’t saved to its file will be lost. To keep them, save first.'
         : `You can bring it back with ${MOD_LABEL}Z, but not after you reload or close the page. ` +
           'To keep a copy, export it first.'),
     actions: [
@@ -237,7 +237,7 @@ export async function openProjectFile(file: File): Promise<void> {
   }
 }
 
-/** Start over with an empty project, after confirming. Undoable. */
+/** Start over with an empty project, after confirming. Undoable on the website. */
 export async function newProject(): Promise<void> {
   if (!(await confirmReplace('Start a new project?', 'A new, empty project', 'New project'))) return;
   docStore.replace(emptyDoc());

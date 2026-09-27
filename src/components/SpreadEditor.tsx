@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { bump, dropPhotos, folioLabel, putInPile, putOnPage } from '../actions';
+import { bump, dropPhotos, folioLabel, putInPile, putOnPage, raise } from '../actions';
 import { clearGhost, startDrag, trackGhost } from '../drag';
 import {
   fitCentered,
@@ -131,8 +131,9 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
         setSnapHit(null);
         if (!moved) {
           docStore.silent((d) => {
-            const item = findItem(d, spreadId, p.photoId);
-            if (item) bump(d, item);
+            const spread = d.spreads.find((s) => s.id === spreadId);
+            const item = spread?.items.find((i) => i.photoId === p.photoId);
+            if (spread && item) raise(d, spread.items, item);
           });
           return;
         }

@@ -5,6 +5,7 @@ import { projectLoaded } from './persistence';
 import { tourSeenPref } from './prefs';
 import { docStore } from './store';
 import { endTour } from './tour';
+import { newProject } from './project';
 import type { Doc } from './types';
 import { ui } from './ui';
 import { readZip } from './zip';
@@ -85,6 +86,26 @@ async function scenarios(dir: string): Promise<void> {
   asked?.resolve('cancel');
   await opening;
   check('cancelling keeps the project', title()?.name === 'Fixture B' && docStore.doc.settings.pageW === 9);
+
+  // A file opened from Finder while photos are importing waits its turn.
+  docStore.apply((d) => void (d.settings.pageW = 10));
+  await save();
+  ui.set({ importing: { done: 0, total: 1 } });
+  const waiting = openPath(a);
+  await pause(300);
+  check('waits for an import before opening', title()?.name === 'Fixture B');
+  ui.set({ importing: null });
+  await waiting;
+  check('then opens it', title()?.name === 'Fixture A' && photoCount() === 3);
+
+  // New Project starts fresh history, so undo can't bring back a project without its file.
+  await newProject();
+  check('New Project starts an untitled, empty project', title()?.name === 'Untitled' && photoCount() === 0);
+  check('New Project starts fresh history', !docStore.getSnapshot().canUndo);
+
+  // Leave the state the relaunch expects: Fixture B, with an unsaved change.
+  await openPath(b);
+  docStore.apply((d) => void (d.settings.pageW = 9));
 }
 
 /** The second run, after quitting: the last project should come back as it was left. */
