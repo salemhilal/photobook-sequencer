@@ -90,8 +90,8 @@ npm run app:store   # → a signed, universal .pkg for App Store Connect (upload
 It needs the Apple Distribution and Mac Installer Distribution certificates in your
 keychain, and the app's Mac App Store provisioning profile at
 `src-tauri/embedded.provisionprofile`; it says what's missing. The **App Store** workflow
-(run by hand in GitHub Actions) does the same in CI, after the tests; its header lists the
-secrets it needs.
+does the same in CI, after the tests, when a GitHub release is published (tagged `v` +
+`package.json`'s version) or when run by hand; its header lists the secrets it needs.
 
 ## Offline and install
 
