@@ -68,6 +68,10 @@ export interface UiState {
   outdated: boolean;
   /** A new version of the app has downloaded and is waiting for a reload. */
   updateReady: boolean;
+  /** Another tab or window is the one editing the project; this one shows and saves nothing. */
+  elsewhere: boolean;
+  /** The last save failed (e.g. storage full); cleared by the next successful save. */
+  saveFailed: boolean;
 }
 
 export const ui = createStore<UiState>({
@@ -89,6 +93,8 @@ export const ui = createStore<UiState>({
   confirm: null,
   outdated: false,
   updateReady: false,
+  elsewhere: false,
+  saveFailed: false,
 });
 
 export function openModal(modal: Modal): void {

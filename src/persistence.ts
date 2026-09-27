@@ -4,10 +4,17 @@ import { forgetUrl } from './images';
 import { migrateDoc, NewerProjectError, schemaVersionOf } from './schema';
 import { requestPersistence } from './storage';
 import { docStore, emptyDoc } from './store';
+import { claimEditor } from './tabLock';
 import { CURRENT_SCHEMA, type Doc } from './types';
 import { ui } from './ui';
 
 const SAVE_DELAY = 400;
+
+/** Whether this tab may write to storage: it's the editing tab and its code isn't outdated. */
+function maySave(): boolean {
+  const s = ui.get();
+  return !s.outdated && !s.elsewhere;
+}
 
 /**
  * Save the project unless the stored one was saved by a newer version of the app
@@ -25,6 +32,22 @@ export async function saveUnlessNewer(doc: Doc): Promise<'saved' | 'newer'> {
 }
 
 /**
+ * Save now, reporting failures (e.g. storage full) so work isn't silently lost.
+ * The warning clears on the next successful save.
+ */
+export async function saveProject(): Promise<'saved' | 'newer' | 'skipped' | 'failed'> {
+  if (!maySave()) return 'skipped';
+  try {
+    const result = await saveUnlessNewer(docStore.doc);
+    if (ui.get().saveFailed) ui.set({ saveFailed: false });
+    return result;
+  } catch {
+    ui.set({ saveFailed: true });
+    return 'failed';
+  }
+}
+
+/**
  * Loads the saved project on startup, then saves it (debounced) whenever it changes,
  * cleaning up stored images nothing refers to anymore. Returns whether loading is done.
  */
@@ -37,41 +60,48 @@ export function usePersistence(): boolean {
     let unsubscribe = () => {};
 
     const save = async () => {
-      if (ui.get().outdated) return;
-      if ((await saveUnlessNewer(docStore.doc)) === 'newer') return unsubscribe();
-      await collectGarbage();
-      keepStorage();
+      const result = await saveProject();
+      if (result === 'newer') return unsubscribe();
+      if (result === 'saved') {
+        await collectGarbage();
+        keepStorage();
+      }
     };
 
-    void loadDoc()
-      .then((stored) => {
-        if (cancelled) return;
-        try {
-          docStore.reset(stored ? migrateDoc(stored) : emptyDoc());
-        } catch (e) {
-          if (e instanceof NewerProjectError) return ui.set({ outdated: true });
-          throw e;
-        }
-        setLoaded(true);
-        void collectGarbage();
-        keepStorage();
-        let last = docStore.doc;
-        unsubscribe = docStore.subscribe(() => {
-          if (docStore.doc === last) return;
-          last = docStore.doc;
-          clearTimeout(timer);
-          timer = setTimeout(() => void save(), SAVE_DELAY);
-        });
-      })
-      .catch(() => {
-        if (cancelled) return;
-        ui.set({ notice: "Couldn't open saved work. Changes won't be saved in this browser." });
-        setLoaded(true);
+    const start = async () => {
+      if (!(await claimEditor(() => ui.set({ elsewhere: true })))) {
+        ui.set({ elsewhere: true });
+        return;
+      }
+      const stored = await loadDoc();
+      if (cancelled) return;
+      try {
+        docStore.reset(stored ? migrateDoc(stored) : emptyDoc());
+      } catch (e) {
+        if (e instanceof NewerProjectError) return ui.set({ outdated: true });
+        throw e;
+      }
+      setLoaded(true);
+      void collectGarbage();
+      keepStorage();
+      let last = docStore.doc;
+      unsubscribe = docStore.subscribe(() => {
+        if (docStore.doc === last) return;
+        last = docStore.doc;
+        clearTimeout(timer);
+        timer = setTimeout(() => void save(), SAVE_DELAY);
       });
+    };
 
-    // Best effort when leaving; the version check still applies.
+    start().catch(() => {
+      if (cancelled) return;
+      ui.set({ notice: "Couldn't open saved work. Changes won't be saved in this browser." });
+      setLoaded(true);
+    });
+
+    // Best effort when leaving; the same checks apply.
     const flush = () => {
-      if (timer !== undefined && !ui.get().outdated) void saveUnlessNewer(docStore.doc);
+      if (timer !== undefined) void saveProject();
     };
     window.addEventListener('pagehide', flush);
     return () => {
@@ -96,14 +126,15 @@ function keepStorage(): void {
 
 /**
  * Delete stored images no longer reachable from the document or its undo history.
- * Skipped during imports, which store images before the document refers to them.
+ * Skipped during imports, which store images before the document refers to them,
+ * and in a tab that isn't the one editing.
  */
 async function collectGarbage(): Promise<void> {
-  if (ui.get().importing) return;
+  if (ui.get().importing || !maySave()) return;
   const live = new Set<string>();
   for (const d of docStore.allDocs()) for (const id of Object.keys(d.photos)) live.add(id);
   for (const id of await imageIds()) {
-    if (!live.has(id) && !ui.get().importing) {
+    if (!live.has(id) && !ui.get().importing && maySave()) {
       await deleteImage(id);
       forgetUrl(id);
     }

@@ -28,6 +28,7 @@ import { SpreadEditor } from './components/SpreadEditor';
 import { usePersistence } from './persistence';
 import { docStore, useDoc } from './store';
 import { openModal, toggleSidebar, ui } from './ui';
+import { takeOver } from './tabLock';
 import { checkForUpdate, reloadToUpdate } from './update';
 
 const NOTICE_MS = 6000;
@@ -42,6 +43,8 @@ export default function App() {
   const sidebarOpen = ui.use((s) => s.sidebarOpen);
   const outdated = ui.use((s) => s.outdated);
   const updateReady = ui.use((s) => s.updateReady);
+  const elsewhere = ui.use((s) => s.elsewhere);
+  const saveFailed = ui.use((s) => s.saveFailed);
   const loaded = usePersistence();
 
   useCommandShortcuts();
@@ -53,6 +56,7 @@ export default function App() {
     return () => clearTimeout(t);
   }, [notice]);
 
+  if (elsewhere) return <ElsewhereScreen />;
   if (outdated) return <OutdatedScreen />;
   if (!loaded) return <div className="loading">Opening your book…</div>;
 
@@ -146,6 +150,14 @@ export default function App() {
       <ConfirmDialog />
       <ContextMenus />
       <DragGhost />
+      {saveFailed && (
+        <div className="save-failed" role="alert">
+          Couldn't save your work. Your browser's storage may be full.
+          <button className="btn primary" onClick={() => runCommand('exportProject')}>
+            Export a copy
+          </button>
+        </div>
+      )}
       {updateReady && (
         <div className="update-bar" role="status">
           A new version is available.
@@ -178,11 +190,25 @@ function ShortcutHint({ label, below }: { label: string; below?: boolean }) {
 }
 
 /** Shown instead of the app when the saved project is from a newer version of the app. */
+/** Shown instead of the app while another tab or window is editing the project. */
+function ElsewhereScreen() {
+  return (
+    <div className="screen-message" role="alert">
+      <span className="wordmark">SEQUENCER</span>
+      <h1>Photobook Sequencer is open in another window.</h1>
+      <p>To keep your work safe, only one window can edit at a time. Using it here stops the other one.</p>
+      <button className="btn primary" onClick={takeOver}>
+        Use it here
+      </button>
+    </div>
+  );
+}
+
 function OutdatedScreen() {
   // The newer version may not have downloaded yet; look for it now.
   useEffect(checkForUpdate, []);
   return (
-    <div className="outdated" role="alert">
+    <div className="screen-message" role="alert">
       <span className="wordmark">SEQUENCER</span>
       <h1>This project was saved by a newer version of Photobook Sequencer.</h1>
       <p>Reload to update. Your saved project hasn't been changed.</p>
