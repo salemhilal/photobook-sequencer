@@ -168,7 +168,8 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
-function uniqueName(name: string, id: string, used: Set<string>): string {
+/** A filename not yet in `used` (case-insensitively), made safe for any file system. */
+export function uniqueName(name: string, id: string, used: Set<string>): string {
   const clean = name.replace(/[/\\:*?"<>|]/g, '_') || `${id}.jpg`;
   let result = clean;
   for (let n = 2; used.has(result.toLowerCase()); n++) {

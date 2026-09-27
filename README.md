@@ -75,3 +75,11 @@ photo-book-2026-09-26.photo-sequence
 ```
 
 Drop a project on the desk to open it. Plain `.zip` files with the same contents work too.
+
+## InDesign
+
+File → Export for InDesign saves a ZIP with an `.idml` file and a `Links/` folder of
+the placed photos. Unzip it and open the `.idml` in InDesign (or Affinity Publisher):
+you get a facing-pages document at the book's size, the largest border guide as
+margins, the other guides as ruler guides, and each photo in a frame, linked to its
+original. If InDesign reports missing links, relink them to the `Links` folder.

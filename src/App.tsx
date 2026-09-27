@@ -3,6 +3,7 @@ import {
   Download,
   FilePlus,
   FileText,
+  Package,
   FolderOpen,
   ImagePlus,
   Info,
@@ -96,6 +97,7 @@ export default function App() {
             fileItem('importProject', 'Import project…', <FolderOpen />),
             fileItem('exportProject', 'Export project', <Download />),
             fileItem('savePdf', 'Save PDF', <FileText />),
+            fileItem('exportIndesign', 'Export for InDesign', <Package />),
             { ...fileItem('tour', 'Take the tour', <Compass />), separatorBefore: true },
             fileItem('about', 'About…', <Info />, false),
           ]}

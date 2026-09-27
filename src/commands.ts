@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { deleteFromProject, importPhotos } from './actions';
+import { exportIndesign } from './indesign';
 import { copyPhotos, duplicateAndSelect } from './clipboard';
 import { savePdf } from './pdf';
 import { hasMod, isMac, isTyping, MOD_LABEL } from './platform';
@@ -111,6 +112,7 @@ export const commands = {
     inFields: true,
     run: () => void savePdf(),
   },
+  exportIndesign: { bindings: [], scope: 'app', run: () => void exportIndesign() },
   preview: { bindings: [{ key: 'p', mod: true }], scope: 'app', inFields: true, run: () => toggleModal('preview') },
   settings: { bindings: [{ key: ',', mod: true }], scope: 'app', inFields: true, run: () => toggleModal('settings') },
   toggleSidebar: { bindings: [{ key: 'b', mod: true }], scope: 'app', inFields: true, run: toggleSidebar },
