@@ -1,6 +1,6 @@
 # Sequence
 
-A tool for prototyping photo sequences.
+A tool for playing with photo sequences.
 
 **Try it:** https://sequence.photos · [Privacy policy](https://sequence.photos/privacy/)
 
