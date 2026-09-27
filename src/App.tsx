@@ -22,6 +22,7 @@ import { Desk } from './components/Desk';
 import { FileMenu } from './components/FileMenu';
 import { PhotoImg } from './components/PhotoImg';
 import { Preview } from './components/Preview';
+import { QuickLook } from './components/QuickLook';
 import { SettingsDialog } from './components/SettingsDialog';
 import { Sidebar } from './components/Sidebar';
 import { SpreadEditor } from './components/SpreadEditor';
@@ -147,6 +148,7 @@ export default function App() {
       {modal === 'settings' && <SettingsDialog />}
       {modal === 'about' && <AboutDialog />}
       {modal === 'preview' && <Preview />}
+      <QuickLook />
       <ConfirmDialog />
       <ContextMenus />
       <DragGhost />

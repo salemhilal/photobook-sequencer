@@ -1,10 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { Copy, CopyPlus, LayoutGrid, Trash2, Undo2 } from 'lucide-react';
+import { Copy, CopyPlus, Eye, LayoutGrid, Trash2, Undo2 } from 'lucide-react';
 import { deleteFromProject, locate, putInPile, tidyPile } from '../actions';
 import { copyPhotos, duplicateAndSelect } from '../clipboard';
 import { shortcutLabel } from '../commands';
 import { docStore, useDoc } from '../store';
-import { ui, type ContextMenuState } from '../ui';
+import { openQuickLook, ui, type ContextMenuState } from '../ui';
 import { DeskColorPicker } from './DeskColorPicker';
 
 /** Renders whichever right-click menu is open. */
@@ -104,6 +104,11 @@ function PhotoItems({ menu, onClose }: { menu: Extract<ContextMenuState, { kind:
       <div className="menu-caption data muted" title={name}>
         {name}
       </div>
+      <button className="menu-item" role="menuitem" onClick={() => openQuickLook([menu.photoId])}>
+        <Eye />
+        <span className="menu-label">Quick Look</span>
+        {!onPage && <kbd className="menu-shortcut">Space</kbd>}
+      </button>
       <button
         className="menu-item"
         role="menuitem"

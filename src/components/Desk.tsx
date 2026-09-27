@@ -9,7 +9,7 @@ import { docStore, useDoc } from '../store';
 import type { Placement } from '../types';
 import { DESK_PPI, deskGeometry } from '../deskGeometry';
 import { isTyping } from '../platform';
-import { openPhotoMenu, openModal, ui } from '../ui';
+import { deskCovered, openPhotoMenu, openModal, openQuickLook, ui } from '../ui';
 import { PageSizeFields } from './PageSizeFields';
 import { PhotoImg } from './PhotoImg';
 
@@ -21,6 +21,8 @@ const GHOST_MAX = 140;
 const EDGE_FADE_PX = 120;
 /** Screen pixels between a photo and its selection frame. */
 const FRAME_GAP_PX = 5;
+/** A Space press shorter than this, without panning, opens Quick Look; longer is a held pan key. */
+const SPACE_TAP_MS = 400;
 
 export function Desk() {
   const { doc } = useDoc();
@@ -29,6 +31,8 @@ export function Desk() {
   const dropHover = ui.use((s) => s.hoverKey === 'desk');
   const ref = useRef<HTMLDivElement>(null);
   const spaceHeld = useRef(false);
+  /** When Space went down over the uncovered desk; cleared if it's used to pan. */
+  const spaceTap = useRef<number | null>(null);
   const [marquee, setMarquee] = useState<Rect | null>(null);
   const [panning, setPanning] = useState(false);
   const [hoverId, setHoverId] = useState<string | null>(null);
@@ -76,11 +80,18 @@ export function Desk() {
     const down = (e: KeyboardEvent) => {
       if (e.code === 'Space' && !isTyping(e)) {
         spaceHeld.current = true;
+        if (!e.repeat) spaceTap.current = deskCovered() ? null : performance.now();
         if (e.target === document.body) e.preventDefault();
       }
     };
+    // Tapping Space opens Quick Look on the selection; holding it pans.
     const up = (e: KeyboardEvent) => {
-      if (e.code === 'Space') spaceHeld.current = false;
+      if (e.code !== 'Space') return;
+      spaceHeld.current = false;
+      const down = spaceTap.current;
+      spaceTap.current = null;
+      if (down === null || performance.now() - down > SPACE_TAP_MS || deskCovered()) return;
+      openQuickLook(ui.get().selection);
     };
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
@@ -91,6 +102,7 @@ export function Desk() {
   }, []);
 
   const startPan = (e: React.PointerEvent) => {
+    spaceTap.current = null;
     const v0 = ui.get().view;
     setPanning(true);
     startDrag(e, {

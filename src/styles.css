@@ -1462,6 +1462,74 @@ body.col-resizing * {
   right: 12px;
 }
 
+/* Quick Look */
+.quick-look {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 15, 14, 0.92);
+  backdrop-filter: blur(12px);
+  color: #e9e6df;
+  animation: quick-look-in 0.14s ease-out;
+}
+@keyframes quick-look-in {
+  from {
+    opacity: 0;
+  }
+}
+.quick-look .muted,
+.quick-look .hint {
+  color: #8d8a83;
+}
+.quick-look .btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+.quick-look-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+}
+.quick-look-name {
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.quick-look-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.quick-look-stage.zoomed {
+  overflow: auto;
+}
+.quick-look-canvas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.quick-look-canvas img {
+  display: block;
+  flex: none;
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.45);
+  cursor: zoom-in;
+  animation: quick-look-photo-in 0.18s ease-out;
+}
+.quick-look-stage.zoomed img {
+  cursor: zoom-out;
+  animation: none;
+}
+@keyframes quick-look-photo-in {
+  from {
+    transform: scale(0.97);
+  }
+}
+
 /* Drag feedback */
 .drag-ghost {
   position: fixed;

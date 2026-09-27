@@ -72,6 +72,8 @@ export interface UiState {
   elsewhere: boolean;
   /** The last save failed (e.g. storage full); cleared by the next successful save. */
   saveFailed: boolean;
+  /** Photos open in Quick Look, and which one is showing. */
+  quickLook: { ids: string[]; index: number } | null;
 }
 
 export const ui = createStore<UiState>({
@@ -95,6 +97,7 @@ export const ui = createStore<UiState>({
   updateReady: false,
   elsewhere: false,
   saveFailed: false,
+  quickLook: null,
 });
 
 export function openModal(modal: Modal): void {
@@ -109,10 +112,19 @@ export function toggleModal(modal: Modal): void {
   ui.set((s) => ({ modal: s.modal === modal ? null : modal }));
 }
 
-/** Whether something covers the desk (a dialog or the spread editor), pausing desk shortcuts. */
+/** Whether something covers the desk (a dialog, the spread editor, or Quick Look), pausing desk shortcuts. */
 export function deskCovered(): boolean {
   const s = ui.get();
-  return s.modal !== null || s.editingSpreadId !== null;
+  return s.modal !== null || s.editingSpreadId !== null || s.quickLook !== null;
+}
+
+/** Show photos full-size, starting with the first. */
+export function openQuickLook(ids: string[]): void {
+  if (ids.length) ui.set({ quickLook: { ids, index: 0 }, contextMenu: null });
+}
+
+export function closeQuickLook(): void {
+  ui.set({ quickLook: null });
 }
 
 /** Ask the user to choose; resolves to the chosen action's value, or null if dismissed. */
