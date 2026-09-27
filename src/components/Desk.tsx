@@ -355,7 +355,9 @@ export function Desk() {
               <span className="caps muted">Page size</span>
               <PageSizeFields />
               <p className="help">
-                You can change this anytime. Guides, appearance, and more are in{' '}
+                You can change this anytime.
+                <br />
+                Guides, appearance, and more are in{' '}
                 <button className="link" onClick={() => openModal('settings')}>
                   Settings
                 </button>
