@@ -10,6 +10,7 @@
     "build:app": "tsc -b && vite build --mode app",
     "app": "tauri dev",
     "app:build": "tauri build",
+    "app:store": "node scripts/app-store.mjs",
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",

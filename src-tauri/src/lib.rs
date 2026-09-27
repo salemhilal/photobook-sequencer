@@ -80,25 +80,102 @@ fn finish_save(id: u32, path: Option<String>, saves: tauri::State<Saves>) -> Res
   result
 }
 
+/// Security-scoped bookmarks. In the App Sandbox the app may only use files the user
+/// picked (or double-clicked), and only until it quits; a bookmark, kept with the
+/// project, gets that access back on the next launch (and follows the file if it moved).
+#[cfg(target_os = "macos")]
+mod bookmarks {
+  use objc2::rc::Retained;
+  use objc2::runtime::Bool;
+  use objc2_foundation::{
+    NSData, NSString, NSURL, NSURLBookmarkCreationOptions, NSURLBookmarkResolutionOptions,
+  };
+
+  /// A bookmark to a file the app can use now.
+  #[tauri::command]
+  pub fn bookmark_file(path: String) -> Result<Vec<u8>, String> {
+    let url = NSURL::fileURLWithPath(&NSString::from_str(&path));
+    let data = url
+      .bookmarkDataWithOptions_includingResourceValuesForKeys_relativeToURL_error(
+        NSURLBookmarkCreationOptions::WithSecurityScope,
+        None,
+        None,
+      )
+      .map_err(|e| e.localizedDescription().to_string())?;
+    Ok(data.to_vec())
+  }
+
+  /// Use a bookmarked file again (for the rest of this launch); returns where it is now.
+  #[tauri::command]
+  pub fn open_bookmark(bookmark: Vec<u8>) -> Result<String, String> {
+    let data = NSData::with_bytes(&bookmark);
+    let mut stale = Bool::NO;
+    let url: Retained<NSURL> = unsafe {
+      NSURL::URLByResolvingBookmarkData_options_relativeToURL_bookmarkDataIsStale_error(
+        &data,
+        NSURLBookmarkResolutionOptions::WithSecurityScope,
+        None,
+        &mut stale,
+      )
+    }
+    .map_err(|e| e.localizedDescription().to_string())?;
+    // Kept until the app quits: the project stays open, and may be saved, until then.
+    unsafe { url.startAccessingSecurityScopedResource() };
+    url.path().map(|p| p.to_string()).ok_or_else(|| "not a file".into())
+  }
+}
+
 /// The end-to-end test's hooks (npm run test:app; see src/platform/macos/e2e.ts). Not in the real app.
 #[cfg(feature = "e2e")]
 mod e2e {
+  use std::io::Write;
+
+  /// The report goes to stdout, and to a file in the temporary folder: sandboxed, that's
+  /// inside the app's container, where the test can read it (stdout doesn't reach it there).
+  fn report(line: &str) {
+    println!("{line}");
+    let file = std::env::temp_dir().join("photobook-e2e.log");
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(file) {
+      let _ = writeln!(f, "{line}");
+    }
+  }
+
   /// Where the test's fixtures are, when the app was started to run it.
   #[tauri::command]
   pub fn e2e_dir() -> Option<String> {
     std::env::var("PBS_E2E").ok()
   }
 
+  /// Which part of the test this run is (see scripts/e2e-app.mjs).
+  #[tauri::command]
+  pub fn e2e_phase() -> Option<String> {
+    std::env::var("PBS_E2E_PHASE").ok()
+  }
+
+  /// Progress, for when a run gets stuck.
+  #[tauri::command]
+  pub fn e2e_log(message: String) {
+    report(&format!("… {message}"));
+  }
+
   #[tauri::command]
   pub fn e2e_finish(ok: bool, report: String) {
-    println!("{report}");
+    self::report(&report);
     std::process::exit(if ok { 0 } else { 1 });
   }
 }
 
 #[cfg(not(feature = "e2e"))]
 fn handlers() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
-  tauri::generate_handler![take_opened_files, read_project, begin_save, append_save, finish_save]
+  tauri::generate_handler![
+    take_opened_files,
+    read_project,
+    begin_save,
+    append_save,
+    finish_save,
+    bookmarks::bookmark_file,
+    bookmarks::open_bookmark
+  ]
 }
 
 #[cfg(feature = "e2e")]
@@ -109,7 +186,11 @@ fn handlers() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
     begin_save,
     append_save,
     finish_save,
+    bookmarks::bookmark_file,
+    bookmarks::open_bookmark,
     e2e::e2e_dir,
+    e2e::e2e_phase,
+    e2e::e2e_log,
     e2e::e2e_finish
   ]
 }

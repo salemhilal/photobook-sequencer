@@ -75,6 +75,22 @@ the website and `src/platform/macos/` for the app (see `vite.config.ts`). So the
 code is never part of the website (CI checks), and anything added there has to be
 implemented for both.
 
+### App Store
+
+The app runs in the App Sandbox (`src-tauri/Entitlements.plist`), local builds too: it can
+use the files you pick or double-click, and keeps bookmarks to them so a project can still
+be saved after a restart.
+
+```bash
+npm run app:store   # → a signed, universal .pkg for App Store Connect (uploads it, given an API key)
+```
+
+It needs the Apple Distribution and Mac Installer Distribution certificates in your
+keychain, and the app's Mac App Store provisioning profile at
+`src-tauri/embedded.provisionprofile`; it says what's missing. The **App Store** workflow
+(run by hand in GitHub Actions) does the same in CI, after the tests; its header lists the
+secrets it needs.
+
 ## Offline and install
 
 The deployed app works offline once it has loaded: a service worker keeps a copy of
