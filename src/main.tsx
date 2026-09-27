@@ -11,7 +11,9 @@ import { ui } from './ui';
 import { startOfflineSupport } from './update';
 
 applyDeskColor(ui.get().deskColor);
-startOfflineSupport();
+// The website works offline through a service worker; the Mac app has everything built in.
+if (!__NATIVE_APP__) startOfflineSupport();
+else void import('./native').then((m) => m.startNative());
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root');

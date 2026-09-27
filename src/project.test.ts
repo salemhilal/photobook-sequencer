@@ -31,7 +31,7 @@ function sampleDoc(): Doc {
 }
 
 /** Run `fn`, capturing the file it downloads. */
-async function captureDownload(fn: () => Promise<void>): Promise<{ blob: Blob; name: string }> {
+async function captureDownload(fn: () => Promise<unknown>): Promise<{ blob: Blob; name: string }> {
   let blob: Blob | undefined;
   let name = '';
   const create = vi.spyOn(URL, 'createObjectURL').mockImplementation((b) => {

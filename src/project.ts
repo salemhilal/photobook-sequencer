@@ -28,7 +28,8 @@ interface Manifest {
 
 export class ProjectFileError extends Error {}
 
-export async function exportProject(): Promise<void> {
+/** Export the project to a file; resolves to whether it was saved. */
+export async function exportProject(): Promise<boolean> {
   const doc = docStore.doc;
   const ids = Object.keys(doc.photos);
   const entries: ZipInput[] = [];
@@ -58,7 +59,7 @@ export async function exportProject(): Promise<void> {
       setBusy(`Exporting ${Math.min(photoCount, Math.floor(done / 2))} of ${photoCount}…`),
     );
     // A .photo-sequence file is a ZIP; the octet-stream type keeps browsers from renaming it to .zip.
-    download(
+    return await download(
       new Blob([zip], { type: 'application/octet-stream' }),
       `photo-book-${new Date().toISOString().slice(0, 10)}${PROJECT_EXTENSION}`,
     );
@@ -243,8 +244,7 @@ export async function saveProjectFile(): Promise<boolean> {
     return false;
   }
   try {
-    await exportProject();
-    return true;
+    return await exportProject();
   } catch (e) {
     ui.set({ notice: e instanceof ZipTooLargeError ? e.message : "Couldn't export the project." });
     return false;
