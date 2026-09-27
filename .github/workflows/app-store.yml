@@ -1,5 +1,7 @@
 # Builds the Mac app, tests it end to end, and uploads it to App Store Connect (where
-# it shows up in TestFlight). Run it by hand: Actions → App Store → Run workflow.
+# it shows up in TestFlight, ready to submit). Runs when a GitHub release is published
+# (its tag must be v + package.json's version, e.g. v0.2.0), or by hand: Actions → App
+# Store → Run workflow.
 #
 # Secrets it needs (Settings → Secrets and variables → Actions):
 #   APP_STORE_CERTIFICATES      base64 of a .p12 holding the "Apple Distribution" and
@@ -9,10 +11,14 @@
 #   APP_STORE_API_KEY_ID        an App Store Connect API key (Users and Access → Integrations),
 #   APP_STORE_API_ISSUER        its issuer ID,
 #   APP_STORE_API_KEY           and the key file's contents (AuthKey_<id>.p8)
+#
+# The build number (CFBundleVersion) counts commits, so each upload's is higher.
 
 name: App Store
 
 on:
+  release:
+    types: [published]
   workflow_dispatch:
 
 jobs:
@@ -23,6 +29,16 @@ jobs:
         with:
           # The build number counts commits (see scripts/app-store.mjs).
           fetch-depth: 0
+      - name: Check the release matches the app's version
+        if: github.event_name == 'release'
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          VERSION="v$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "The release is $TAG, but package.json says $VERSION. Bump the version and tag to match."
+            exit 1
+          fi
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
@@ -51,11 +67,10 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KEYCHAIN"
           security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
           echo "$PROFILE" | base64 --decode > src-tauri/embedded.provisionprofile
-          mkdir -p ~/.appstoreconnect/private_keys
-          echo "$API_KEY" > ~/.appstoreconnect/private_keys/AuthKey_$API_KEY_ID.p8
+          echo "$API_KEY" > "$RUNNER_TEMP/AuthKey_$API_KEY_ID.p8"
 
       - name: Build and upload
         env:
           APP_STORE_API_KEY_ID: ${{ secrets.APP_STORE_API_KEY_ID }}
           APP_STORE_API_ISSUER: ${{ secrets.APP_STORE_API_ISSUER }}
-        run: npm run app:store
+        run: APP_STORE_API_KEY_PATH="$RUNNER_TEMP/AuthKey_$APP_STORE_API_KEY_ID.p8" npm run app:store
