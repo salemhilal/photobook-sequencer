@@ -33,7 +33,8 @@ export interface LinkedImage {
 
 export function buildIdml(doc: Doc, links: Map<string, LinkedImage>): ZipInput[] {
   let nextId = 0;
-  const id = () => `u${(++nextId).toString(16)}`;
+  // InDesign names its own objects u1, u2, …; a distinct prefix keeps ours from matching them.
+  const id = () => `pbs${++nextId}`;
   const { settings } = doc;
   const spreadFiles = doc.spreads.map((spread, i) => {
     const spreadId = id();
@@ -72,7 +73,7 @@ function preferencesXml(s: Settings, pageCount: number): string {
   const h = s.pageH * PT;
   return `${HEAD}
 <idPkg:Preferences xmlns:idPkg="${PKG}" DOMVersion="${DOM}">
-<DocumentPreference PageHeight="${n(h)}" PageWidth="${n(w)}" PagesPerDocument="${pageCount}" FacingPages="true" StartPageNumber="1" PageBinding="LeftToRight" AllowPageShuffle="true" DocumentBleedUniformSize="true" DocumentBleedTopOffset="0" DocumentBleedBottomOffset="0" DocumentBleedInsideOrLeftOffset="0" DocumentBleedOutsideOrRightOffset="0" Intent="PrintIntent"/>
+<DocumentPreference PageHeight="${n(h)}" PageWidth="${n(w)}" PageOrientation="${w > h ? 'Landscape' : 'Portrait'}" PagesPerDocument="${pageCount}" FacingPages="true" StartPageNumber="1" PageBinding="LeftToRight" AllowPageShuffle="true" DocumentBleedUniformSize="true" DocumentBleedTopOffset="0" DocumentBleedBottomOffset="0" DocumentBleedInsideOrLeftOffset="0" DocumentBleedOutsideOrRightOffset="0" Intent="PrintIntent"/>
 ${marginXml(s)}
 <ViewPreference HorizontalMeasurementUnits="Inches" VerticalMeasurementUnits="Inches"/>
 </idPkg:Preferences>`;
