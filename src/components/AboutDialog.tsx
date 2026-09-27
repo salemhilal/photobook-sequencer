@@ -1,4 +1,4 @@
-import { CodeXml, ExternalLink, Mail } from 'lucide-react';
+import { CodeXml, ExternalLink, Mail, Shield } from 'lucide-react';
 import { closeModal } from '../ui';
 import { Dialog } from './Dialog';
 
@@ -22,6 +22,10 @@ export function AboutDialog() {
           <a href="https://github.com/salemhilal/photobook-sequencer" target="_blank" rel="noopener noreferrer">
             <CodeXml />
             Source on GitHub
+          </a>
+          <a href="https://photobook-sequencer.netlify.app/privacy/" target="_blank" rel="noopener noreferrer">
+            <Shield />
+            Privacy policy
           </a>
         </div>
         <p className="about-copyright data muted">© {new Date().getFullYear()} Salem Hilal</p>

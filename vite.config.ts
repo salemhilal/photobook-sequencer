@@ -27,6 +27,8 @@ export default defineConfig(({ mode }) => {
         includeManifestIcons: false,
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,png,jpg,woff,woff2}'],
+          // The privacy policy is its own page, not a route in the app.
+          navigateFallbackDenylist: [/^\/privacy/],
           // Don't cache old builds' leftovers.
           cleanupOutdatedCaches: true,
           // The first install takes control of open pages right away, so they work
