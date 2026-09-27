@@ -43,7 +43,6 @@ export function buildIdml(doc: Doc, links: Map<string, LinkedImage>): ZipInput[]
       xml: spreadXml(doc, spread, i, spreadId, id, links),
     };
   });
-  const pageCount = doc.spreads.reduce((n, s) => n + pageSides(s.kind).length, 0);
 
   const designmap = `${HEAD}
 <?aid style="50" type="document" readerVersion="6.0" featureSet="257" product="8.0(370)" ?>
@@ -63,17 +62,21 @@ ${spreadFiles.map((f) => `<idPkg:Spread src="${f.name}"/>`).join('\n')}
     { name: 'mimetype', data: new Blob(['application/vnd.adobe.indesign-idml-package']) },
     { name: 'designmap.xml', data: xmlBlob(designmap) },
     { name: 'META-INF/container.xml', data: xmlBlob(container) },
-    { name: 'Resources/Preferences.xml', data: xmlBlob(preferencesXml(settings, pageCount)) },
+    { name: 'Resources/Preferences.xml', data: xmlBlob(preferencesXml(settings)) },
     ...spreadFiles.map((f) => ({ name: f.name, data: xmlBlob(f.xml) })),
   ];
 }
 
-function preferencesXml(s: Settings, pageCount: number): string {
+/**
+ * Page setup. PagesPerDocument is 1 whatever the book's length: InDesign starts from
+ * a blank document with that many pages, and only its first spread is replaced by ours.
+ */
+function preferencesXml(s: Settings): string {
   const w = s.pageW * PT;
   const h = s.pageH * PT;
   return `${HEAD}
 <idPkg:Preferences xmlns:idPkg="${PKG}" DOMVersion="${DOM}">
-<DocumentPreference PageHeight="${n(h)}" PageWidth="${n(w)}" PageOrientation="${w > h ? 'Landscape' : 'Portrait'}" PagesPerDocument="${pageCount}" FacingPages="true" StartPageNumber="1" PageBinding="LeftToRight" AllowPageShuffle="true" DocumentBleedUniformSize="true" DocumentBleedTopOffset="0" DocumentBleedBottomOffset="0" DocumentBleedInsideOrLeftOffset="0" DocumentBleedOutsideOrRightOffset="0" Intent="PrintIntent"/>
+<DocumentPreference PageHeight="${n(h)}" PageWidth="${n(w)}" PageOrientation="${w > h ? 'Landscape' : 'Portrait'}" PagesPerDocument="1" FacingPages="true" StartPageNumber="1" PageBinding="LeftToRight" AllowPageShuffle="true" DocumentBleedUniformSize="true" DocumentBleedTopOffset="0" DocumentBleedBottomOffset="0" DocumentBleedInsideOrLeftOffset="0" DocumentBleedOutsideOrRightOffset="0" Intent="PrintIntent"/>
 ${marginXml(s)}
 <ViewPreference HorizontalMeasurementUnits="Inches" VerticalMeasurementUnits="Inches"/>
 </idPkg:Preferences>`;
@@ -156,8 +159,10 @@ function guidesXml(s: Settings, pageIndex: number, id: () => string): string {
     vertical.push(b * PT, w - b * PT);
     horizontal.push(b * PT, h - b * PT);
   }
+  // Vertical guides are placed from the spread's left edge, not the page's.
+  const left = pageIndex * w;
   const guide = (orientation: string, at: number) =>
-    `<Guide Self="${id()}" OrientationKind="${orientation}" Location="${n(at)}" FitToPage="true" ViewThreshold="0" Locked="false" ItemLayer="${LAYER}" PageIndex="${pageIndex}" GuideType="Ruler"/>`;
+    `<Guide Self="${id()}" Orientation="${orientation}" Location="${n(orientation === 'Vertical' ? left + at : at)}" FitToPage="true" ViewThreshold="0" Locked="false" ItemLayer="${LAYER}" PageIndex="${pageIndex}" GuideType="Ruler"/>`;
   return [...vertical.map((v) => guide('Vertical', v)), ...horizontal.map((y) => guide('Horizontal', y))].join('\n');
 }
 

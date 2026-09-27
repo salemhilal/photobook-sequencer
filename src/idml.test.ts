@@ -36,7 +36,8 @@ describe('buildIdml', () => {
     const doc = prefs.querySelector('DocumentPreference')!;
     expect(doc.getAttribute('PageWidth')).toBe('720');
     expect(doc.getAttribute('PageHeight')).toBe('576');
-    expect(doc.getAttribute('PagesPerDocument')).toBe('6');
+    // More would leave InDesign's own blank pages ahead of the book's.
+    expect(doc.getAttribute('PagesPerDocument')).toBe('1');
     expect(doc.getAttribute('FacingPages')).toBe('true');
     expect(prefs.querySelector('MarginPreference')!.getAttribute('Top')).toBe('36');
   });
@@ -52,6 +53,16 @@ describe('buildIdml', () => {
     expect(spreads[1]!.querySelector('Page')!.getAttribute('Name')).toBe('2');
     // The 1.25 in border guide and the center lines become ruler guides: 3 vertical and 3 horizontal.
     expect(spreads[1]!.querySelector('Page')!.querySelectorAll('Guide')).toHaveLength(6);
+    // Vertical guides are measured from the spread's left edge.
+    const right = spreads[1]!.querySelectorAll('Page')[1]!;
+    const verticals = [...right.querySelectorAll('Guide[Orientation="Vertical"]')].map((g) =>
+      g.getAttribute('Location'),
+    );
+    expect(verticals).toEqual(['1080', '810', '1350']);
+    const horizontals = [...right.querySelectorAll('Guide[Orientation="Horizontal"]')].map((g) =>
+      g.getAttribute('Location'),
+    );
+    expect(horizontals).toEqual(['288', '90', '486']);
   });
 
   it('frames each photo where it sits, with its image scaled by its resolution', async () => {
