@@ -14,8 +14,9 @@ npm install
 npm run dev    # → http://localhost:5173
 ```
 
-The site has three pages: the landing page (`index.html`, at `/`), the app
-(`app/index.html`, at `/app/`), and the privacy policy (`privacy/index.html`).
+The site has four pages: the landing page (`index.html`, at `/`), the app
+(`app/index.html`, at `/app/`), the privacy policy (`privacy/index.html`), and support
+(`support/index.html`).
 
 ## Test
 
