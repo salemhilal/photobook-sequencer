@@ -5,8 +5,8 @@ import { buildIdml } from './idml';
 import { emptyProject } from './store';
 import type { Project } from './types';
 
-async function build(doc: Project, links = new Map()) {
-  const entries = buildIdml(doc, links);
+async function build(project: Project, links = new Map()) {
+  const entries = buildIdml(project, links);
   const files = new Map<string, Document>();
   for (const e of entries) {
     if (e.name.endsWith('.xml')) files.set(e.name, new DOMParser().parseFromString(await e.data.text(), 'text/xml'));
@@ -15,11 +15,11 @@ async function build(doc: Project, links = new Map()) {
 }
 
 function sample(): Project {
-  const doc = emptyProject(); // 10 × 8 in pages; borders 0.5 and 1.25; four spreads
+  const project = emptyProject(); // 10 × 8 in pages; borders 0.5 and 1.25; four spreads
   const a = toPhotoId('a');
-  doc.photos[a] = { id: a, name: 'a & b.jpg', pxW: 3000, pxH: 2000 };
-  doc.spreads[0]!.items.push({ photoId: a, x: -9, y: 1, w: 6, h: 4, z: 1 });
-  return doc;
+  project.photos[a] = { id: a, name: 'a & b.jpg', pxW: 3000, pxH: 2000 };
+  project.spreads[0]!.items.push({ photoId: a, x: -9, y: 1, w: 6, h: 4, z: 1 });
+  return project;
 }
 
 describe('buildIdml', () => {
@@ -35,12 +35,12 @@ describe('buildIdml', () => {
   it('sets up facing pages at the book’s size, with the largest border guide as margins', async () => {
     const { files } = await build(sample());
     const prefs = files.get('Resources/Preferences.xml')!;
-    const doc = prefs.querySelector('DocumentPreference')!;
-    expect(doc.getAttribute('PageWidth')).toBe('720');
-    expect(doc.getAttribute('PageHeight')).toBe('576');
+    const documentPrefs = prefs.querySelector('DocumentPreference')!;
+    expect(documentPrefs.getAttribute('PageWidth')).toBe('720');
+    expect(documentPrefs.getAttribute('PageHeight')).toBe('576');
     // More would leave InDesign's own blank pages ahead of the book's.
-    expect(doc.getAttribute('PagesPerDocument')).toBe('1');
-    expect(doc.getAttribute('FacingPages')).toBe('true');
+    expect(documentPrefs.getAttribute('PagesPerDocument')).toBe('1');
+    expect(documentPrefs.getAttribute('FacingPages')).toBe('true');
     expect(prefs.querySelector('MarginPreference')!.getAttribute('Top')).toBe('36');
   });
 
@@ -68,16 +68,18 @@ describe('buildIdml', () => {
   });
 
   it('mirrors per-edge margins and line guides on facing pages', async () => {
-    const doc = sample();
-    doc.settings.borders = [{ id: toGuideId('book'), kind: 'edges', top: 0.5, bottom: 1, inside: 1.5, outside: 0.75 }];
-    doc.settings.dropBorder = toGuideId('book');
-    doc.settings.centerV = false;
-    doc.settings.centerH = false;
-    doc.settings.lines = [
+    const project = sample();
+    project.settings.borders = [
+      { id: toGuideId('book'), kind: 'edges', top: 0.5, bottom: 1, inside: 1.5, outside: 0.75 },
+    ];
+    project.settings.dropBorder = toGuideId('book');
+    project.settings.centerV = false;
+    project.settings.centerH = false;
+    project.settings.lines = [
       { id: toGuideId('v'), axis: 'vertical', at: 2 },
       { id: toGuideId('h'), axis: 'horizontal', at: 3 },
     ];
-    const { files } = await build(doc);
+    const { files } = await build(project);
     // The document's margins: with facing pages, Left is inside and Right is outside.
     const docMargins = files.get('Resources/Preferences.xml')!.querySelector('MarginPreference')!;
     expect(['Top', 'Bottom', 'Left', 'Right'].map((a) => docMargins.getAttribute(a))).toEqual([

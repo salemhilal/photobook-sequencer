@@ -1,7 +1,7 @@
 import { getImage } from './db';
 import { pageSides } from './geometry';
 import { platform } from '#platform';
-import { docStore } from './store';
+import { projectStore } from './store';
 import { ui } from './ui';
 import { allSpreads } from './spreads';
 
@@ -13,13 +13,13 @@ const PT_PER_INCH = 72;
  */
 export async function renderPdf(onProgress: (done: number, total: number) => void): Promise<Blob> {
   const { PDFDocument } = await import('pdf-lib');
-  const doc = docStore.doc;
-  const { pageW, pageH } = doc.settings;
+  const project = projectStore.project;
+  const { pageW, pageH } = project.settings;
   const pdf = await PDFDocument.create();
   pdf.setTitle('Photo book');
   pdf.setCreator('Sequence');
 
-  const book = allSpreads(doc);
+  const book = allSpreads(project);
   for (const [i, spread] of book.entries()) {
     const sides = pageSides(spread.kind);
     const left = sides[0] === 'left' ? -pageW : 0;

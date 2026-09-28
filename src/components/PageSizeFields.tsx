@@ -1,6 +1,6 @@
 import { current } from 'immer';
 import { clampBorder, relayoutRect } from '../geometry';
-import { docStore, useDoc } from '../store';
+import { projectStore, useProject } from '../store';
 import { NumberField } from './NumberField';
 import { allSpreads } from '../spreads';
 
@@ -10,7 +10,7 @@ import { allSpreads } from '../spreads';
  * keep their place relative to the guides (if chosen), and border guides stay on the page.
  */
 function setPageSize(dim: 'pageW' | 'pageH', n: number): void {
-  docStore.apply((d) => {
+  projectStore.apply((d) => {
     const from = current(d.settings);
     if (from[dim] === n) return;
     d.settings[dim] = n;
@@ -24,7 +24,7 @@ function setPageSize(dim: 'pageW' | 'pageH', n: number): void {
 
 /** Page width × height in inches. Used in Settings and on a new project's empty desk. */
 export function PageSizeFields() {
-  const { doc } = useDoc();
+  const { project } = useProject();
   return (
     <div className="inline">
       <NumberField
@@ -32,7 +32,7 @@ export function PageSizeFields() {
         min={1}
         suffix=""
         commitOnBlur
-        value={doc.settings.pageW}
+        value={project.settings.pageW}
         onCommit={(n) => setPageSize('pageW', n)}
       />
       <NumberField
@@ -40,7 +40,7 @@ export function PageSizeFields() {
         min={1}
         suffix=""
         commitOnBlur
-        value={doc.settings.pageH}
+        value={project.settings.pageH}
         onCommit={(n) => setPageSize('pageH', n)}
       />
       <span className="muted data">in</span>

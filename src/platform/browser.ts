@@ -1,7 +1,7 @@
 import { download, pickFiles } from '../files';
 import { buildProjectFile, openProjectFile, PROJECT_ACCEPT, PROJECT_EXTENSION } from '../project';
 import { requestPersistence } from '../storage';
-import { docStore } from '../store';
+import { projectStore } from '../store';
 import { ui } from '../ui';
 import { startOfflineSupport } from '../update';
 import { ZipTooLargeError } from '../zip';
@@ -26,7 +26,7 @@ export const platform: Platform = {
 
   async keepProject() {
     if (ui.get().busy || ui.get().importing) return false;
-    if (!Object.keys(docStore.doc.photos).length) {
+    if (!Object.keys(projectStore.project.photos).length) {
       ui.set({ notice: 'Add some photos before exporting.' });
       return false;
     }
@@ -51,8 +51,8 @@ export const platform: Platform = {
 
 /** Once the project has photos, ask (once) for the browser not to clear its storage. */
 function keepStorageOnceThereAreFiles(): void {
-  const stop = docStore.subscribe(() => {
-    if (!Object.keys(docStore.doc.photos).length) return;
+  const stop = projectStore.subscribe(() => {
+    if (!Object.keys(projectStore.project.photos).length) return;
     stop();
     void requestPersistence();
   });

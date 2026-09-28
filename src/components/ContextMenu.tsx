@@ -3,7 +3,7 @@ import { Copy, CopyPlus, Eye, LayoutGrid, Trash2, Undo2 } from 'lucide-react';
 import { deleteFromProject, locate, putInPile, tidyPile } from '../actions';
 import { copyPhotos, duplicateAndSelect } from '../clipboard';
 import { shortcutLabel } from '../commands';
-import { docStore, useDoc } from '../store';
+import { projectStore, useProject } from '../store';
 import { openQuickLook, ui, type ContextMenuState } from '../ui';
 import { DeskColorPicker } from './DeskColorPicker';
 
@@ -68,10 +68,10 @@ function MenuShell({ x, y, onClose, children }: { x: number; y: number; onClose:
 }
 
 function DeskItems({ onClose }: { onClose: () => void }) {
-  const { doc } = useDoc();
+  const { project } = useProject();
   const selection = ui.use((s) => s.selection);
   const tidySelection = selection.length > 1;
-  const canTidy = tidySelection || doc.pile.length > 1;
+  const canTidy = tidySelection || project.pile.length > 1;
   return (
     <>
       <button
@@ -96,9 +96,9 @@ function DeskItems({ onClose }: { onClose: () => void }) {
 }
 
 function PhotoItems({ menu, onClose }: { menu: Extract<ContextMenuState, { kind: 'photo' }>; onClose: () => void }) {
-  const { doc } = useDoc();
-  const name = doc.photos[menu.photoId]?.name ?? 'Photo';
-  const onPage = locate(doc, menu.photoId)?.where === 'spread';
+  const { project } = useProject();
+  const name = project.photos[menu.photoId]?.name ?? 'Photo';
+  const onPage = locate(project, menu.photoId)?.where === 'spread';
   return (
     <>
       <div className="menu-caption data muted" title={name}>
@@ -142,7 +142,7 @@ function PhotoItems({ menu, onClose }: { menu: Extract<ContextMenuState, { kind:
           className="menu-item"
           role="menuitem"
           onClick={() => {
-            docStore.apply((d) => putInPile(d, menu.photoId));
+            projectStore.apply((d) => putInPile(d, menu.photoId));
             onClose();
           }}
         >

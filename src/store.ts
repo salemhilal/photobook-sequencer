@@ -9,7 +9,7 @@ const COALESCE_MS = 1000;
 type Recipe = (d: Draft<Project>) => void;
 
 export interface HistoryState {
-  doc: Project;
+  project: Project;
   canUndo: boolean;
   canRedo: boolean;
 }
@@ -19,7 +19,7 @@ export interface HistoryState {
  * - `apply` records a discrete change.
  * - `begin` / `preview` / `end` wrap a gesture (like a drag) so it records a single step.
  */
-class DocStore {
+class ProjectStore {
   private past: Project[] = [];
   private future: Project[] = [];
   private present: Project;
@@ -40,16 +40,16 @@ class DocStore {
 
   getSnapshot = (): HistoryState => this.snapshot;
 
-  get doc(): Project {
+  get project(): Project {
     return this.present;
   }
 
-  /** The doc a gesture started from (or the present, outside a gesture). */
+  /** The project a gesture started from (or the present, outside a gesture). */
   get gestureStart(): Project {
     return this.gestureBase ?? this.present;
   }
 
-  /** Every doc still reachable through undo/redo. */
+  /** Every project still reachable through undo/redo. */
   allDocs(): Project[] {
     return [...this.past, this.present, ...this.future, ...(this.gestureBase ? [this.gestureBase] : [])];
   }
@@ -58,10 +58,10 @@ class DocStore {
    * Show `doc` in place of the project for a while (e.g. a demo), with its own history.
    * Returns a function that brings back the project exactly as it was, history included.
    */
-  swap(doc: Project): () => void {
+  swap(project: Project): () => void {
     this.cancel();
     const { past, future, present } = this;
-    this.reset(doc);
+    this.reset(project);
     return () => {
       this.cancel();
       this.past = past;
@@ -72,11 +72,11 @@ class DocStore {
     };
   }
 
-  reset(doc: Project): void {
+  reset(project: Project): void {
     this.past = [];
     this.future = [];
     this.gestureBase = null;
-    this.present = doc;
+    this.present = project;
     this.emit();
   }
 
@@ -96,11 +96,11 @@ class DocStore {
   }
 
   /** Replace the whole document as one undoable step (e.g. importing a project). */
-  replace(doc: Project): void {
+  replace(project: Project): void {
     this.push(this.present);
     this.future = [];
     this.lastCoalesce = null;
-    this.present = doc;
+    this.present = project;
     this.emit();
   }
 
@@ -116,7 +116,7 @@ class DocStore {
     this.gestureBase = this.present;
   }
 
-  /** Replace the gesture's result, starting over from the doc as it was at `begin`. */
+  /** Replace the gesture's result, starting over from the project as it was at `begin`. */
   preview(recipe: Recipe): void {
     const base = this.gestureBase ?? this.present;
     this.present = produce(base, recipe);
@@ -158,13 +158,13 @@ class DocStore {
     this.emit();
   }
 
-  private push(doc: Project): void {
-    this.past.push(doc);
+  private push(project: Project): void {
+    this.past.push(project);
     if (this.past.length > HISTORY_LIMIT) this.past.shift();
   }
 
   private makeSnapshot(): HistoryState {
-    return { doc: this.present, canUndo: this.past.length > 0, canRedo: this.future.length > 0 };
+    return { project: this.present, canUndo: this.past.length > 0, canRedo: this.future.length > 0 };
   }
 
   private emit(): void {
@@ -202,10 +202,10 @@ export function emptyProject(): Project {
   };
 }
 
-export const docStore = new DocStore(emptyProject());
+export const projectStore = new ProjectStore(emptyProject());
 
-export function useDoc(): HistoryState {
-  return useSyncExternalStore(docStore.subscribe, docStore.getSnapshot);
+export function useProject(): HistoryState {
+  return useSyncExternalStore(projectStore.subscribe, projectStore.getSnapshot);
 }
 
 /** Tiny observable store for UI state that is not part of undo history. */

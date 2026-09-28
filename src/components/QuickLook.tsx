@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { getImage } from '../db';
 import { useWindowEvent } from '../hooks';
 import { markMissing, usePhotoMissing, usePhotoUrl } from '../images';
-import { useDoc } from '../store';
+import { useProject } from '../store';
 import type { PhotoMeta } from '../types';
 import { closeQuickLook, ui } from '../ui';
 
@@ -23,12 +23,12 @@ export function QuickLook() {
 }
 
 function QuickLookView(props: { ids: PhotoId[]; index: number }) {
-  const { doc } = useDoc();
+  const { project } = useProject();
   // Undo can remove a photo while it's showing.
-  const ids = props.ids.filter((id) => doc.photos[id]);
+  const ids = props.ids.filter((id) => project.photos[id]);
   const index = Math.min(props.index, ids.length - 1);
   const current = ids[index];
-  const photo = current && doc.photos[current];
+  const photo = current && project.photos[current];
 
   useEffect(() => {
     if (!photo) closeQuickLook();

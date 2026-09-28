@@ -5,7 +5,7 @@ import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { projectLoaded } from '../../persistence';
 import { createPref } from '../../prefs';
 import { buildProjectFile, confirmReplace, importProject, PROJECT_EXTENSION, ProjectFileError } from '../../project';
-import { docStore } from '../../store';
+import { projectStore } from '../../store';
 import { endTour } from '../../tour';
 import type { Project } from '../../types';
 import { ask, ui } from '../../ui';
@@ -23,7 +23,7 @@ interface OpenFile {
   path: string;
   /** Lets the file be saved after the app restarts (see bookmarks in src-tauri/src/lib.rs); null if none could be made. */
   bookmark: string | null;
-  /** The doc as last saved there (or opened from it); null when that's unknown (remembered with changes). */
+  /** The project as last saved there (or opened from it); null when that's unknown (remembered with changes). */
   saved: Project | null;
 }
 
@@ -65,8 +65,8 @@ async function attach(path: string, saved: Project): Promise<void> {
 
 /** Whether there's anything the file doesn't have. */
 function edited(): boolean {
-  if (file?.saved) return docStore.doc !== file.saved;
-  return Object.keys(docStore.doc.photos).length > 0 || docStore.getSnapshot().canUndo;
+  if (file?.saved) return projectStore.project !== file.saved;
+  return Object.keys(projectStore.project.photos).length > 0 || projectStore.getSnapshot().canUndo;
 }
 
 /** Whether the project is safe in its file, so replacing it loses nothing. */
@@ -105,7 +105,7 @@ function showState(): void {
  * project whose file is no longer attached.
  */
 export function forgetFile(): void {
-  docStore.reset(docStore.doc);
+  projectStore.reset(projectStore.project);
   file = null;
   showState();
   remember();
@@ -124,7 +124,7 @@ export async function saveAs(target?: string): Promise<boolean> {
 
 async function writeTo(target: string): Promise<boolean> {
   if (ui.get().busy || ui.get().importing || ui.get().tour !== null) return false;
-  const doc = docStore.doc;
+  const project = projectStore.project;
   try {
     const file = await buildProjectFile('Saving');
     await writeFile(target, file, (f) => ui.set({ busy: `Saving… ${Math.round(f * 100)}%` }));
@@ -135,7 +135,7 @@ async function writeTo(target: string): Promise<boolean> {
     ui.set({ busy: null });
   }
   // Changes made while saving aren't in the file.
-  await attach(target, doc);
+  await attach(target, project);
   showState();
   remember();
   return true;
@@ -187,7 +187,7 @@ async function open(target: string, launching: boolean): Promise<void> {
   endTour();
   if (!launching) {
     if (target === file?.path && !edited()) return;
-    const hasWork = Object.keys(docStore.doc.photos).length > 0;
+    const hasWork = Object.keys(projectStore.project.photos).length > 0;
     if (hasWork && !(await confirmReplace('Open another project?', `“${name(target)}”`, 'Open'))) return;
   }
   try {
@@ -195,8 +195,8 @@ async function open(target: string, launching: boolean): Promise<void> {
     const bytes = await invoke<ArrayBuffer>('read_project', { path: target }).finally(() => ui.set({ busy: null }));
     await importProject(new File([bytes], target.split('/').pop() ?? 'project'));
     // Undo shouldn't lead back into a different file's project.
-    docStore.reset(docStore.doc);
-    await attach(target, docStore.doc);
+    projectStore.reset(projectStore.project);
+    await attach(target, projectStore.project);
     // The title bar names the file; the import's "undo to go back" no longer applies.
     ui.set({ selection: [], editingSpreadId: null, modal: null, notice: null });
     showState();
@@ -232,7 +232,7 @@ export async function startDocuments(): Promise<void> {
   const remembered = filePref.load();
   if (remembered) {
     const { bookmark = null } = remembered;
-    const saved = remembered.clean ? docStore.doc : null;
+    const saved = remembered.clean ? projectStore.project : null;
     let path = remembered.path;
     // Get access to the file again, wherever it is now.
     if (bookmark) {
@@ -242,7 +242,7 @@ export async function startDocuments(): Promise<void> {
     file = { path, bookmark, saved };
   }
   showState();
-  docStore.subscribe(showState);
+  projectStore.subscribe(showState);
   ui.subscribe(showState);
 
   const win = getCurrentWindow();

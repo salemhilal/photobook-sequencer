@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { deleteImage, imageIds, loadDoc, saveDoc } from './db';
+import { deleteImage, imageIds, loadSavedProject, storeProject } from './db';
 import { forgetUrl } from './images';
 import { migrateProject, NewerProjectError, schemaVersionOf } from './schema';
-import { docStore, emptyProject } from './store';
+import { projectStore, emptyProject } from './store';
 import { claimEditor } from './tabLock';
 import { CURRENT_SCHEMA, type Project } from './types';
 import { block, ui } from './ui';
@@ -27,13 +27,13 @@ function maySave(): boolean {
  * (say, in another tab after a deploy). Overwriting it would lose data this code
  * doesn't understand, so this tab stops instead and asks for a reload.
  */
-export async function saveUnlessNewer(doc: Project): Promise<'saved' | 'newer'> {
-  const stored = await loadDoc();
+export async function saveUnlessNewer(project: Project): Promise<'saved' | 'newer'> {
+  const stored = await loadSavedProject();
   if (stored && schemaVersionOf(stored) > CURRENT_SCHEMA) {
     block('outdated');
     return 'newer';
   }
-  await saveDoc(doc);
+  await storeProject(project);
   return 'saved';
 }
 
@@ -44,7 +44,7 @@ export async function saveUnlessNewer(doc: Project): Promise<'saved' | 'newer'> 
 export async function saveProject(): Promise<'saved' | 'newer' | 'skipped' | 'failed'> {
   if (!maySave()) return 'skipped';
   try {
-    const result = await saveUnlessNewer(docStore.doc);
+    const result = await saveUnlessNewer(projectStore.project);
     if (ui.get().saveFailed) ui.set({ saveFailed: false });
     return result;
   } catch {
@@ -78,10 +78,10 @@ export function usePersistence(): boolean {
         block('elsewhere');
         return;
       }
-      const stored = await loadDoc();
+      const stored = await loadSavedProject();
       if (cancelled) return;
       try {
-        docStore.reset(stored ? migrateProject(stored) : emptyProject());
+        projectStore.reset(stored ? migrateProject(stored) : emptyProject());
       } catch (e) {
         if (e instanceof NewerProjectError) return block('outdated');
         throw e;
@@ -89,10 +89,10 @@ export function usePersistence(): boolean {
       setLoaded(true);
       markLoaded();
       void collectGarbage();
-      let last = docStore.doc;
-      unsubscribe = docStore.subscribe(() => {
-        if (docStore.doc === last) return;
-        last = docStore.doc;
+      let last = projectStore.project;
+      unsubscribe = projectStore.subscribe(() => {
+        if (projectStore.project === last) return;
+        last = projectStore.project;
         clearTimeout(timer);
         timer = setTimeout(() => void save(), SAVE_DELAY);
       });
@@ -129,7 +129,7 @@ export function usePersistence(): boolean {
 async function collectGarbage(): Promise<void> {
   if (ui.get().importing || !maySave()) return;
   const live = new Set<string>();
-  for (const d of docStore.allDocs()) for (const id of Object.keys(d.photos)) live.add(id);
+  for (const d of projectStore.allDocs()) for (const id of Object.keys(d.photos)) live.add(id);
   for (const id of await imageIds()) {
     if (!live.has(id) && !ui.get().importing && maySave()) {
       await deleteImage(id);

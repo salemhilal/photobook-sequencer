@@ -3,7 +3,7 @@ import { getImage } from '../../db';
 import { projectLoaded } from '../../persistence';
 import { tourSeenPref } from '../../prefs';
 import { newProject } from '../../project';
-import { docStore } from '../../store';
+import { projectStore } from '../../store';
 import { endTour } from '../../tour';
 import type { Project } from '../../types';
 import { ui } from '../../ui';
@@ -26,10 +26,10 @@ function check(name: string, ok: boolean, detail = ''): void {
 }
 
 const pause = (ms = 50) => new Promise((r) => setTimeout(r, ms));
-const photoCount = () => Object.keys(docStore.doc.photos).length;
+const photoCount = () => Object.keys(projectStore.project.photos).length;
 const title = () => ui.get().windowTitle;
 
-async function savedDoc(path: string): Promise<Project> {
+async function savedProject(path: string): Promise<Project> {
   const bytes = await invoke<ArrayBuffer>('read_project', { path });
   const manifest = (await (await (await readZip(new Blob([bytes]))).get('project.json')?.blob())?.text()) ?? '{}';
   return (JSON.parse(manifest) as { doc: Project }).doc;
@@ -44,7 +44,7 @@ async function scenarios(dir: string): Promise<void> {
   await openPath(a, true);
   check('opens a project', photoCount() === 3, `${photoCount()} photos`);
   check('names the window after the file', title()?.name === 'Fixture A' && !title()?.edited, JSON.stringify(title()));
-  for (const id of Object.keys(docStore.doc.photos)) {
+  for (const id of Object.keys(projectStore.project.photos)) {
     const img = await getImage(id);
     const bitmap = img && (await createImageBitmap(img.full).catch(() => null));
     check(`stores photo ${id} so it can be shown`, !!bitmap, img ? `${img.full.size} bytes` : 'missing');
@@ -62,41 +62,41 @@ async function scenarios(dir: string): Promise<void> {
   localStorage.setItem('photobook-theme', 'dark');
 
   // Save.
-  docStore.apply((d) => void (d.settings.pageW = 11));
+  projectStore.apply((d) => void (d.settings.pageW = 11));
   check('marks unsaved changes', title()?.edited === true);
   check('saves over the file', (await save()) && !title()?.edited, ui.get().notice ?? '');
-  check('the file has the change', (await savedDoc(a)).settings.pageW === 11);
+  check('the file has the change', (await savedProject(a)).settings.pageW === 11);
 
   // Save As.
-  docStore.apply((d) => void (d.settings.pageW = 12));
+  projectStore.apply((d) => void (d.settings.pageW = 12));
   check('saves as a new file', await saveAs(copy), ui.get().notice ?? '');
   check(
     'names the window after the new file',
     title()?.name === 'Saved As' && !title()?.edited,
     JSON.stringify(title()),
   );
-  check('the new file has the change', (await savedDoc(copy)).settings.pageW === 12);
-  check('the old file keeps its own', (await savedDoc(a)).settings.pageW === 11);
-  const copied = await savedDoc(copy);
+  check('the new file has the change', (await savedProject(copy)).settings.pageW === 12);
+  check('the old file keeps its own', (await savedProject(a)).settings.pageW === 11);
+  const copied = await savedProject(copy);
   check('the new file keeps every photo', Object.keys(copied.photos).length === 3);
 
   // Opening another, with everything saved: no questions.
   await openPath(b);
   check('opens another project without asking when saved', photoCount() === 1 && title()?.name === 'Fixture B');
-  check('starts fresh history for each file', !docStore.getSnapshot().canUndo);
+  check('starts fresh history for each file', !projectStore.getSnapshot().canUndo);
 
   // Opening another, with unsaved changes: it asks first.
-  docStore.apply((d) => void (d.settings.pageW = 9));
+  projectStore.apply((d) => void (d.settings.pageW = 9));
   const opening = openPath(a);
   await pause();
   const asked = ui.get().confirm;
   check('asks before replacing unsaved changes', !!asked);
   asked?.choose(asked.actions.findIndex((a) => a.label === 'Cancel'));
   await opening;
-  check('cancelling keeps the project', title()?.name === 'Fixture B' && docStore.doc.settings.pageW === 9);
+  check('cancelling keeps the project', title()?.name === 'Fixture B' && projectStore.project.settings.pageW === 9);
 
   // A file opened from Finder while photos are importing waits its turn.
-  docStore.apply((d) => void (d.settings.pageW = 10));
+  projectStore.apply((d) => void (d.settings.pageW = 10));
   await save();
   ui.set({ importing: { done: 0, total: 1 } });
   const waiting = openPath(a);
@@ -109,24 +109,24 @@ async function scenarios(dir: string): Promise<void> {
   // New Project starts fresh history, so undo can't bring back a project without its file.
   await newProject();
   check('New Project starts an untitled, empty project', title()?.name === 'Untitled' && photoCount() === 0);
-  check('New Project starts fresh history', !docStore.getSnapshot().canUndo);
+  check('New Project starts fresh history', !projectStore.getSnapshot().canUndo);
 
   // Leave the state the relaunch expects: Fixture B, with an unsaved change.
   await openPath(b);
-  docStore.apply((d) => void (d.settings.pageW = 9));
+  projectStore.apply((d) => void (d.settings.pageW = 9));
 }
 
 /** The second run, after quitting: the last project should come back as it was left. */
 async function afterRelaunch(): Promise<void> {
   await pause(500);
-  check('reopens the last project', photoCount() === 1 && docStore.doc.settings.pageW === 9);
+  check('reopens the last project', photoCount() === 1 && projectStore.project.settings.pageW === 9);
   check('runs the page’s startup script (the saved theme)', document.documentElement.dataset.theme === 'dark');
   check(
     'remembers it has unsaved changes',
     title()?.name === 'Fixture B' && title()?.edited === true,
     JSON.stringify(title()),
   );
-  for (const id of Object.keys(docStore.doc.photos)) {
+  for (const id of Object.keys(projectStore.project.photos)) {
     const img = await getImage(id);
     const bitmap = img && (await createImageBitmap(img.full).catch(() => null));
     check(`photo ${id} still shows after relaunching`, !!bitmap, img ? `${img.full.size} bytes` : 'missing');
@@ -147,7 +147,7 @@ async function sandboxOpen(): Promise<void> {
   );
   // Without its file, saving would ask where (a dialog nobody's there to answer).
   if (title()?.name !== 'Sandbox') return;
-  docStore.apply((d) => void (d.settings.pageW = 13));
+  projectStore.apply((d) => void (d.settings.pageW = 13));
   check('saves over it, sandboxed', await save(), ui.get().notice ?? '');
 }
 
@@ -156,7 +156,7 @@ async function sandboxRelaunch(): Promise<void> {
   await until(() => title()?.name === 'Sandbox');
   check('remembers its file, sandboxed', title()?.name === 'Sandbox', JSON.stringify(title()));
   if (title()?.name !== 'Sandbox') return;
-  docStore.apply((d) => void (d.settings.pageW = 14));
+  projectStore.apply((d) => void (d.settings.pageW = 14));
   check('still saves over it after relaunching (bookmark)', await save(), ui.get().notice ?? '');
 }
 

@@ -4,10 +4,10 @@ let stored: unknown;
 const saves: unknown[] = [];
 let saveError: Error | null = null;
 vi.mock('./db', () => ({
-  loadDoc: async () => stored,
-  saveDoc: async (doc: unknown) => {
+  loadSavedProject: async () => stored,
+  storeProject: async (project: unknown) => {
     if (saveError) throw saveError;
-    saves.push(doc);
+    saves.push(project);
   },
   imageIds: async () => [],
   deleteImage: async () => {},

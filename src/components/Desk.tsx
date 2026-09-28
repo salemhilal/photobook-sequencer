@@ -5,7 +5,7 @@ import { addPhotos } from '../commands';
 import { isProjectFile, openProjectFile } from '../project';
 import { clearGhost, startDrag, trackGhost } from '../drag';
 import { intersects, resizeRect, type Corner, type Rect } from '../geometry';
-import { docStore, useDoc } from '../store';
+import { projectStore, useProject } from '../store';
 import type { Placement } from '../types';
 import { DESK_PPI, deskGeometry } from '../deskGeometry';
 import { isTyping } from '../input';
@@ -25,7 +25,7 @@ const FRAME_GAP_PX = 5;
 const SPACE_TAP_MS = 400;
 
 export function Desk() {
-  const { doc } = useDoc();
+  const { project } = useProject();
   const view = ui.use((s) => s.view);
   const selection = ui.use((s) => s.selection);
   const dropHover = ui.use((s) => s.hover?.kind === 'desk');
@@ -133,7 +133,7 @@ export function Desk() {
         const a = deskGeometry.toDesk(rect.left + m.x, rect.top + m.y);
         const b = deskGeometry.toDesk(rect.left + m.x + m.w, rect.top + m.y + m.h);
         const box = { x: a.x, y: a.y, w: b.x - a.x, h: b.y - a.y };
-        const hit = docStore.doc.pile.filter((p) => intersects(p, box)).map((p) => p.photoId);
+        const hit = projectStore.project.pile.filter((p) => intersects(p, box)).map((p) => p.photoId);
         ui.set({ selection: [...new Set([...initial, ...hit])] });
       },
       onEnd: () => setMarquee(null),
@@ -165,14 +165,14 @@ export function Desk() {
     };
 
     startDrag(e, {
-      onStart: () => docStore.begin(),
+      onStart: () => projectStore.begin(),
       onMove: ({ e: ev, dx, dy }) => {
         const target = trackGhost(ev, null);
         setEdge(ev);
         ui.set({ ghost: target?.kind === 'desk' ? null : { ...ghost, clientX: ev.clientX, clientY: ev.clientY } });
         const set = new Set(ids);
-        const ordered = [...docStore.doc.pile].sort((a, b) => a.z - b.z);
-        docStore.preview((d) => {
+        const ordered = [...projectStore.project.pile].sort((a, b) => a.z - b.z);
+        projectStore.preview((d) => {
           for (const q of ordered) {
             if (!set.has(q.photoId)) continue;
             const item = d.pile.find((i) => i.photoId === q.photoId);
@@ -189,7 +189,7 @@ export function Desk() {
         if (!moved) {
           if (toggle && wasSelected) ui.set({ selection: current.filter((id) => id !== p.photoId) });
           else if (!toggle) ui.set({ selection: [p.photoId] });
-          docStore.silent((d) => {
+          projectStore.silent((d) => {
             const item = d.pile.find((i) => i.photoId === p.photoId);
             if (item) raise(d, d.pile, item);
           });
@@ -199,19 +199,19 @@ export function Desk() {
         clearGhost();
         if (target?.kind === 'desk') {
           // Moved around the desk: keep the new positions.
-          docStore.end();
+          projectStore.end();
         } else if (target) {
-          docStore.preview((d) => void dropPhotos(d, target, ids));
-          docStore.end();
+          projectStore.preview((d) => void dropPhotos(d, target, ids));
+          projectStore.end();
           ui.set({ selection: [] });
         } else {
-          docStore.cancel();
+          projectStore.cancel();
         }
       },
       onCancel: () => {
         clearGhost();
         setEdge(null);
-        docStore.cancel();
+        projectStore.cancel();
       },
     });
   };
@@ -222,21 +222,21 @@ export function Desk() {
     const k = DESK_PPI * ui.get().view.zoom;
     setResizingId(p.photoId);
     startDrag(e, {
-      onStart: () => docStore.begin(),
+      onStart: () => projectStore.begin(),
       onMove: ({ e: ev, dx, dy }) => {
         const { rect } = resizeRect(p, corner, dx / k, dy / k, !ev.shiftKey, null, 0);
-        docStore.preview((d) => {
+        projectStore.preview((d) => {
           const item = d.pile.find((i) => i.photoId === p.photoId);
           if (item) Object.assign(item, rect);
         });
       },
       onEnd: (_, moved) => {
         setResizingId(null);
-        if (moved) docStore.end();
+        if (moved) projectStore.end();
       },
       onCancel: () => {
         setResizingId(null);
-        docStore.cancel();
+        projectStore.cancel();
       },
     });
   };
@@ -263,8 +263,8 @@ export function Desk() {
     // Only MIME types are visible before the drop, not file names. Photos are image/*;
     // .photo-sequence files have no registered type, so they arrive with an empty one.
     const types = [...e.dataTransfer.items].map((i) => i.type);
-    const project = types.some((t) => t === '' || t === 'application/zip' || t === 'application/x-zip-compressed');
-    setFileDrop(project ? 'project' : 'photos');
+    const projectFile = types.some((t) => t === '' || t === 'application/zip' || t === 'application/x-zip-compressed');
+    setFileDrop(projectFile ? 'project' : 'photos');
   };
 
   const onDragLeave = (e: React.DragEvent) => {
@@ -278,12 +278,12 @@ export function Desk() {
     fileDragDepth.current = 0;
     setFileDrop(null);
     const files = [...e.dataTransfer.files];
-    const project = files.find(isProjectFile);
-    if (project) void openProjectFile(project);
+    const projectFile = files.find(isProjectFile);
+    if (projectFile) void openProjectFile(projectFile);
     else if (files.length) void importPhotos(files);
   };
 
-  const items = [...doc.pile].sort((a, b) => a.z - b.z);
+  const items = [...project.pile].sort((a, b) => a.z - b.z);
   const single = selection.length === 1 ? selection[0] : null;
 
   return (
@@ -332,10 +332,10 @@ export function Desk() {
       {marquee && (
         <div className="marquee" style={{ left: marquee.x, top: marquee.y, width: marquee.w, height: marquee.h }} />
       )}
-      {doc.pile.length === 0 && (
+      {project.pile.length === 0 && (
         <div className="desk-empty">
           <p className="desk-empty-title">
-            {Object.keys(doc.photos).length ? 'Every photo is placed' : 'Start by adding photos'}
+            {Object.keys(project.photos).length ? 'Every photo is placed' : 'Start by adding photos'}
           </p>
           <p>
             Add or drop photos or exported projects here.
@@ -345,7 +345,7 @@ export function Desk() {
           <button className="btn primary" onPointerDown={(e) => e.stopPropagation()} onClick={addPhotos}>
             Add photos
           </button>
-          {Object.keys(doc.photos).length === 0 && (
+          {Object.keys(project.photos).length === 0 && (
             // A new project: set the page size before placing anything.
             <div
               className="setup-card"

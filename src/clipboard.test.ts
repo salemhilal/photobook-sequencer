@@ -36,7 +36,7 @@ vi.stubGlobal('navigator', {
 
 const { addPhotosToPile } = await import('./actions');
 const { copyPhotos, isInternalPaste, pasteCopied } = await import('./clipboard');
-const { docStore, emptyProject } = await import('./store');
+const { projectStore, emptyProject } = await import('./store');
 const { ui } = await import('./ui');
 
 /** What a paste event would carry after our copy (or after copying something else). */
@@ -47,7 +47,7 @@ beforeEach(() => {
   images.clear();
   written = {};
   failWrites = false;
-  docStore.reset(emptyProject());
+  projectStore.reset(emptyProject());
   addPhotosToPile([
     { id: A, name: 'a.jpg', pxW: 100, pxH: 100 },
     { id: B, name: 'b.jpg', pxW: 100, pxH: 100 },
@@ -69,10 +69,10 @@ describe('copy and paste', () => {
 
     await pasteCopied();
     await pasteCopied();
-    const pile = docStore.doc.pile;
+    const pile = projectStore.project.pile;
     expect(pile).toHaveLength(6);
     const a = pile.find((p) => p.photoId === A)!;
-    const copiesOfA = pile.filter((p) => docStore.doc.photos[p.photoId]!.name === 'a copy.jpg');
+    const copiesOfA = pile.filter((p) => projectStore.project.photos[p.photoId]!.name === 'a copy.jpg');
     expect(copiesOfA.map((p) => Math.round((p.x - a.x) * 100) / 100)).toEqual([0.25, 0.5]);
     expect(ui.get().selection).toHaveLength(2);
   });

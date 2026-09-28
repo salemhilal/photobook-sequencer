@@ -35,7 +35,7 @@ import { Tour } from './components/Tour';
 import { usePersistence } from './persistence';
 import { tourSeenPref } from './prefs';
 import { startTour } from './tour';
-import { docStore, useDoc } from './store';
+import { projectStore, useProject } from './store';
 import { openModal, toggleSidebar, ui } from './ui';
 import { takeOver } from './tabLock';
 import { checkForUpdate, reloadToUpdate } from './update';
@@ -44,7 +44,7 @@ import { allSpreads } from './spreads';
 const NOTICE_MS = 6000;
 
 export default function App() {
-  const { doc, canUndo, canRedo } = useDoc();
+  const { project, canUndo, canRedo } = useProject();
   const editing = ui.use((s) => s.editingSpreadId);
   const modal = ui.use((s) => s.modal);
   const importing = ui.use((s) => s.importing);
@@ -67,7 +67,7 @@ export default function App() {
   }, [notice]);
 
   // The first time this browser opens the app to an empty project, show the tour.
-  const fresh = loaded && Object.keys(doc.photos).length === 0;
+  const fresh = loaded && Object.keys(project.photos).length === 0;
   useEffect(() => {
     if (fresh && !tourSeenPref.load()) startTour();
   }, [fresh]);
@@ -77,10 +77,10 @@ export default function App() {
   if (!loaded) return <div className="loading">Opening your book…</div>;
 
   const working = importing !== null || busy !== null;
-  const placed = allSpreads(doc).reduce((n, s) => n + s.items.length, 0);
+  const placed = allSpreads(project).reduce((n, s) => n + s.items.length, 0);
   const status = importing?.total
     ? `Importing ${importing.done} of ${importing.total}…`
-    : (busy ?? (importing ? 'Importing…' : `${doc.pile.length} on desk · ${placed} placed`));
+    : (busy ?? (importing ? 'Importing…' : `${project.pile.length} on desk · ${placed} placed`));
 
   const fileItem = (id: CommandId, icon: React.ReactNode, disabled = working) => ({
     label: commandTitle(id),
@@ -122,7 +122,7 @@ export default function App() {
                 aria-label="Undo"
                 title={`Undo (${shortcutLabel('undo')})`}
                 disabled={!canUndo}
-                onClick={() => docStore.undo()}
+                onClick={() => projectStore.undo()}
               >
                 <Undo2 />
               </button>
@@ -131,7 +131,7 @@ export default function App() {
                 aria-label="Redo"
                 title={`Redo (${shortcutLabel('redo')})`}
                 disabled={!canRedo}
-                onClick={() => docStore.redo()}
+                onClick={() => projectStore.redo()}
               >
                 <Redo2 />
               </button>

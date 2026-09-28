@@ -9,7 +9,7 @@ import { hasMod, isMac, isTextField, isTyping, MOD_LABEL } from './input';
 import { platform } from '#platform';
 import { pickFiles } from './files';
 import { newProject } from './project';
-import { docStore } from './store';
+import { projectStore } from './store';
 import { startTour } from './tour';
 import { deskCovered, openModal, toggleGuides, toggleModal, toggleSidebar, ui } from './ui';
 
@@ -67,7 +67,7 @@ function nudgeSelection(e?: KeyboardEvent): void | false {
   const n = e.shiftKey ? NUDGE_BIG : NUDGE;
   const dx = e.key === 'ArrowLeft' ? -n : e.key === 'ArrowRight' ? n : 0;
   const dy = e.key === 'ArrowUp' ? -n : e.key === 'ArrowDown' ? n : 0;
-  docStore.apply(
+  projectStore.apply(
     (d) => {
       for (const p of d.pile) {
         if (!ids.has(p.photoId)) continue;
@@ -155,7 +155,7 @@ export const commands = {
     run: () => toggleModal('settings'),
   },
   toggleSidebar: { bindings: [{ key: 'b', mod: true }], scope: 'app', inFields: true, run: toggleSidebar },
-  undo: { title: 'Undo', bindings: [{ key: 'z', mod: true }], scope: 'app', run: () => docStore.undo() },
+  undo: { title: 'Undo', bindings: [{ key: 'z', mod: true }], scope: 'app', run: () => projectStore.undo() },
   redo: {
     title: 'Redo',
     bindings: [
@@ -164,13 +164,13 @@ export const commands = {
     ],
     scope: 'app',
     label: isMac ? '⇧⌘Z' : 'Ctrl+Y',
-    run: () => docStore.redo(),
+    run: () => projectStore.redo(),
   },
   selectAll: {
     title: 'Select all',
     bindings: [{ key: 'a', mod: true }],
     scope: 'desk',
-    run: () => ui.set({ selection: docStore.doc.pile.map((p) => p.photoId) }),
+    run: () => ui.set({ selection: projectStore.project.pile.map((p) => p.photoId) }),
   },
   copy: {
     bindings: [{ key: 'c', mod: true }],

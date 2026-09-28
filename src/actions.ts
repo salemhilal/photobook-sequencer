@@ -3,7 +3,7 @@ import { getImage, putImage, type StoredImage } from './db';
 import { importFiles, setUrl } from './images';
 import { newPhotoId, newSpreadId, type PhotoId, type SpreadId } from './ids';
 import { allSpreads, findSpread, middleIndex } from './spreads';
-import { docStore } from './store';
+import { projectStore } from './store';
 import { dropBox, fitCentered, pageRect, pileSize, PILE_PHOTO_SIZE } from './geometry';
 import type { DropTarget } from './drag';
 import type { Project, PageSide, PhotoMeta, Placement } from './types';
@@ -19,11 +19,11 @@ export function addPhotosToPile(photos: PhotoMeta[]): void {
   const vis = deskGeometry.visible();
   const cols = Math.max(3, Math.floor((vis.w - 0.5) / CELL));
   let top = vis.y + 0.4;
-  const pile = docStore.doc.pile;
+  const pile = projectStore.project.pile;
   if (pile.length) top = Math.max(...pile.map((p) => p.y + p.h)) + 0.6;
   const left = vis.x + 0.4;
 
-  docStore.apply((d) => {
+  projectStore.apply((d) => {
     photos.forEach((photo, i) => {
       d.photos[photo.id] = photo;
       const { w, h } = pileSize(photo);
@@ -159,7 +159,7 @@ const TIDY_GAP = 0.3;
  */
 export function tidyPile(photoIds?: PhotoId[]): void {
   const ids = photoIds && photoIds.length > 1 ? new Set(photoIds) : null;
-  const items = docStore.doc.pile.filter((p) => !ids || ids.has(p.photoId));
+  const items = projectStore.project.pile.filter((p) => !ids || ids.has(p.photoId));
   if (items.length < 2) return;
 
   const cell = Math.max(...items.map((p) => Math.max(p.w, p.h))) + TIDY_GAP;
@@ -192,7 +192,7 @@ export function tidyPile(photoIds?: PhotoId[]): void {
     gridRow += Math.ceil(row.length / cols);
   }
 
-  docStore.apply((d) => {
+  projectStore.apply((d) => {
     for (const p of d.pile) {
       const at = slot.get(p.photoId);
       if (!at) continue;
@@ -219,14 +219,14 @@ export async function duplicatePhotos(photoIds: PhotoId[], offset = DUPLICATE_OF
   const sources: { from: PhotoId; id: PhotoId; img: StoredImage }[] = [];
   for (const from of photoIds) {
     const img = await getImage(from);
-    if (img && docStore.doc.photos[from]) sources.push({ from, id: newPhotoId(), img });
+    if (img && projectStore.project.photos[from]) sources.push({ from, id: newPhotoId(), img });
   }
   if (!sources.length) return [];
   for (const { id, img } of sources) setUrl(id, img.thumb);
 
   // Reference the new photos before storing their images, so a background cleanup
   // of unreferenced images can't remove them in between.
-  docStore.apply((d) => {
+  projectStore.apply((d) => {
     for (const { from, id } of sources) {
       const meta = d.photos[from];
       if (!meta) continue;
@@ -247,7 +247,7 @@ export async function duplicatePhotos(photoIds: PhotoId[], offset = DUPLICATE_OF
 
 export function deleteFromProject(photoIds: PhotoId[]): void {
   const ids = new Set(photoIds);
-  docStore.apply((d) => {
+  projectStore.apply((d) => {
     d.pile = d.pile.filter((p) => !ids.has(p.photoId));
     for (const s of allSpreads(d)) s.items = s.items.filter((p) => !ids.has(p.photoId));
     for (const id of ids) delete d.photos[id];
@@ -257,14 +257,14 @@ export function deleteFromProject(photoIds: PhotoId[]): void {
 
 /** Insert a new middle spread before book position `index`. First and last spreads stay put. */
 export function insertSpread(index: number): void {
-  docStore.apply((d) => {
+  projectStore.apply((d) => {
     d.spreads.splice(middleIndex(d, index), 0, { kind: 'middle', id: newSpreadId(), items: [] });
   });
 }
 
 /** Delete a middle spread (the first and last aren't in that list, so can't be), returning its photos to the desk. */
 export function deleteSpread(spreadId: SpreadId): void {
-  docStore.apply((d) => {
+  projectStore.apply((d) => {
     const idx = d.spreads.findIndex((s) => s.id === spreadId);
     const spread = d.spreads[idx];
     if (!spread) return;
@@ -283,7 +283,7 @@ export function deleteSpread(spreadId: SpreadId): void {
 
 /** Move a middle spread so it sits at book position `toIndex` (counted after its removal). */
 export function moveSpread(spreadId: SpreadId, toIndex: number): void {
-  docStore.apply((d) => {
+  projectStore.apply((d) => {
     const from = d.spreads.findIndex((s) => s.id === spreadId);
     const spread = d.spreads[from];
     if (!spread) return;

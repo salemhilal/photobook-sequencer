@@ -9,20 +9,27 @@ const B = toPhotoId('b');
 
 /** A project with something in every part: photos on the desk and a page, every guide kind. */
 function sound(): Project {
-  const doc = emptyProject();
-  doc.photos = {
+  const project = emptyProject();
+  project.photos = {
     [A]: { id: A, name: 'a.jpg', pxW: 1200, pxH: 800 },
     [B]: { id: B, name: 'b.jpg', pxW: 800, pxH: 1200 },
   };
-  doc.pile = [{ photoId: A, x: -3, y: 1, w: 2, h: 1.33, z: 1 }];
-  doc.spreads[0]!.items = [{ photoId: B, x: -9, y: 0.5, w: 4, h: 6, z: 2 }];
-  doc.settings.borders.push({ id: toGuideId('edges'), kind: 'edges', top: 0.5, bottom: 1, inside: 1.5, outside: 0.75 });
-  doc.settings.lines = [
+  project.pile = [{ photoId: A, x: -3, y: 1, w: 2, h: 1.33, z: 1 }];
+  project.spreads[0]!.items = [{ photoId: B, x: -9, y: 0.5, w: 4, h: 6, z: 2 }];
+  project.settings.borders.push({
+    id: toGuideId('edges'),
+    kind: 'edges',
+    top: 0.5,
+    bottom: 1,
+    inside: 1.5,
+    outside: 0.75,
+  });
+  project.settings.lines = [
     { id: toGuideId('v'), axis: 'vertical', at: 2 },
     { id: toGuideId('h'), axis: 'horizontal', at: 3 },
   ];
-  doc.nextZ = 3;
-  return doc;
+  project.nextZ = 3;
+  return project;
 }
 
 /** A sound project as plain JSON, changed by `damage`, then checked. */
@@ -34,8 +41,8 @@ function check(damage: (d: any) => void): () => Project {
 
 describe('validateProject', () => {
   it('accepts sound projects as they are', () => {
-    const project = sound();
-    expect(validateProject(project)).toEqual(project);
+    const input = sound();
+    expect(validateProject(input)).toEqual(input);
     const empty = emptyProject();
     expect(validateProject(empty)).toEqual(empty);
   });
@@ -44,9 +51,9 @@ describe('validateProject', () => {
     const d = JSON.parse(JSON.stringify(sound()));
     d.extra = 'x';
     d.pile[0].tint = 'red';
-    const doc = validateProject(d);
-    expect(doc).not.toHaveProperty('extra');
-    expect(doc.pile[0]).not.toHaveProperty('tint');
+    const project = validateProject(d);
+    expect(project).not.toHaveProperty('extra');
+    expect(project.pile[0]).not.toHaveProperty('tint');
   });
 
   it('refuses anything that isn’t a project, or is from another version', () => {
@@ -150,10 +157,10 @@ describe('validateProject', () => {
   });
 
   it('returns ids of the right kinds', () => {
-    const project = sound();
-    const doc = validateProject(project);
-    expect(doc.firstSpread.id).toBe(project.firstSpread.id);
-    expect(doc.settings.lines.map((l) => l.id)).toEqual([toGuideId('v'), toGuideId('h')]);
-    expect(Object.keys(doc.photos)).toEqual([A, B]);
+    const input = sound();
+    const project = validateProject(input);
+    expect(project.firstSpread.id).toBe(input.firstSpread.id);
+    expect(project.settings.lines.map((l) => l.id)).toEqual([toGuideId('v'), toGuideId('h')]);
+    expect(Object.keys(project.photos)).toEqual([A, B]);
   });
 });

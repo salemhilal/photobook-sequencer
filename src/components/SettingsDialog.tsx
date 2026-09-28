@@ -3,7 +3,7 @@ import { Ruler } from 'lucide-react';
 import { platform } from '#platform';
 import { Dialog } from './Dialog';
 import { formatBytes, readStorageStatus, requestPersistence, type StorageStatus } from '../storage';
-import { docStore, useDoc } from '../store';
+import { projectStore, useProject } from '../store';
 import type { ThemePref } from '../theme';
 import { setTheme, closeModal, openModal, ui } from '../ui';
 import { DeskColorPicker } from './DeskColorPicker';
@@ -73,8 +73,8 @@ function StorageRow() {
 }
 
 export function SettingsDialog() {
-  const { doc } = useDoc();
-  const s = doc.settings;
+  const { project } = useProject();
+  const s = project.settings;
 
   return (
     <Dialog title="Settings" onClose={closeModal} className="settings">
@@ -87,7 +87,7 @@ export function SettingsDialog() {
               <input
                 type="checkbox"
                 checked={s.keepRelative}
-                onChange={(e) => docStore.apply((d) => void (d.settings.keepRelative = e.target.checked))}
+                onChange={(e) => projectStore.apply((d) => void (d.settings.keepRelative = e.target.checked))}
               />
               Keep photos relative to guides
             </label>

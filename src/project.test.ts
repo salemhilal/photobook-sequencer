@@ -16,7 +16,7 @@ import { deleteImage, getImage, putImage } from './db';
 import { platform } from '#platform';
 import { importProject, isProjectFile, newProject, ProjectFileError } from './project';
 import { ui } from './ui';
-import { docStore, emptyProject } from './store';
+import { projectStore, emptyProject } from './store';
 import { toPhotoId } from './ids';
 import type { Project } from './types';
 
@@ -31,14 +31,14 @@ const B = toPhotoId('b');
 import { createZip } from './zip';
 
 function sampleProject(): Project {
-  const doc = emptyProject();
-  doc.photos = {
+  const project = emptyProject();
+  project.photos = {
     [A]: { id: A, name: 'beach.jpg', pxW: 1200, pxH: 900 },
     [B]: { id: B, name: 'beach.jpg', pxW: 900, pxH: 1200 },
   };
-  doc.pile = [{ photoId: A, x: 1, y: 1, w: 2, h: 1.5, z: 1 }];
-  doc.nextZ = 2;
-  return doc;
+  project.pile = [{ photoId: A, x: 1, y: 1, w: 2, h: 1.5, z: 1 }];
+  project.nextZ = 2;
+  return project;
 }
 
 /** Run `fn`, capturing the file it downloads. */
@@ -61,15 +61,15 @@ async function captureDownload(fn: () => Promise<unknown>): Promise<{ blob: Blob
 
 afterEach(() => {
   vi.restoreAllMocks();
-  docStore.reset(emptyProject());
+  projectStore.reset(emptyProject());
 });
 
 describe('project files', () => {
   it('exports and re-imports a project with its layout and images', async () => {
-    const doc = sampleProject();
-    docStore.reset(doc);
-    docStore.apply((d) => putOnPage(d, [B], d.spreads[0]!.id, 'right'));
-    const before = docStore.doc;
+    const project = sampleProject();
+    projectStore.reset(project);
+    projectStore.apply((d) => putOnPage(d, [B], d.spreads[0]!.id, 'right'));
+    const before = projectStore.project;
     await putImage('a', { full: new Blob(['full-a'], { type: 'image/jpeg' }), thumb: new Blob(['thumb-a']) });
     await putImage('b', { full: new Blob(['full-b'], { type: 'image/jpeg' }), thumb: new Blob(['thumb-b']) });
 
@@ -79,20 +79,20 @@ describe('project files', () => {
     // Simulate opening the file on a fresh machine.
     await deleteImage('a');
     await deleteImage('b');
-    docStore.reset(emptyProject());
+    projectStore.reset(emptyProject());
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:thumb');
     await importProject(new File([blob], name));
 
-    expect(docStore.doc).toEqual(before);
+    expect(projectStore.project).toEqual(before);
     expect(await (await getImage('b'))!.full.text()).toBe('full-b');
     expect(await (await getImage('a'))!.thumb.text()).toBe('thumb-a');
 
-    docStore.undo();
-    expect(Object.keys(docStore.doc.photos)).toHaveLength(0);
+    projectStore.undo();
+    expect(Object.keys(projectStore.project.photos)).toHaveLength(0);
   });
 
   it('gives duplicate filenames distinct names inside the zip', async () => {
-    docStore.reset(sampleProject());
+    projectStore.reset(sampleProject());
     await putImage('a', { full: new Blob(['a']), thumb: new Blob(['a']) });
     await putImage('b', { full: new Blob(['b']), thumb: new Blob(['b']) });
     const { blob } = await captureDownload(() => platform.keepProject());
@@ -102,12 +102,12 @@ describe('project files', () => {
   });
 
   it('drops photos whose images are missing from the file', async () => {
-    const doc = sampleProject();
+    const project = sampleProject();
     const manifest = {
       format: 'photo-sequencer-project',
       version: 1,
       exportedAt: '',
-      doc,
+      doc: project,
       files: { a: { image: 'images/a.jpg' }, b: { image: 'images/missing.jpg' } },
     };
     const zip = await createZip([
@@ -120,7 +120,7 @@ describe('project files', () => {
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:thumb');
 
     await importProject(new File([zip], 'partial.zip'));
-    expect(Object.keys(docStore.doc.photos)).toEqual(['a']);
+    expect(Object.keys(projectStore.project.photos)).toEqual(['a']);
   });
 
   it('rejects files that are not projects', async () => {
@@ -130,8 +130,8 @@ describe('project files', () => {
   });
 
   it('refuses projects whose contents are from a newer version', async () => {
-    const doc = { ...sampleProject(), schemaVersion: 99 };
-    const manifest = { format: 'photo-sequencer-project', version: 1, exportedAt: '', doc, files: {} };
+    const project = { ...sampleProject(), schemaVersion: 99 };
+    const manifest = { format: 'photo-sequencer-project', version: 1, exportedAt: '', doc: project, files: {} };
     const zip = await createZip([{ name: 'project.json', data: new Blob([JSON.stringify(manifest)]) }]);
     await expect(importProject(new File([zip], 'future.photo-sequence'))).rejects.toThrow(/newer version/);
   });
@@ -147,7 +147,7 @@ describe('project files', () => {
       format: 'photo-sequencer-project',
       version: 99,
       exportedAt: '',
-      doc: sampleProject(),
+      project: sampleProject(),
       files: {},
     };
     const zip = await createZip([{ name: 'project.json', data: new Blob([JSON.stringify(manifest)]) }]);
@@ -155,18 +155,18 @@ describe('project files', () => {
   });
 
   it('starts a new project only after confirming, and can be undone', async () => {
-    docStore.reset(sampleProject());
+    projectStore.reset(sampleProject());
     const cancelled = newProject();
     pick('Cancel');
     await cancelled;
-    expect(Object.keys(docStore.doc.photos)).toHaveLength(2);
+    expect(Object.keys(projectStore.project.photos)).toHaveLength(2);
 
     const confirmed = newProject();
     expect(ui.get().confirm!.actions.map((a) => a.label)).toEqual(['Cancel', 'Export current first', 'New project']);
     pick('New project');
     await confirmed;
-    expect(Object.keys(docStore.doc.photos)).toHaveLength(0);
-    docStore.undo();
-    expect(Object.keys(docStore.doc.photos)).toHaveLength(2);
+    expect(Object.keys(projectStore.project.photos)).toHaveLength(0);
+    projectStore.undo();
+    expect(Object.keys(projectStore.project.photos)).toHaveLength(2);
   });
 });

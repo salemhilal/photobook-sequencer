@@ -60,15 +60,15 @@ const expected: Project = {
   nextZ: 2,
 };
 
-/** A doc with its guides' ids replaced by their position, and the drop guide's by its. */
-function withoutIds(doc: Project): unknown {
-  const ids = doc.settings.borders.map((b) => b.id);
+/** A project with its guides' ids replaced by their position, and the drop guide's by its. */
+function withoutIds(project: Project): unknown {
+  const ids = project.settings.borders.map((b) => b.id);
   return {
-    ...doc,
+    ...project,
     settings: {
-      ...doc.settings,
-      borders: doc.settings.borders.map((b, i) => ({ ...b, id: i })),
-      dropBorder: doc.settings.dropBorder === null ? null : ids.indexOf(doc.settings.dropBorder),
+      ...project.settings,
+      borders: project.settings.borders.map((b, i) => ({ ...b, id: i })),
+      dropBorder: project.settings.dropBorder === null ? null : ids.indexOf(project.settings.dropBorder),
     },
   };
 }
@@ -93,13 +93,13 @@ describe('migrateProject', () => {
 
 describe('migrating version 0 without border guides', () => {
   it('gives it version 1’s default guides, then upgrades them', () => {
-    const doc = migrateProject({ ...(samples[0] as object), settings: { pageW: 10, pageH: 8 } });
-    expect(doc.settings.borders.map(({ kind, ...b }) => kind === 'even' && 'inset' in b && b.inset)).toEqual([
+    const project = migrateProject({ ...(samples[0] as object), settings: { pageW: 10, pageH: 8 } });
+    expect(project.settings.borders.map(({ kind, ...b }) => kind === 'even' && 'inset' in b && b.inset)).toEqual([
       0.5, 1.25,
     ]);
-    expect(doc.settings.lines).toEqual([]);
+    expect(project.settings.lines).toEqual([]);
     // Dropped photos fit the largest box, as before: the 0.5 in guide.
-    expect(doc.settings.dropBorder).toBe(doc.settings.borders[0]!.id);
+    expect(project.settings.dropBorder).toBe(project.settings.borders[0]!.id);
   });
 });
 
