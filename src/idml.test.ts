@@ -67,12 +67,13 @@ describe('buildIdml', () => {
 
   it('mirrors per-edge margins and line guides on facing pages', async () => {
     const doc = sample();
-    doc.settings.borders = [{ top: 0.5, bottom: 1, inside: 1.5, outside: 0.75 }];
+    doc.settings.borders = [{ id: 'book', kind: 'edges', top: 0.5, bottom: 1, inside: 1.5, outside: 0.75 }];
+    doc.settings.dropBorder = 'book';
     doc.settings.centerV = false;
     doc.settings.centerH = false;
     doc.settings.lines = [
-      { axis: 'vertical', at: 2 },
-      { axis: 'horizontal', at: 3 },
+      { id: 'v', axis: 'vertical', at: 2 },
+      { id: 'h', axis: 'horizontal', at: 3 },
     ];
     const { files } = await build(doc);
     // The document's margins: with facing pages, Left is inside and Right is outside.

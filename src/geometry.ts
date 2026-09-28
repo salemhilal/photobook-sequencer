@@ -1,4 +1,4 @@
-import type { BorderGuide, LineGuide, PageSide, PhotoMeta, Settings, Spread, SpreadKind } from './types';
+import type { BorderGuide, Edges, LineGuide, PageSide, PhotoMeta, Settings, Spread, SpreadKind } from './types';
 
 export interface Rect {
   x: number;
@@ -25,32 +25,50 @@ export function sideAt(x: number): PageSide {
   return x < 0 ? 'left' : 'right';
 }
 
-export function uniformBorder(b: number): BorderGuide {
-  return { top: b, bottom: b, inside: b, outside: b };
-}
-
-export function isUniform(g: BorderGuide): boolean {
-  return g.top === g.bottom && g.top === g.inside && g.top === g.outside;
+/** A border guide's distance from each edge, whichever kind it is. */
+export function edgesOf(g: BorderGuide): Edges {
+  if (g.kind === 'even') return { top: g.inset, bottom: g.inset, inside: g.inset, outside: g.inset };
+  const { top, bottom, inside, outside } = g;
+  return { top, bottom, inside, outside };
 }
 
 /** How far a border guide is from a page's left and right edges: outside and inside swap on left pages. */
-function sideInsets(side: PageSide, g: BorderGuide): { left: number; right: number } {
-  return side === 'left' ? { left: g.outside, right: g.inside } : { left: g.inside, right: g.outside };
+function sideInsets(side: PageSide, e: Edges): { left: number; right: number } {
+  return side === 'left' ? { left: e.outside, right: e.inside } : { left: e.inside, right: e.outside };
 }
 
 /** A border guide's box on one page. */
 export function borderBox(side: PageSide, s: Settings, g: BorderGuide): Rect {
   const p = pageRect(side, s);
-  const { left, right } = sideInsets(side, g);
-  return { x: p.x + left, y: g.top, w: Math.max(0.1, p.w - left - right), h: Math.max(0.1, p.h - g.top - g.bottom) };
+  const e = edgesOf(g);
+  const { left, right } = sideInsets(side, e);
+  return { x: p.x + left, y: e.top, w: Math.max(0.1, p.w - left - right), h: Math.max(0.1, p.h - e.top - e.bottom) };
 }
 
-/** The border guide photos fit inside when dropped on a page: the marked one, or the largest. */
+/** The border guide photos fit inside when dropped on a page: the chosen one, or else the largest. */
 export function dropGuide(s: Settings): BorderGuide | null {
-  const marked = s.borders.find((g) => g.drop);
-  if (marked) return marked;
-  const area = (g: BorderGuide) => (s.pageW - g.inside - g.outside) * (s.pageH - g.top - g.bottom);
+  const chosen = s.borders.find((g) => g.id === s.dropBorder);
+  if (chosen) return chosen;
+  const area = (g: BorderGuide) => {
+    const e = edgesOf(g);
+    return (s.pageW - e.inside - e.outside) * (s.pageH - e.top - e.bottom);
+  };
   return s.borders.reduce<BorderGuide | null>((best, g) => (!best || area(g) > area(best) ? g : best), null);
+}
+
+/** The smallest a border guide's box gets, in inches, so it always stays on the page. */
+const MIN_BOX = 0.25;
+
+/** Keeps a border guide's box on the page (after an edit, or when the page shrinks). */
+export function clampBorder(g: BorderGuide, s: Settings): void {
+  if (g.kind === 'even') {
+    g.inset = Math.max(0, Math.min(g.inset, (Math.min(s.pageW, s.pageH) - MIN_BOX) / 2));
+    return;
+  }
+  g.top = Math.max(0, Math.min(g.top, s.pageH - g.bottom - MIN_BOX));
+  g.bottom = Math.max(0, Math.min(g.bottom, s.pageH - g.top - MIN_BOX));
+  g.inside = Math.max(0, Math.min(g.inside, s.pageW - g.outside - MIN_BOX));
+  g.outside = Math.max(0, Math.min(g.outside, s.pageW - g.inside - MIN_BOX));
 }
 
 /** Where a photo dropped on a page is fitted: the drop guide's box, or the page. */
@@ -76,10 +94,6 @@ export function lineAt(side: PageSide, s: Settings, axis: LineGuide['axis'], v: 
 /** Whether a line guide falls on the page (it can end up off it when the page shrinks). */
 export function lineOnPage(s: Settings, l: LineGuide): boolean {
   return l.at > 0 && l.at < (l.axis === 'vertical' ? s.pageW : s.pageH);
-}
-
-export function inset(r: Rect, by: number): Rect {
-  return { x: r.x + by, y: r.y + by, w: Math.max(0.1, r.w - 2 * by), h: Math.max(0.1, r.h - 2 * by) };
 }
 
 /** Largest rect with the photo's aspect ratio that fits in `box`, centered in `center`. */
@@ -115,13 +129,13 @@ export function spreadGuides(spread: Spread, s: Settings): GuideLines {
     const p = pageRect(side, s);
     if (s.centerV) xs.push(p.x + p.w / 2);
     for (const g of s.borders) {
-      const { left, right } = sideInsets(side, g);
+      const { left, right } = sideInsets(side, edgesOf(g));
       xs.push(p.x + left, p.x + p.w - right);
     }
     for (const l of lines) if (l.axis === 'vertical') xs.push(linePosition(side, s, l));
   }
   if (s.centerH) ys.push(s.pageH / 2);
-  for (const g of s.borders) ys.push(g.top, s.pageH - g.bottom);
+  for (const e of s.borders.map(edgesOf)) ys.push(e.top, s.pageH - e.bottom);
   for (const l of lines) if (l.axis === 'horizontal') ys.push(l.at);
   return { xs, ys };
 }
@@ -320,7 +334,7 @@ function mapAxis(v: number, knots: Knots): number {
  * the photo is refit into that box, keeping its proportions, around the box's center.
  */
 export function relayoutRect(r: Rect, from: Settings, to: Settings): Rect {
-  const b = from.borders;
+  const b = from.borders.map(edgesOf);
   const vertical = from.lines.filter((l) => l.axis === 'vertical').map((l) => l.at);
   const horizontal = from.lines.filter((l) => l.axis === 'horizontal').map((l) => l.at);
   const outside = [...b.map((g) => g.outside), ...vertical];

@@ -1,12 +1,12 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, EyeOff, X } from 'lucide-react';
 import { bump, dropPhotos, folioLabel, putInPile, putOnPage, raise } from '../actions';
 import { clearGhost, startDrag, trackGhost } from '../drag';
 import {
   borderBox,
+  edgesOf,
   fitCentered,
   fmt,
-  isUniform,
   pageRect,
   resizeRect,
   sideAt,
@@ -19,7 +19,8 @@ import {
 import { docStore, useDoc } from '../store';
 import type { BorderGuide, Doc, Placement } from '../types';
 import { isTyping } from '../input';
-import { openPhotoMenu, ui } from '../ui';
+import { openPhotoMenu, toggleGuides, ui } from '../ui';
+import { shortcutLabel } from '../commands';
 import { useWindowEvent } from '../hooks';
 import { NumberField } from './NumberField';
 import { PhotoImg } from './PhotoImg';
@@ -40,6 +41,13 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
   const [stage, setStage] = useState({ w: 800, h: 500 });
   const [selected, setSelected] = useState<string | null>(null);
   const [snapHit, setSnapHit] = useState<SnapFeedback | null>(null);
+  /**
+   * A guide box to glow while a Fit button is hovered, for the photo it was for: the
+   * button can vanish under the pointer (the photo deselected) without a pointerleave.
+   */
+  const [hovered, setHovered] = useState<{ photoId: string; box: Rect } | null>(null);
+  const glow = hovered && hovered.photoId === selected ? hovered.box : null;
+  const guidesHidden = ui.use((s) => s.guidesHidden);
 
   useLayoutEffect(() => {
     const el = stageRef.current;
@@ -105,7 +113,11 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
   });
 
   if (!spread) return null;
-  const lines = snapLines(spread, settings);
+  // Hidden guides aren't snapped to either: only the page edges are.
+  const lines = snapLines(
+    spread,
+    guidesHidden ? { ...settings, centerV: false, centerH: false, borders: [], lines: [] } : settings,
+  );
   const threshold = SNAP_PX / scale;
 
   const onItemDown = (e: React.PointerEvent, p: Placement) => {
@@ -228,6 +240,15 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
           </button>
           <span className="spacer" />
           <span className="hint">Shift: free resize · Alt: no snapping · Arrows nudge</span>
+          <button
+            className={`btn ghost icon${guidesHidden ? ' active' : ''}`}
+            aria-label={guidesHidden ? 'Show guides' : 'Hide guides'}
+            aria-pressed={guidesHidden}
+            title={`${guidesHidden ? 'Show' : 'Hide'} guides (${shortcutLabel('toggleGuides')})`}
+            onClick={toggleGuides}
+          >
+            {guidesHidden ? <EyeOff /> : <Eye />}
+          </button>
           <button className="btn ghost icon" aria-label="Close" onClick={close}>
             <X />
           </button>
@@ -240,10 +261,23 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
                 settings={settings}
                 scale={scale}
                 pad={PAD}
-                guides
+                guides={!guidesHidden}
                 droppable
                 snapHit={snapHit}
                 renderItem={renderItem}
+                overlay={
+                  glow && (
+                    <div
+                      className="guide-glow"
+                      style={{
+                        left: (PAD + settings.pageW + glow.x) * scale,
+                        top: (PAD + glow.y) * scale,
+                        width: glow.w * scale,
+                        height: glow.h * scale,
+                      }}
+                    />
+                  )
+                }
                 onPointerDown={() => setSelected(null)}
               />
             </div>
@@ -253,6 +287,7 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
             item={selectedItem}
             onChange={(patch, key) => selectedItem && updateItem(selectedItem.photoId, patch, key)}
             onToPile={() => selectedItem && toPile(selectedItem.photoId)}
+            onHoverBox={(box) => setHovered(box && selectedItem ? { photoId: selectedItem.photoId, box } : null)}
           />
         </div>
         <PileStrip spreadId={spreadId} />
@@ -261,9 +296,17 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
   );
 }
 
+/** A Fit button's name for a border guide: its distance, or the range of its distances. */
+function guideLabel(g: BorderGuide): string {
+  if (g.kind === 'even') return `Fit ${fmt(g.inset)} in guide`;
+  const d = Object.values(edgesOf(g));
+  return `Fit ${fmt(Math.min(...d))}–${fmt(Math.max(...d))} in guide`;
+}
+
 /** A border guide's distances, for a tooltip: top, outside, bottom, inside. */
 function guideSummary(g: BorderGuide): string {
-  return `Top ${fmt(g.top)} · Outside ${fmt(g.outside)} · Bottom ${fmt(g.bottom)} · Inside ${fmt(g.inside)} in`;
+  const e = edgesOf(g);
+  return `Top ${fmt(e.top)} · Outside ${fmt(e.outside)} · Bottom ${fmt(e.bottom)} · Inside ${fmt(e.inside)} in`;
 }
 
 function findItem(d: Doc, spreadId: string, photoId: string): Placement | undefined {
@@ -275,9 +318,11 @@ interface InspectorProps {
   item: Placement | null;
   onChange: (patch: Partial<Placement>, coalesce?: string) => void;
   onToPile: () => void;
+  /** A Fit button's box while it's hovered (null when it isn't), to show which guide it means. */
+  onHoverBox: (box: Rect | null) => void;
 }
 
-function Inspector({ doc, item, onChange, onToPile }: InspectorProps) {
+function Inspector({ doc, item, onChange, onToPile, onHoverBox }: InspectorProps) {
   const [lock, setLock] = useState(true);
   const { settings } = doc;
   if (!item) {
@@ -338,12 +383,24 @@ function Inspector({ doc, item, onChange, onToPile }: InspectorProps) {
         >
           Center on page
         </button>
-        <button className="btn" onClick={() => fit(page)}>
+        <button
+          className="btn"
+          onClick={() => fit(page)}
+          onPointerEnter={() => onHoverBox(page)}
+          onPointerLeave={() => onHoverBox(null)}
+        >
           Fit page
         </button>
-        {boxes.map(({ g, box }, i) => (
-          <button key={i} className="btn" onClick={() => fit(box)} title={isUniform(g) ? undefined : guideSummary(g)}>
-            {isUniform(g) ? `Fit ${fmt(g.top)} in guide` : `Fit border guide ${i + 1}`}
+        {boxes.map(({ g, box }) => (
+          <button
+            key={g.id}
+            className="btn"
+            onClick={() => fit(box)}
+            onPointerEnter={() => onHoverBox(box)}
+            onPointerLeave={() => onHoverBox(null)}
+            title={g.kind === 'edges' ? guideSummary(g) : undefined}
+          >
+            {guideLabel(g)}
           </button>
         ))}
         <button className="btn" onClick={onToPile}>

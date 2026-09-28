@@ -1,11 +1,11 @@
-import { dropGuide, linePosition, lineOnPage, pageRect, pageSides } from './geometry';
+import { dropGuide, edgesOf, linePosition, lineOnPage, pageRect, pageSides } from './geometry';
 import type { Doc, PageSide, Settings, Spread } from './types';
 import type { ZipInput } from './zip';
 
 /**
  * Build an IDML file (InDesign Markup Language: a ZIP of XML that InDesign opens
  * as a new document). The book becomes a facing-pages document with the same
- * page size and spreads, the largest border guide as margins, the other guides as
+ * page size and spreads, the drop border guide as margins, the other guides as
  * ruler guides, and each photo as a frame with its image linked from `Links/`.
  *
  * Coordinates: an IDML spread's origin is at its binding (our gutter) and vertical
@@ -83,11 +83,12 @@ ${marginXml(s)}
 }
 
 /**
- * Margins from the drop guide (the largest border guide). For the document, with facing
+ * Margins from the border guide dropped photos fit inside. For the document, with facing
  * pages, Left and Right are inside and outside; on a page, they're its own left and right.
  */
 function marginXml(s: Settings, side?: PageSide): string {
-  const g = dropGuide(s) ?? { top: 0, bottom: 0, inside: 0, outside: 0 };
+  const drop = dropGuide(s);
+  const g = drop ? edgesOf(drop) : { top: 0, bottom: 0, inside: 0, outside: 0 };
   const [left, right] = side === 'left' ? [g.outside, g.inside] : [g.inside, g.outside];
   const m = (v: number) => n(v * PT);
   return `<MarginPreference ColumnCount="1" ColumnGutter="12" Top="${m(g.top)}" Bottom="${m(g.bottom)}" Left="${m(left)}" Right="${m(right)}" ColumnDirection="Horizontal" ColumnsPositions="0 ${m(s.pageW - left - right)}"/>`;
@@ -160,8 +161,9 @@ function guidesXml(s: Settings, side: PageSide, pageIndex: number, id: () => str
   const horizontal: number[] = [];
   if (s.centerV) vertical.push(w / 2);
   if (s.centerH) horizontal.push(h / 2);
-  for (const g of s.borders) {
-    if (g === margin) continue;
+  for (const b of s.borders) {
+    if (b.id === margin?.id) continue;
+    const g = edgesOf(b);
     const [left, right] = side === 'left' ? [g.outside, g.inside] : [g.inside, g.outside];
     vertical.push(left * PT, w - right * PT);
     horizontal.push(g.top * PT, h - g.bottom * PT);

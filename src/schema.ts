@@ -1,4 +1,4 @@
-import { emptyDoc } from './store';
+import { emptyDoc, newId } from './store';
 import { CURRENT_SCHEMA, type Doc } from './types';
 
 /**
@@ -20,13 +20,19 @@ const migrations: Record<number, (doc: Raw) => Raw> = {
     // Version 1's defaults: borders were numbers, and there were no line guides.
     const v1 = { ...base.settings, borders: [0.5, 1.25] } as Raw;
     delete v1.lines;
+    delete v1.dropBorder;
     return { ...doc, settings: { ...v1, ...(doc.settings as object) } };
   },
-  /** 1 → 2: border guides get a distance per edge; line guides arrive. */
+  /**
+   * 1 → 2: guides get ids, border guides can have a distance per edge (these stay even),
+   * line guides arrive, and the guide dropped photos fit is chosen: as before, the largest.
+   */
   1: (doc) => {
     const settings = doc.settings as Raw;
-    const borders = (settings.borders as number[]).map((b) => ({ top: b, bottom: b, inside: b, outside: b }));
-    return { ...doc, settings: { ...settings, borders, lines: [] } };
+    const insets = settings.borders as number[];
+    const borders = insets.map((inset) => ({ id: newId(), kind: 'even', inset }));
+    const largest = borders.reduce<(typeof borders)[number] | null>((a, b) => (!a || b.inset < a.inset ? b : a), null);
+    return { ...doc, settings: { ...settings, borders, lines: [], dropBorder: largest?.id ?? null } };
   },
 };
 

@@ -1048,6 +1048,26 @@ body.col-resizing * {
   height: 0;
   border-top: 1px solid var(--guide);
 }
+/* A guide's box glowing while its Fit button is hovered (spread editor). */
+.guide-glow {
+  position: absolute;
+  z-index: 3;
+  border: 1px solid var(--guide-hit);
+  background: color-mix(in srgb, var(--guide-hit) 10%, transparent);
+  box-shadow: 0 0 10px 1px color-mix(in srgb, var(--guide-hit) 45%, transparent);
+  pointer-events: none;
+  animation: glow-in 120ms ease-out;
+}
+@keyframes glow-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .guide-glow {
+    animation: none;
+  }
+}
 .guide.center {
   border-color: var(--guide-center);
 }
@@ -1250,6 +1270,11 @@ body.col-resizing * {
   text-transform: uppercase;
   cursor: pointer;
   white-space: nowrap;
+}
+/* The panel scrolls, so it clips: open the tooltip rightward, inside it. */
+.drop-toggle[data-tip]::after {
+  right: auto;
+  left: 0;
 }
 .drop-toggle:hover {
   color: var(--text);
@@ -1478,9 +1503,6 @@ body.col-resizing * {
 .setting .num-field input {
   width: 64px;
 }
-.setting .guide-row {
-  gap: 4px;
-}
 .setting .help {
   margin: 0;
   font-size: 12px;
@@ -1489,22 +1511,6 @@ body.col-resizing * {
 .setting .check {
   gap: 8px;
 }
-.add-guide {
-  margin-left: -10px;
-  color: var(--muted);
-}
-.tag {
-  margin-left: 4px;
-  padding: 1px 6px;
-  border-radius: 3px;
-  background: var(--accent-soft);
-  color: var(--accent-ink);
-  font: 500 10.5px var(--mono);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  cursor: help;
-}
-
 /*
  * Tooltips: `data-tip` on an element shows its text on hover or keyboard focus.
  * They open below and toward the left, so they stay inside dialogs.

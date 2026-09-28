@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { migrateDoc, NewerProjectError } from './schema';
-import { CURRENT_SCHEMA } from './types';
+import { CURRENT_SCHEMA, type Doc } from './types';
 
 /**
  * A saved project in each past shape. When you bump CURRENT_SCHEMA, add a sample
@@ -32,7 +32,10 @@ const samples: Record<number, unknown> = {
   },
 };
 
-/** What every sample should become. */
+/**
+ * What every sample should become. Upgrading gives guides new ids, so they're compared
+ * with the ids set aside (see `withoutIds`), and checked to line up separately.
+ */
 const expected = {
   schemaVersion: CURRENT_SCHEMA,
   photos: { a: { id: 'a', name: 'a.jpg', pxW: 1200, pxH: 800 } },
@@ -47,11 +50,25 @@ const expected = {
     centerV: true,
     centerH: false,
     keepRelative: true,
-    borders: [{ top: 0.5, bottom: 0.5, inside: 0.5, outside: 0.5 }],
+    borders: [{ id: 'm', kind: 'even', inset: 0.5 }],
     lines: [],
+    dropBorder: 'm',
   },
   nextZ: 2,
 };
+
+/** A doc with its guides' ids replaced by their position, and the drop guide's by its. */
+function withoutIds(doc: Doc): unknown {
+  const ids = doc.settings.borders.map((b) => b.id);
+  return {
+    ...doc,
+    settings: {
+      ...doc.settings,
+      borders: doc.settings.borders.map((b, i) => ({ ...b, id: i })),
+      dropBorder: doc.settings.dropBorder === null ? null : ids.indexOf(doc.settings.dropBorder),
+    },
+  };
+}
 
 describe('migrateDoc', () => {
   it('has a sample for every past version', () => {
@@ -59,7 +76,7 @@ describe('migrateDoc', () => {
   });
 
   it.each(Object.entries(samples))('upgrades version %s to the current shape', (_, sample) => {
-    expect(migrateDoc(structuredClone(sample))).toEqual(expected);
+    expect(withoutIds(migrateDoc(structuredClone(sample)))).toEqual(withoutIds(expected as Doc));
   });
 
   it('leaves current projects as they are', () => {
@@ -74,10 +91,11 @@ describe('migrateDoc', () => {
 describe('migrating version 0 without border guides', () => {
   it('gives it version 1’s default guides, then upgrades them', () => {
     const doc = migrateDoc({ ...(samples[0] as object), settings: { pageW: 10, pageH: 8 } });
-    expect(doc.settings.borders).toEqual([
-      { top: 0.5, bottom: 0.5, inside: 0.5, outside: 0.5 },
-      { top: 1.25, bottom: 1.25, inside: 1.25, outside: 1.25 },
+    expect(doc.settings.borders.map(({ kind, ...b }) => kind === 'even' && 'inset' in b && b.inset)).toEqual([
+      0.5, 1.25,
     ]);
     expect(doc.settings.lines).toEqual([]);
+    // Dropped photos fit the largest box, as before: the 0.5 in guide.
+    expect(doc.settings.dropBorder).toBe(doc.settings.borders[0]!.id);
   });
 });
