@@ -59,6 +59,8 @@ export interface UiState {
   hints: boolean;
   theme: ThemePref;
   sidebarOpen: boolean;
+  /** Guides hidden for now (not saved): pages show without them, and photos snap only to page edges. */
+  guidesHidden: boolean;
   /** Preferred sidebar width in px (clamped to the window when shown). */
   sidebarWidth: number;
   deskColor: string;
@@ -93,6 +95,7 @@ export const ui = createStore<UiState>({
   hints: false,
   theme: themePref.load(),
   sidebarOpen: sidebarOpenPref.load(),
+  guidesHidden: false,
   sidebarWidth: sidebarWidthPref.load(),
   deskColor: deskColorPref.load(),
   contextMenu: null,
@@ -181,4 +184,8 @@ export function toggleSidebar(): void {
   const open = !ui.get().sidebarOpen;
   ui.set({ sidebarOpen: open });
   sidebarOpenPref.save(open);
+}
+
+export function toggleGuides(): void {
+  ui.set((s) => ({ guidesHidden: !s.guidesHidden }));
 }

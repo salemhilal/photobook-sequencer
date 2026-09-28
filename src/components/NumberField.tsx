@@ -11,10 +11,22 @@ interface Props {
   /** Called when editing starts and ends (focus and blur). */
   onBegin?: () => void;
   onEnd?: () => void;
+  /** Commit only when done (blur or Enter; Escape reverts) instead of as you type. */
+  commitOnBlur?: boolean;
 }
 
 /** Numeric input that commits valid values as you type and reverts invalid ones on blur. */
-export function NumberField({ value, onCommit, min, step = 0.125, label, suffix = 'in', onBegin, onEnd }: Props) {
+export function NumberField({
+  value,
+  onCommit,
+  min,
+  step = 0.125,
+  label,
+  suffix = 'in',
+  onBegin,
+  onEnd,
+  commitOnBlur = false,
+}: Props) {
   // While editing, show what's typed; otherwise show the live value.
   const [draft, setDraft] = useState<string | null>(null);
 
@@ -39,16 +51,24 @@ export function NumberField({ value, onCommit, min, step = 0.125, label, suffix 
           onBegin?.();
         }}
         onBlur={() => {
+          const n = draft === null ? null : parse(draft);
+          if (commitOnBlur && n !== null && n !== value) onCommit(n);
           setDraft(null);
           onEnd?.();
         }}
         onChange={(e) => {
           setDraft(e.target.value);
           const n = parse(e.target.value);
-          if (n !== null && n !== value) onCommit(n);
+          if (!commitOnBlur && n !== null && n !== value) onCommit(n);
         }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+          if (e.key === 'Escape' && commitOnBlur) {
+            // Leave it as it was.
+            setDraft(fmt(value));
+            e.stopPropagation();
+            requestAnimationFrame(() => (e.target as HTMLInputElement).blur());
+          }
         }}
       />
       {suffix && <span className="num-suffix">{suffix}</span>}

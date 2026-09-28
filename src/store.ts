@@ -1,6 +1,5 @@
 import { useSyncExternalStore } from 'react';
 import { produce, type Draft } from 'immer';
-import { uniformBorder } from './geometry';
 import { CURRENT_SCHEMA, type Doc } from './types';
 
 const HISTORY_LIMIT = 200;
@@ -178,6 +177,7 @@ export function newId(): string {
 }
 
 export function emptyDoc(): Doc {
+  const margin = newId();
   return {
     schemaVersion: CURRENT_SCHEMA,
     photos: {},
@@ -194,8 +194,12 @@ export function emptyDoc(): Doc {
       centerV: true,
       centerH: true,
       keepRelative: true,
-      borders: [uniformBorder(0.5), uniformBorder(1.25)],
+      borders: [
+        { id: margin, kind: 'even', inset: 0.5 },
+        { id: newId(), kind: 'even', inset: 1.25 },
+      ],
       lines: [],
+      dropBorder: margin,
     },
     nextZ: 1,
   };

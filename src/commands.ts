@@ -10,7 +10,7 @@ import { pickFiles } from './files';
 import { newProject } from './project';
 import { docStore } from './store';
 import { startTour } from './tour';
-import { deskCovered, openModal, toggleModal, toggleSidebar, ui } from './ui';
+import { deskCovered, openModal, toggleGuides, toggleModal, toggleSidebar, ui } from './ui';
 
 /**
  * Every command in one table. Each has its name, bindings, when it applies, and what
@@ -144,6 +144,8 @@ export const commands = {
     scope: 'app',
     run: () => toggleModal('guides'),
   },
+  // ⌘; as in InDesign and Photoshop.
+  toggleGuides: { bindings: [{ key: ';', mod: true }], scope: 'app', inFields: true, run: toggleGuides },
   settings: {
     title: 'Settings…',
     bindings: [{ key: ',', mod: true }],

@@ -2,21 +2,21 @@ import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Link2, Link2Off, Plus, SeparatorHorizontal, SeparatorVertical, X } from 'lucide-react';
 import { startDrag } from '../drag';
 import {
+  clampBorder,
   dropGuide,
+  edgesOf,
   fmt,
-  isUniform,
   lineAt,
   lineOnPage,
   linePosition,
   pageRect,
   pageSides,
   sideAt,
-  uniformBorder,
 } from '../geometry';
 import { useWindowEvent } from '../hooks';
 import { isTyping } from '../input';
-import { docStore, useDoc } from '../store';
-import type { BorderGuide, LineGuide, Settings, Spread } from '../types';
+import { docStore, newId, useDoc } from '../store';
+import type { BorderGuide, Edges, LineGuide, Settings, Spread } from '../types';
 import { closeModal } from '../ui';
 import { NumberField } from './NumberField';
 import { SpreadCanvas } from './SpreadCanvas';
@@ -39,14 +39,15 @@ const EDGES = ['top', 'bottom', 'inside', 'outside'] as const;
 
 type Axis = LineGuide['axis'];
 
-/** What's selected: a guide from the rulers, a border guide, or a center line. */
-type Selection = { kind: 'line'; index: number } | { kind: 'border'; index: number } | { kind: 'center'; axis: Axis };
+/** What's selected: a guide from the rulers or a border guide (by id), or a center line. */
+type Selection = { kind: 'line' | 'border'; id: string } | { kind: 'center'; axis: Axis };
 
 const round = (n: number) => Math.round(n * 1000) / 1000;
-const same = (a: Selection | null, b: Selection) =>
-  !!a &&
-  a.kind === b.kind &&
-  (a.kind === 'center' ? a.axis === (b as typeof a).axis : a.index === (b as typeof a).index);
+
+function same(a: Selection | null, b: Selection): boolean {
+  if (!a || a.kind !== b.kind) return false;
+  return a.kind === 'center' ? b.kind === 'center' && a.axis === b.axis : b.kind !== 'center' && a.id === b.id;
+}
 
 export function GuidesEditor() {
   const { doc } = useDoc();
@@ -68,7 +69,15 @@ export function GuidesEditor() {
 
   const remove = (sel: Selection) => {
     if (sel.kind === 'center') return;
-    docStore.apply((d) => void (sel.kind === 'line' ? d.settings.lines : d.settings.borders).splice(sel.index, 1));
+    docStore.apply((d) => {
+      const g = d.settings;
+      if (sel.kind === 'line') g.lines = g.lines.filter((l) => l.id !== sel.id);
+      else {
+        g.borders = g.borders.filter((b) => b.id !== sel.id);
+        // Photos fit the largest remaining guide instead.
+        if (g.dropBorder === sel.id) g.dropBorder = null;
+      }
+    });
     setSelected(null);
   };
 
@@ -95,7 +104,7 @@ export function GuidesEditor() {
   const pageTop = top + PAD * scale;
 
   /** The guide the pointer is placing, or null over the ruler or off the page (to remove it). */
-  const guideAt = (axis: Axis, e: PointerEvent): LineGuide | null => {
+  const guideAt = (axis: Axis, id: string, e: PointerEvent): LineGuide | null => {
     const r = stageRef.current?.getBoundingClientRect();
     if (!r) return null;
     const px = e.clientX - r.left;
@@ -105,26 +114,24 @@ export function GuidesEditor() {
     if (e.shiftKey) at = Math.round(at / SNAP) * SNAP;
     const overRuler = axis === 'horizontal' ? py < RULER : px < RULER;
     const size = axis === 'horizontal' ? s.pageH : s.pageW;
-    return overRuler || at <= 0 || at >= size ? null : { axis, at: round(at) };
+    return overRuler || at <= 0 || at >= size ? null : { id, axis, at: round(at) };
   };
 
-  /** Drag a new guide out of a ruler (`index` null) or an existing one. */
-  const dragGuide = (e: React.PointerEvent, axis: Axis, index: number | null) => {
+  /** Drag a new guide out of a ruler (`existing` null) or an existing one, by id. */
+  const dragGuide = (e: React.PointerEvent, axis: Axis, existing: string | null) => {
     if (e.button !== 0) return;
     e.stopPropagation();
     const start = s.lines;
+    const id = existing ?? newId();
+    // The guide where the pointer is: added, moved, or (off the page) removed.
     const place = (g: LineGuide | null): LineGuide[] => {
-      const lines = [...start];
-      if (index === null) {
-        if (g) lines.push(g);
-      } else if (g) lines[index] = g;
-      else lines.splice(index, 1);
-      return lines;
+      if (!existing) return g ? [...start, g] : start;
+      return g ? start.map((l) => (l.id === id ? g : l)) : start.filter((l) => l.id !== id);
     };
     startDrag(e, {
       onStart: () => docStore.begin(),
       onMove: ({ e: ev }) => {
-        const g = guideAt(axis, ev);
+        const g = guideAt(axis, id, ev);
         docStore.preview((d) => void (d.settings.lines = place(g)));
         const r = stageRef.current?.getBoundingClientRect();
         const from = axis === 'horizontal' ? 'from top' : 'from outside';
@@ -137,12 +144,12 @@ export function GuidesEditor() {
       onEnd: ({ e: ev }, moved) => {
         setDragLabel(null);
         if (!moved) {
-          if (index !== null) setSelected({ kind: 'line', index });
+          if (existing) setSelected({ kind: 'line', id });
           return;
         }
-        const g = guideAt(axis, ev);
+        const g = guideAt(axis, id, ev);
         docStore.end();
-        setSelected(g ? { kind: 'line', index: index ?? start.length } : null);
+        setSelected(g ? { kind: 'line', id } : null);
       },
       onCancel: () => {
         setDragLabel(null);
@@ -156,7 +163,7 @@ export function GuidesEditor() {
   const oX = (PAD + s.pageW) * scale;
   const oY = PAD * scale;
   const guides: ReactNode[] = [];
-  const draw = (key: string, axis: Axis, at: number, sel: Selection, side: 'left' | 'right' | null, drag?: number) => {
+  const draw = (key: string, axis: Axis, at: number, sel: Selection, side: 'left' | 'right' | null) => {
     const page = side ? pageRect(side, s) : { x: -s.pageW, w: 2 * s.pageW };
     const style =
       axis === 'horizontal'
@@ -169,7 +176,7 @@ export function GuidesEditor() {
         className={`line-guide line-guide-${axis === 'horizontal' ? 'h' : 'v'} ${kind}${same(selected, sel) ? ' selected' : ''}`}
         style={style}
         onPointerDown={(e) => {
-          if (drag !== undefined) return dragGuide(e, axis, drag);
+          if (sel.kind === 'line') return dragGuide(e, axis, sel.id);
           if (e.button !== 0) return;
           e.stopPropagation();
           setSelected(sel);
@@ -177,27 +184,31 @@ export function GuidesEditor() {
       />,
     );
   };
-  if (s.centerV)
-    for (const side of SIDES)
-      draw(`cv-${side}`, 'vertical', pageCenter(side, s), { kind: 'center', axis: 'vertical' }, side);
-  if (s.centerH) draw('ch', 'horizontal', s.pageH / 2, { kind: 'center', axis: 'horizontal' }, null);
-  s.borders.forEach((g, i) => {
-    const sel: Selection = { kind: 'border', index: i };
+  if (s.centerV) {
     for (const side of SIDES) {
       const p = pageRect(side, s);
-      const [l, r] = side === 'left' ? [g.outside, g.inside] : [g.inside, g.outside];
-      draw(`b${i}-${side}-l`, 'vertical', p.x + l, sel, side);
-      draw(`b${i}-${side}-r`, 'vertical', p.x + p.w - r, sel, side);
-      draw(`b${i}-${side}-t`, 'horizontal', g.top, sel, side);
-      draw(`b${i}-${side}-b`, 'horizontal', s.pageH - g.bottom, sel, side);
+      draw(`cv-${side}`, 'vertical', p.x + p.w / 2, { kind: 'center', axis: 'vertical' }, side);
     }
-  });
-  s.lines.forEach((l, i) => {
-    if (!lineOnPage(s, l)) return;
-    const sel: Selection = { kind: 'line', index: i };
-    if (l.axis === 'horizontal') draw(`l${i}`, 'horizontal', l.at, sel, null, i);
-    else for (const side of SIDES) draw(`l${i}-${side}`, 'vertical', linePosition(side, s, l), sel, side, i);
-  });
+  }
+  if (s.centerH) draw('ch', 'horizontal', s.pageH / 2, { kind: 'center', axis: 'horizontal' }, null);
+  for (const b of s.borders) {
+    const sel: Selection = { kind: 'border', id: b.id };
+    const e = edgesOf(b);
+    for (const side of SIDES) {
+      const p = pageRect(side, s);
+      const [l, r] = side === 'left' ? [e.outside, e.inside] : [e.inside, e.outside];
+      draw(`${b.id}-${side}-l`, 'vertical', p.x + l, sel, side);
+      draw(`${b.id}-${side}-r`, 'vertical', p.x + p.w - r, sel, side);
+      draw(`${b.id}-${side}-t`, 'horizontal', e.top, sel, side);
+      draw(`${b.id}-${side}-b`, 'horizontal', s.pageH - e.bottom, sel, side);
+    }
+  }
+  for (const l of s.lines) {
+    if (!lineOnPage(s, l)) continue;
+    const sel: Selection = { kind: 'line', id: l.id };
+    if (l.axis === 'horizontal') draw(l.id, 'horizontal', l.at, sel, null);
+    else for (const side of SIDES) draw(`${l.id}-${side}`, 'vertical', linePosition(side, s, l), sel, side);
+  }
 
   return (
     <div className="modal-backdrop" data-modal onPointerDown={(e) => e.target === e.currentTarget && closeModal()}>
@@ -258,11 +269,6 @@ export function GuidesEditor() {
       </div>
     </div>
   );
-}
-
-function pageCenter(side: 'left' | 'right', s: Settings): number {
-  const p = pageRect(side, s);
-  return p.x + p.w / 2;
 }
 
 interface RulerProps {
@@ -348,28 +354,29 @@ function GuidesPanel({ s, selected, onSelect, onRemove }: PanelProps) {
   const drop = dropGuide(s);
   const addLine = (axis: Axis) => {
     const size = axis === 'vertical' ? s.pageW : s.pageH;
-    docStore.apply((d) => void d.settings.lines.push({ axis, at: Math.round(size / 3 / SNAP) * SNAP }));
-    onSelect({ kind: 'line', index: s.lines.length });
+    const id = newId();
+    docStore.apply((d) => void d.settings.lines.push({ id, axis, at: Math.round(size / 3 / SNAP) * SNAP }));
+    onSelect({ kind: 'line', id });
   };
   const addBorder = () => {
+    const id = newId();
     docStore.apply((d) => {
-      const b = uniformBorder((d.settings.borders.at(-1)?.top ?? 0.25) + 0.25);
+      const last = d.settings.borders.at(-1);
+      const b: BorderGuide = { id, kind: 'even', inset: (last ? edgesOf(last).top : 0.25) + 0.25 };
       clampBorder(b, d.settings);
       d.settings.borders.push(b);
     });
-    onSelect({ kind: 'border', index: s.borders.length });
+    onSelect({ kind: 'border', id });
   };
   const center = (axis: Axis, label: string) => {
     const sel: Selection = { kind: 'center', axis };
-    const on = axis === 'vertical' ? s.centerV : s.centerH;
+    const key = axis === 'vertical' ? 'centerV' : 'centerH';
     return (
       <label className={`check pick${same(selected, sel) ? ' selected' : ''}`} onPointerDown={() => onSelect(sel)}>
         <input
           type="checkbox"
-          checked={on}
-          onChange={(e) =>
-            docStore.apply((d) => void (d.settings[axis === 'vertical' ? 'centerV' : 'centerH'] = e.target.checked))
-          }
+          checked={s[key]}
+          onChange={(e) => docStore.apply((d) => void (d.settings[key] = e.target.checked))}
         />
         {label}
       </label>
@@ -399,15 +406,14 @@ function GuidesPanel({ s, selected, onSelect, onRemove }: PanelProps) {
           </button>
         </header>
         {s.borders.length === 0 && <p className="help">None. Dropped photos fill the page.</p>}
-        {s.borders.map((g, i) => (
+        {s.borders.map((g) => (
           <BorderRow
-            key={i}
+            key={g.id}
             g={g}
-            i={i}
-            isDrop={g === drop}
-            selected={same(selected, { kind: 'border', index: i })}
-            onSelect={() => onSelect({ kind: 'border', index: i })}
-            onRemove={() => onRemove({ kind: 'border', index: i })}
+            isDrop={g.id === drop?.id}
+            selected={same(selected, { kind: 'border', id: g.id })}
+            onSelect={() => onSelect({ kind: 'border', id: g.id })}
+            onRemove={() => onRemove({ kind: 'border', id: g.id })}
           />
         ))}
       </section>
@@ -433,11 +439,11 @@ function GuidesPanel({ s, selected, onSelect, onRemove }: PanelProps) {
           </button>
         </header>
         {s.lines.length === 0 && <p className="help">Drag from a ruler to add one.</p>}
-        {s.lines.map((l, i) => (
+        {s.lines.map((l) => (
           <div
-            key={i}
-            className={`inline guide-row pick${same(selected, { kind: 'line', index: i }) ? ' selected' : ''}`}
-            onPointerDown={() => onSelect({ kind: 'line', index: i })}
+            key={l.id}
+            className={`inline guide-row pick${same(selected, { kind: 'line', id: l.id }) ? ' selected' : ''}`}
+            onPointerDown={() => onSelect({ kind: 'line', id: l.id })}
           >
             <span className="guide-kind">{l.axis === 'horizontal' ? 'Horizontal' : 'Vertical'}</span>
             <NumberField
@@ -446,18 +452,18 @@ function GuidesPanel({ s, selected, onSelect, onRemove }: PanelProps) {
               onCommit={(n) =>
                 docStore.apply(
                   (d) => {
-                    const line = d.settings.lines[i];
-                    if (line)
-                      line.at = Math.min(n, (line.axis === 'vertical' ? d.settings.pageW : d.settings.pageH) - 0.05);
+                    const line = d.settings.lines.find((x) => x.id === l.id);
+                    const size = l.axis === 'vertical' ? d.settings.pageW : d.settings.pageH;
+                    if (line) line.at = Math.min(n, size - 0.05);
                   },
-                  { coalesce: `line:${i}` },
+                  { coalesce: `line:${l.id}` },
                 )
               }
             />
             <button
               className="btn ghost icon small"
               aria-label="Remove guide"
-              onClick={() => onRemove({ kind: 'line', index: i })}
+              onClick={() => onRemove({ kind: 'line', id: l.id })}
             >
               <X />
             </button>
@@ -473,57 +479,57 @@ function GuidesPanel({ s, selected, onSelect, onRemove }: PanelProps) {
   );
 }
 
-/** Keeps a border guide's box on the page: at least 0.1 in across each way. */
-function clampBorder(b: BorderGuide, s: Settings): void {
-  b.top = Math.min(b.top, s.pageH - b.bottom - 0.1);
-  b.bottom = Math.min(b.bottom, s.pageH - b.top - 0.1);
-  b.inside = Math.min(b.inside, s.pageW - b.outside - 0.1);
-  b.outside = Math.min(b.outside, s.pageW - b.inside - 0.1);
-}
-
 interface BorderRowProps {
   g: BorderGuide;
-  i: number;
   isDrop: boolean;
   selected: boolean;
   onSelect: () => void;
   onRemove: () => void;
 }
 
-function BorderRow({ g, i, isDrop, selected, onSelect, onRemove }: BorderRowProps) {
-  // Linked, an edit sets every edge. Starts linked when they're all the same.
-  const [linked, setLinked] = useState(() => isUniform(g));
-  const set = (edge: (typeof EDGES)[number], n: number) =>
+/** A border guide's settings. A linked (even) guide edits all four distances at once. */
+function BorderRow({ g, isDrop, selected, onSelect, onRemove }: BorderRowProps) {
+  const e = edgesOf(g);
+  const linked = g.kind === 'even';
+  const update = (change: (b: BorderGuide) => BorderGuide, coalesce?: string) =>
     docStore.apply(
       (d) => {
-        const b = d.settings.borders[i];
-        if (!b) return;
-        for (const e of linked ? EDGES : [edge]) b[e] = n;
-        clampBorder(b, d.settings);
+        const i = d.settings.borders.findIndex((x) => x.id === g.id);
+        const current = d.settings.borders[i];
+        if (!current) return;
+        const next = change(current);
+        clampBorder(next, d.settings);
+        d.settings.borders[i] = next;
       },
-      { coalesce: `border:${i}:${linked ? 'all' : edge}` },
+      coalesce ? { coalesce: `border:${g.id}:${coalesce}` } : {},
     );
-  const makeDrop = () =>
-    docStore.apply((d) => {
-      for (const [j, b] of d.settings.borders.entries()) {
-        if (j === i) b.drop = true;
-        else delete b.drop;
-      }
-    });
+  const set = (edge: keyof Edges, n: number) =>
+    update((b) => (b.kind === 'even' ? { ...b, inset: n } : { ...b, [edge]: n }), linked ? 'inset' : edge);
+  // Unlinking keeps the distance on every edge; linking gives all four the top's.
+  const toggleLinked = () =>
+    update((b) =>
+      b.kind === 'even' ? { id: b.id, kind: 'edges', ...edgesOf(b) } : { id: b.id, kind: 'even', inset: b.top },
+    );
 
   return (
     <div className={`border-guide pick${selected ? ' selected' : ''}`} onPointerDown={onSelect}>
       <div className="grid2">
-        <NumberField label="Top" value={g.top} min={0} suffix="" onCommit={(n) => set('top', n)} />
-        <NumberField label="Bottom" value={g.bottom} min={0} suffix="" onCommit={(n) => set('bottom', n)} />
-        <NumberField label="Inside" value={g.inside} min={0} suffix="" onCommit={(n) => set('inside', n)} />
-        <NumberField label="Outside" value={g.outside} min={0} suffix="" onCommit={(n) => set('outside', n)} />
+        {EDGES.map((edge) => (
+          <NumberField
+            key={edge}
+            label={edge[0]!.toUpperCase() + edge.slice(1)}
+            value={e[edge]}
+            min={0}
+            suffix=""
+            onCommit={(n) => set(edge, n)}
+          />
+        ))}
       </div>
       <div className="inline border-tools">
         <button
           className={`drop-toggle${isDrop ? ' on' : ''}`}
           aria-pressed={isDrop}
-          onClick={makeDrop}
+          onClick={() => docStore.apply((d) => void (d.settings.dropBorder = g.id))}
           data-tip={
             isDrop
               ? 'Photos dropped on a page fit inside this guide.'
@@ -537,8 +543,8 @@ function BorderRow({ g, i, isDrop, selected, onSelect, onRemove }: BorderRowProp
           className={`btn ghost icon small${linked ? ' active' : ''}`}
           aria-label={linked ? 'Unlink edges' : 'Link edges'}
           aria-pressed={linked}
-          title={linked ? 'Edges linked: editing one sets all four' : 'Link edges'}
-          onClick={() => setLinked(!linked)}
+          title={linked ? 'Edges linked: editing one sets all four' : 'Link edges (all four take the top distance)'}
+          onClick={toggleLinked}
         >
           {linked ? <Link2 /> : <Link2Off />}
         </button>

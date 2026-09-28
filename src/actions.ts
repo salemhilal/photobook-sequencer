@@ -41,7 +41,7 @@ export function addPhotosToPile(photos: PhotoMeta[]): void {
   }
 }
 
-/** Placement for a photo freshly dropped on a page: fit inside the largest border guide, centered on the page. */
+/** Placement for a photo freshly dropped on a page: fit inside the drop border guide, centered on the page. */
 export function placementOnPage(d: Draft<Doc> | Doc, photoId: string, side: PageSide): Placement | null {
   const photo = d.photos[photoId];
   if (!photo) return null;

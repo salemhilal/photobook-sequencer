@@ -34,23 +34,28 @@ export interface Spread {
 export type PageSide = 'left' | 'right';
 
 /**
- * A border guide: a box inset from every page's edges, in inches. Inside is the edge at
- * the gutter, outside the one opposite, so the box mirrors on facing pages.
+ * Distances in inches from a page's edges. Inside is the edge at the gutter and outside
+ * the one opposite, so they mirror on facing pages.
  */
-export interface BorderGuide {
+export interface Edges {
   top: number;
   bottom: number;
   inside: number;
   outside: number;
-  /** Photos dropped on a page fit inside this guide. Without one marked, the largest guide. */
-  drop?: boolean;
 }
+
+/**
+ * A border guide: a box inset from every page's edges, either the same distance from
+ * each (`even`, shown as linked) or its own distance per edge.
+ */
+export type BorderGuide = { id: string } & ({ kind: 'even'; inset: number } | ({ kind: 'edges' } & Edges));
 
 /**
  * A straight guide across every page, mirrored on facing pages. A vertical guide's `at`
  * is inches from the page's outside edge; a horizontal guide's, from its top.
  */
 export interface LineGuide {
+  id: string;
   axis: 'vertical' | 'horizontal';
   at: number;
 }
@@ -64,6 +69,11 @@ export interface Settings {
   keepRelative: boolean;
   borders: BorderGuide[];
   lines: LineGuide[];
+  /**
+   * The border guide photos dropped on a page fit inside, by id. Null (or a guide that's
+   * gone) means the one with the largest box; with no border guides, the page.
+   */
+  dropBorder: string | null;
 }
 
 /**

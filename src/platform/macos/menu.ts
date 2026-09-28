@@ -43,6 +43,7 @@ export async function setUpMenu(): Promise<void> {
   const redo = await command('redo', inField('redo'));
   // Its wording follows the sidebar (see sync below).
   const sidebar = await command('toggleSidebar', undefined, 'Hide Spreads');
+  const guides = await command('toggleGuides', undefined, 'Hide Guides');
 
   const menu = await Menu.new({
     items: [
@@ -101,6 +102,7 @@ export async function setUpMenu(): Promise<void> {
         items: [
           await command('preview'),
           await command('guides'),
+          guides,
           sidebar,
           await separator(),
           await predefined('Fullscreen'),
@@ -127,13 +129,15 @@ export async function setUpMenu(): Promise<void> {
   const sync = () => {
     const { canUndo, canRedo } = docStore.getSnapshot();
     const typing = isTextField(document.activeElement);
-    const state = { undo: canUndo || typing, redo: canRedo || typing, sidebar: ui.get().sidebarOpen };
+    const { sidebarOpen, guidesHidden } = ui.get();
+    const state = { undo: canUndo || typing, redo: canRedo || typing, sidebar: sidebarOpen, guides: !guidesHidden };
     const key = JSON.stringify(state);
     if (key === shown) return;
     shown = key;
     void undo.setEnabled(state.undo);
     void redo.setEnabled(state.redo);
     void sidebar.setText(state.sidebar ? 'Hide Spreads' : 'Show Spreads');
+    void guides.setText(state.guides ? 'Hide Guides' : 'Show Guides');
   };
   sync();
   docStore.subscribe(sync);
