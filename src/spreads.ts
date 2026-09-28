@@ -19,11 +19,6 @@ export function findSpread<D extends Project | Draft<Project>>(d: D, id: SpreadI
   return allSpreads(d).find((s) => s.id === id);
 }
 
-/** A spread's place in the book (0 is the first spread), or -1. */
-export function spreadIndex(d: Project, id: SpreadId): number {
-  return allSpreads(d).findIndex((s) => s.id === id);
-}
-
 /**
  * Where a spread inserted before book position `index` goes among the middle spreads:
  * never before the first spread or after the last.

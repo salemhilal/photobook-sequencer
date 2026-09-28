@@ -148,6 +148,8 @@ export function validateProject(v: unknown): Project {
 
   const photos: Record<PhotoId, PhotoMeta> = {};
   for (const [key, p] of Object.entries(record(d.photos, 'photos'))) {
+    // As a key, it would set the table's prototype rather than file a photo.
+    if (key === '__proto__') fail('photos.__proto__');
     photos[toPhotoId(key)] = photo(p, key, `photos.${key}`);
   }
 

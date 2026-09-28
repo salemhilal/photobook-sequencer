@@ -129,7 +129,7 @@ export function usePersistence(): boolean {
 async function collectGarbage(): Promise<void> {
   if (ui.get().importing || !maySave()) return;
   const live = new Set<string>();
-  for (const d of projectStore.allDocs()) for (const id of Object.keys(d.photos)) live.add(id);
+  for (const d of projectStore.allProjects()) for (const id of Object.keys(d.photos)) live.add(id);
   for (const id of await imageIds()) {
     if (!live.has(id) && !ui.get().importing && maySave()) {
       await deleteImage(id);
