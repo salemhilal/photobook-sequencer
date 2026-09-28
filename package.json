@@ -11,6 +11,7 @@
     "app": "tauri dev",
     "build:app": "tauri build",
     "app:store": "node scripts/app-store.mjs",
+    "bump": "node scripts/bump.mjs",
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
