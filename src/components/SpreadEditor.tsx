@@ -16,6 +16,9 @@ import {
   type Rect,
   type SnapFeedback,
 } from '../geometry';
+import type { Draft } from 'immer';
+import type { PhotoId, SpreadId } from '../ids';
+import { allSpreads, findSpread } from '../spreads';
 import { docStore, useDoc } from '../store';
 import type { BorderGuide, Doc, Placement } from '../types';
 import { isTyping } from '../input';
@@ -32,20 +35,21 @@ const CORNERS: Corner[] = ['nw', 'ne', 'sw', 'se'];
 const NUDGE = 1 / 16;
 const NUDGE_BIG = 1 / 2;
 
-export function SpreadEditor({ spreadId }: { spreadId: string }) {
+export function SpreadEditor({ spreadId }: { spreadId: SpreadId }) {
   const { doc } = useDoc();
-  const index = doc.spreads.findIndex((s) => s.id === spreadId);
-  const spread = doc.spreads[index];
+  const book = allSpreads(doc);
+  const index = book.findIndex((s) => s.id === spreadId);
+  const spread = book[index];
   const { settings } = doc;
   const stageRef = useRef<HTMLDivElement>(null);
   const [stage, setStage] = useState({ w: 800, h: 500 });
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<PhotoId | null>(null);
   const [snapHit, setSnapHit] = useState<SnapFeedback | null>(null);
   /**
    * A guide box to glow while a Fit button is hovered, for the photo it was for: the
    * button can vanish under the pointer (the photo deselected) without a pointerleave.
    */
-  const [hovered, setHovered] = useState<{ photoId: string; box: Rect } | null>(null);
+  const [hovered, setHovered] = useState<{ photoId: PhotoId; box: Rect } | null>(null);
   const glow = hovered && hovered.photoId === selected ? hovered.box : null;
   const guidesHidden = ui.use((s) => s.guidesHidden);
 
@@ -65,14 +69,14 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
 
   const close = () => ui.set({ editingSpreadId: null });
   const go = (delta: number) => {
-    const next = doc.spreads[index + delta];
+    const next = book[index + delta];
     if (next) {
       setSelected(null);
       ui.set({ editingSpreadId: next.id });
     }
   };
 
-  const updateItem = (photoId: string, patch: Partial<Placement>, coalesce?: string) =>
+  const updateItem = (photoId: PhotoId, patch: Partial<Placement>, coalesce?: string) =>
     docStore.apply(
       (d) => {
         const item = findItem(d, spreadId, photoId);
@@ -81,7 +85,7 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
       coalesce ? { coalesce } : {},
     );
 
-  const toPile = (photoId: string) => {
+  const toPile = (photoId: PhotoId) => {
     docStore.apply((d) => putInPile(d, photoId));
     setSelected(null);
   };
@@ -144,7 +148,7 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
         setSnapHit(null);
         if (!moved) {
           docStore.silent((d) => {
-            const spread = d.spreads.find((s) => s.id === spreadId);
+            const spread = findSpread(d, spreadId);
             const item = spread?.items.find((i) => i.photoId === p.photoId);
             if (spread && item) raise(d, spread.items, item);
           });
@@ -215,7 +219,7 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
     </div>
   );
 
-  const label = folioLabel(index, doc.spreads.length);
+  const label = folioLabel(index, book.length);
 
   return (
     <div className="modal-backdrop" data-modal onPointerDown={(e) => e.target === e.currentTarget && close()}>
@@ -233,7 +237,7 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
           <button
             className="btn ghost icon"
             aria-label="Next spread"
-            disabled={index === doc.spreads.length - 1}
+            disabled={index === book.length - 1}
             onClick={() => go(1)}
           >
             <ChevronRight />
@@ -309,8 +313,8 @@ function guideSummary(g: BorderGuide): string {
   return `Top ${fmt(e.top)} · Outside ${fmt(e.outside)} · Bottom ${fmt(e.bottom)} · Inside ${fmt(e.inside)} in`;
 }
 
-function findItem(d: Doc, spreadId: string, photoId: string): Placement | undefined {
-  return d.spreads.find((s) => s.id === spreadId)?.items.find((i) => i.photoId === photoId);
+function findItem(d: Doc | Draft<Doc>, spreadId: SpreadId, photoId: PhotoId): Placement | undefined {
+  return findSpread(d, spreadId)?.items.find((i) => i.photoId === photoId);
 }
 
 interface InspectorProps {
@@ -338,7 +342,7 @@ function Inspector({ doc, item, onChange, onToPile, onHoverBox }: InspectorProps
   const photo = doc.photos[item.photoId];
   const aspect = item.w / item.h;
   const key = (f: string) => `inspect:${item.photoId}:${f}`;
-  const fit = (box: Rect) => onChange(fitCentered({ id: '', name: '', pxW: item.w, pxH: item.h }, box, page));
+  const fit = (box: Rect) => onChange(fitCentered({ pxW: item.w, pxH: item.h }, box, page));
   // Largest box first, as before per-edge guides: the outermost guide at the top.
   const boxes = settings.borders
     .map((g) => ({ g, box: borderBox(side, settings, g) }))
@@ -411,9 +415,9 @@ function Inspector({ doc, item, onChange, onToPile, onHoverBox }: InspectorProps
   );
 }
 
-function PileStrip({ spreadId }: { spreadId: string }) {
+function PileStrip({ spreadId }: { spreadId: SpreadId }) {
   const { doc } = useDoc();
-  const hover = ui.use((s) => s.hoverKey === 'strip');
+  const hover = ui.use((s) => s.hover?.kind === 'strip');
   const pile = [...doc.pile].sort((a, b) => a.y - b.y || a.x - b.x);
 
   const onDown = (e: React.PointerEvent, p: Placement) => {
@@ -427,7 +431,7 @@ function PileStrip({ spreadId }: { spreadId: string }) {
         clearGhost();
         if (!moved) {
           // A click places the photo on the first empty page, or the right page.
-          const spread = docStore.doc.spreads.find((s) => s.id === spreadId);
+          const spread = findSpread(docStore.doc, spreadId);
           if (!spread) return;
           const side = spread.kind === 'last' ? 'left' : spread.kind === 'first' ? 'right' : 'left';
           const taken = spread.items.some((i) => sideAt(i.x + i.w / 2) === side);

@@ -2,6 +2,7 @@ import { current } from 'immer';
 import { clampBorder, relayoutRect } from '../geometry';
 import { docStore, useDoc } from '../store';
 import { NumberField } from './NumberField';
+import { allSpreads } from '../spreads';
 
 /**
  * Change the page size: one undo step, applied when the field is done (blur or Enter),
@@ -15,7 +16,7 @@ function setPageSize(dim: 'pageW' | 'pageH', n: number): void {
     d.settings[dim] = n;
     const to = current(d.settings);
     if (to.keepRelative) {
-      for (const item of d.spreads.flatMap((s) => s.items)) Object.assign(item, relayoutRect(item, from, to));
+      for (const item of allSpreads(d).flatMap((s) => s.items)) Object.assign(item, relayoutRect(item, from, to));
     }
     for (const b of d.settings.borders) clampBorder(b, to);
   });

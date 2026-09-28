@@ -15,7 +15,8 @@ import {
 } from '../geometry';
 import { useWindowEvent } from '../hooks';
 import { isTyping } from '../input';
-import { docStore, newId, useDoc } from '../store';
+import { newGuideId, toSpreadId, type GuideId } from '../ids';
+import { docStore, useDoc } from '../store';
 import type { BorderGuide, Edges, LineGuide, Settings, Spread } from '../types';
 import { closeModal } from '../ui';
 import { NumberField } from './NumberField';
@@ -33,14 +34,14 @@ const PAD = 0.5;
 const RULER = 20;
 /** Shift snaps a dragged guide to this, in inches. */
 const SNAP = 1 / 8;
-const SAMPLE: Spread = { id: 'guides', kind: 'middle', items: [] };
+const SAMPLE: Spread = { id: toSpreadId('guides'), kind: 'middle', items: [] };
 const SIDES = pageSides(SAMPLE.kind);
 const EDGES = ['top', 'bottom', 'inside', 'outside'] as const;
 
 type Axis = LineGuide['axis'];
 
 /** What's selected: a guide from the rulers or a border guide (by id), or a center line. */
-type Selection = { kind: 'line' | 'border'; id: string } | { kind: 'center'; axis: Axis };
+type Selection = { kind: 'line' | 'border'; id: GuideId } | { kind: 'center'; axis: Axis };
 
 const round = (n: number) => Math.round(n * 1000) / 1000;
 
@@ -104,7 +105,7 @@ export function GuidesEditor() {
   const pageTop = top + PAD * scale;
 
   /** The guide the pointer is placing, or null over the ruler or off the page (to remove it). */
-  const guideAt = (axis: Axis, id: string, e: PointerEvent): LineGuide | null => {
+  const guideAt = (axis: Axis, id: GuideId, e: PointerEvent): LineGuide | null => {
     const r = stageRef.current?.getBoundingClientRect();
     if (!r) return null;
     const px = e.clientX - r.left;
@@ -118,11 +119,11 @@ export function GuidesEditor() {
   };
 
   /** Drag a new guide out of a ruler (`existing` null) or an existing one, by id. */
-  const dragGuide = (e: React.PointerEvent, axis: Axis, existing: string | null) => {
+  const dragGuide = (e: React.PointerEvent, axis: Axis, existing: GuideId | null) => {
     if (e.button !== 0) return;
     e.stopPropagation();
     const start = s.lines;
-    const id = existing ?? newId();
+    const id = existing ?? newGuideId();
     // The guide where the pointer is: added, moved, or (off the page) removed.
     const place = (g: LineGuide | null): LineGuide[] => {
       if (!existing) return g ? [...start, g] : start;
@@ -354,12 +355,12 @@ function GuidesPanel({ s, selected, onSelect, onRemove }: PanelProps) {
   const drop = dropGuide(s);
   const addLine = (axis: Axis) => {
     const size = axis === 'vertical' ? s.pageW : s.pageH;
-    const id = newId();
+    const id = newGuideId();
     docStore.apply((d) => void d.settings.lines.push({ id, axis, at: Math.round(size / 3 / SNAP) * SNAP }));
     onSelect({ kind: 'line', id });
   };
   const addBorder = () => {
-    const id = newId();
+    const id = newGuideId();
     docStore.apply((d) => {
       const last = d.settings.borders.at(-1);
       const b: BorderGuide = { id, kind: 'even', inset: (last ? edgesOf(last).top : 0.25) + 0.25 };

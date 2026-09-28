@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { getImage, putImage } from './db';
 import type { PhotoMeta } from './types';
-import { newId } from './store';
+import { newPhotoId } from './ids';
 
 const THUMB_MAX = 1400;
 
@@ -138,7 +138,7 @@ export async function importFiles(
       try {
         const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
         const thumb = await makeThumb(bitmap);
-        const meta: PhotoMeta = { id: newId(), name: file.name, pxW: bitmap.width, pxH: bitmap.height };
+        const meta: PhotoMeta = { id: newPhotoId(), name: file.name, pxW: bitmap.width, pxH: bitmap.height };
         bitmap.close();
         await putImage(meta.id, { full: file, thumb });
         setUrl(meta.id, thumb);

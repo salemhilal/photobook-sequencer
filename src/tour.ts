@@ -1,3 +1,4 @@
+import { toPhotoId } from './ids';
 import { platform } from '#platform';
 import { produce } from 'immer';
 import { putOnPage } from './actions';
@@ -98,7 +99,7 @@ const SAMPLE_PX = { pxW: 795, pxH: 1200 };
 export function sampleDoc(): Doc {
   const doc = emptyDoc();
   SAMPLES.forEach(([name], i) => {
-    const photo: PhotoMeta = { id: `tour-${name}`, name: `${name}.jpg`, ...SAMPLE_PX };
+    const photo: PhotoMeta = { id: toPhotoId(`tour-${name}`), name: `${name}.jpg`, ...SAMPLE_PX };
     doc.photos[photo.id] = photo;
     if (i >= 4) return;
     const { w, h } = pileSize(photo);
@@ -106,9 +107,9 @@ export function sampleDoc(): Doc {
     doc.pile.push({ photoId: photo.id, x: 0.4 + i * 1.8, y: 0.4 + [0.1, 0, 0.25, 0.05][i]!, w, h, z: doc.nextZ++ });
   });
   return produce(doc, (d) => {
-    const spread = d.spreads[1]!;
-    putOnPage(d, ['tour-leaves'], spread.id, 'left');
-    putOnPage(d, ['tour-lily'], spread.id, 'right');
+    const spread = d.spreads[0]!;
+    putOnPage(d, [toPhotoId('tour-leaves')], spread.id, 'left');
+    putOnPage(d, [toPhotoId('tour-lily')], spread.id, 'right');
   });
 }
 
@@ -142,7 +143,7 @@ export function goToStep(index: number): void {
   ui.set({
     tour: index,
     modal: step.modal ?? null,
-    editingSpreadId: step.editor ? (docStore.doc.spreads[1]?.id ?? null) : null,
+    editingSpreadId: step.editor ? (docStore.doc.spreads[0]?.id ?? null) : null,
   });
 }
 

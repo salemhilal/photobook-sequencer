@@ -1,4 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { toPhotoId } from './ids';
+
+const A = toPhotoId('a');
+const B = toPhotoId('b');
 
 const images = new Map<string, unknown>();
 vi.mock('./db', () => ({
@@ -45,21 +49,21 @@ beforeEach(() => {
   failWrites = false;
   docStore.reset(emptyDoc());
   addPhotosToPile([
-    { id: 'a', name: 'a.jpg', pxW: 100, pxH: 100 },
-    { id: 'b', name: 'b.jpg', pxW: 100, pxH: 100 },
+    { id: A, name: 'a.jpg', pxW: 100, pxH: 100 },
+    { id: B, name: 'b.jpg', pxW: 100, pxH: 100 },
   ]);
-  images.set('a', { full: new Blob(['a']), thumb: new Blob(['a']) });
-  images.set('b', { full: new Blob(['b']), thumb: new Blob(['b']) });
+  images.set(A, { full: new Blob([A]), thumb: new Blob([A]) });
+  images.set(B, { full: new Blob([B]), thumb: new Blob([B]) });
 });
 
 describe('copy and paste', () => {
   it('puts the image and a marker on the system clipboard', async () => {
-    await copyPhotos(['a']);
+    await copyPhotos([A]);
     expect(Object.keys(written).sort()).toEqual(['image/png', 'text/plain']);
   });
 
   it('pastes copied photos as duplicates, selected, cascading with each paste', async () => {
-    await copyPhotos(['a', 'b']);
+    await copyPhotos([A, B]);
     const marker = await written['text/plain']!.text();
     expect(isInternalPaste(await pasteData(marker))).toBe(true);
 
@@ -67,21 +71,21 @@ describe('copy and paste', () => {
     await pasteCopied();
     const pile = docStore.doc.pile;
     expect(pile).toHaveLength(6);
-    const a = pile.find((p) => p.photoId === 'a')!;
+    const a = pile.find((p) => p.photoId === A)!;
     const copiesOfA = pile.filter((p) => docStore.doc.photos[p.photoId]!.name === 'a copy.jpg');
     expect(copiesOfA.map((p) => Math.round((p.x - a.x) * 100) / 100)).toEqual([0.25, 0.5]);
     expect(ui.get().selection).toHaveLength(2);
   });
 
   it('treats a paste as external once something else was copied', async () => {
-    await copyPhotos(['a']);
+    await copyPhotos([A]);
     expect(isInternalPaste(await pasteData('some other text'))).toBe(false);
     expect(isInternalPaste(await pasteData(null, [new File(['x'], 'image.png')]))).toBe(false);
   });
 
   it('still pastes inside the app when the system clipboard is unavailable', async () => {
     failWrites = true;
-    await copyPhotos(['a']).catch(() => {});
+    await copyPhotos([A]).catch(() => {});
     expect(isInternalPaste(await pasteData(null))).toBe(true);
   });
 });

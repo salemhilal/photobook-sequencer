@@ -17,16 +17,20 @@ import { platform } from '#platform';
 import { importProject, isProjectFile, newProject, ProjectFileError } from './project';
 import { ui } from './ui';
 import { docStore, emptyDoc } from './store';
+import { toPhotoId } from './ids';
 import type { Doc } from './types';
+
+const A = toPhotoId('a');
+const B = toPhotoId('b');
 import { createZip } from './zip';
 
 function sampleDoc(): Doc {
   const doc = emptyDoc();
   doc.photos = {
-    a: { id: 'a', name: 'beach.jpg', pxW: 1200, pxH: 900 },
-    b: { id: 'b', name: 'beach.jpg', pxW: 900, pxH: 1200 },
+    [A]: { id: A, name: 'beach.jpg', pxW: 1200, pxH: 900 },
+    [B]: { id: B, name: 'beach.jpg', pxW: 900, pxH: 1200 },
   };
-  doc.pile = [{ photoId: 'a', x: 1, y: 1, w: 2, h: 1.5, z: 1 }];
+  doc.pile = [{ photoId: A, x: 1, y: 1, w: 2, h: 1.5, z: 1 }];
   doc.nextZ = 2;
   return doc;
 }
@@ -58,7 +62,7 @@ describe('project files', () => {
   it('exports and re-imports a project with its layout and images', async () => {
     const doc = sampleDoc();
     docStore.reset(doc);
-    docStore.apply((d) => putOnPage(d, ['b'], d.spreads[1]!.id, 'right'));
+    docStore.apply((d) => putOnPage(d, [B], d.spreads[0]!.id, 'right'));
     const before = docStore.doc;
     await putImage('a', { full: new Blob(['full-a'], { type: 'image/jpeg' }), thumb: new Blob(['thumb-a']) });
     await putImage('b', { full: new Blob(['full-b'], { type: 'image/jpeg' }), thumb: new Blob(['thumb-b']) });

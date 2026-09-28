@@ -1,4 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { toPhotoId } from './ids';
+
+const A = toPhotoId('a');
+const B = toPhotoId('b');
 
 // Stand in for IndexedDB: keep stored images in memory.
 const images = new Map<string, unknown>();
@@ -14,8 +18,8 @@ const { docStore, emptyDoc } = await import('./store');
 beforeEach(() => {
   images.clear();
   docStore.reset(emptyDoc());
-  addPhotosToPile([{ id: 'a', name: 'IMG_1.jpg', pxW: 1200, pxH: 800 }]);
-  images.set('a', { full: new Blob(['full']), thumb: new Blob(['thumb']) });
+  addPhotosToPile([{ id: A, name: 'IMG_1.jpg', pxW: 1200, pxH: 800 }]);
+  images.set(A, { full: new Blob(['full']), thumb: new Blob(['thumb']) });
 });
 
 describe('duplicatePhoto', () => {
@@ -25,11 +29,11 @@ describe('duplicatePhoto', () => {
   });
 
   it('adds an independent copy next to a desk photo, with its own image data', async () => {
-    const [id] = await duplicatePhotos(['a']);
+    const [id] = await duplicatePhotos([A]);
     const doc = docStore.doc;
-    expect(id).not.toBe('a');
+    expect(id).not.toBe(A);
     expect(doc.photos[id!]).toMatchObject({ name: 'IMG_1 copy.jpg', pxW: 1200, pxH: 800 });
-    const [orig, copy] = ['a', id!].map((pid) => doc.pile.find((p) => p.photoId === pid)!);
+    const [orig, copy] = [A, id!].map((pid) => doc.pile.find((p) => p.photoId === pid)!);
     expect(copy!.x - orig!.x).toBeCloseTo(0.25);
     expect(copy!.w).toBe(orig!.w);
     expect(copy!.z).toBeGreaterThan(orig!.z);
@@ -37,28 +41,28 @@ describe('duplicatePhoto', () => {
   });
 
   it('keeps the copy on the same spread when the original is on a page', async () => {
-    docStore.apply((d) => putOnPage(d, ['a'], d.spreads[1]!.id, 'right'));
-    const [id] = await duplicatePhotos(['a']);
-    const items = docStore.doc.spreads[1]!.items.map((i) => i.photoId);
-    expect(items).toEqual(['a', id]);
+    docStore.apply((d) => putOnPage(d, [A], d.spreads[0]!.id, 'right'));
+    const [id] = await duplicatePhotos([A]);
+    const items = docStore.doc.spreads[0]!.items.map((i) => i.photoId);
+    expect(items).toEqual([A, id]);
     expect(docStore.doc.pile).toHaveLength(0);
   });
 
   it('duplicates several photos as one undo step, at a chosen offset', async () => {
-    addPhotosToPile([{ id: 'b', name: 'IMG_2.jpg', pxW: 800, pxH: 800 }]);
-    images.set('b', { full: new Blob(['b']), thumb: new Blob(['b']) });
-    const ids = await duplicatePhotos(['a', 'b'], 0.5);
+    addPhotosToPile([{ id: B, name: 'IMG_2.jpg', pxW: 800, pxH: 800 }]);
+    images.set(B, { full: new Blob([B]), thumb: new Blob([B]) });
+    const ids = await duplicatePhotos([A, B], 0.5);
     expect(ids).toHaveLength(2);
-    const b = docStore.doc.pile.find((p) => p.photoId === 'b')!;
+    const b = docStore.doc.pile.find((p) => p.photoId === B)!;
     const bCopy = docStore.doc.pile.find((p) => p.photoId === ids[1])!;
     expect(bCopy.y - b.y).toBeCloseTo(0.5);
     docStore.undo();
-    expect(Object.keys(docStore.doc.photos).sort()).toEqual(['a', 'b']);
+    expect(Object.keys(docStore.doc.photos).sort()).toEqual([A, B]);
   });
 
   it('is undoable', async () => {
-    await duplicatePhotos(['a']);
+    await duplicatePhotos([A]);
     docStore.undo();
-    expect(Object.keys(docStore.doc.photos)).toEqual(['a']);
+    expect(Object.keys(docStore.doc.photos)).toEqual([A]);
   });
 });

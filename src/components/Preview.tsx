@@ -6,6 +6,7 @@ import { savePdf } from '../pdf';
 import { useDoc } from '../store';
 import { closeModal, ui } from '../ui';
 import { SpreadCanvas } from './SpreadCanvas';
+import { allSpreads } from '../spreads';
 
 export function Preview() {
   const { doc } = useDoc();
@@ -13,14 +14,15 @@ export function Preview() {
     const editing = ui.get().editingSpreadId;
     return Math.max(
       0,
-      doc.spreads.findIndex((s) => s.id === editing),
+      allSpreads(doc).findIndex((s) => s.id === editing),
     );
   });
   const [dir, setDir] = useState<'next' | 'prev'>('next');
   const stageRef = useRef<HTMLDivElement>(null);
   const [stage, setStage] = useState({ w: 900, h: 600 });
   const busy = ui.use((s) => s.busy);
-  const { spreads, settings } = doc;
+  const { settings } = doc;
+  const spreads = allSpreads(doc);
   const spread = spreads[Math.min(index, spreads.length - 1)];
 
   const close = closeModal;

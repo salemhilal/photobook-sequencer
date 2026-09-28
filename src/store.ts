@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { produce, type Draft } from 'immer';
+import { newGuideId, newSpreadId } from './ids';
 import { CURRENT_SCHEMA, type Doc } from './types';
 
 const HISTORY_LIMIT = 200;
@@ -172,22 +173,18 @@ class DocStore {
   }
 }
 
-export function newId(): string {
-  return crypto.randomUUID();
-}
-
 export function emptyDoc(): Doc {
-  const margin = newId();
+  const margin = newGuideId();
   return {
     schemaVersion: CURRENT_SCHEMA,
     photos: {},
     pile: [],
+    firstSpread: { kind: 'first', id: newSpreadId(), items: [] },
     spreads: [
-      { id: newId(), kind: 'first', items: [] },
-      { id: newId(), kind: 'middle', items: [] },
-      { id: newId(), kind: 'middle', items: [] },
-      { id: newId(), kind: 'last', items: [] },
+      { kind: 'middle', id: newSpreadId(), items: [] },
+      { kind: 'middle', id: newSpreadId(), items: [] },
     ],
+    lastSpread: { kind: 'last', id: newSpreadId(), items: [] },
     settings: {
       pageW: 10,
       pageH: 8,
@@ -196,7 +193,7 @@ export function emptyDoc(): Doc {
       keepRelative: true,
       borders: [
         { id: margin, kind: 'even', inset: 0.5 },
-        { id: newId(), kind: 'even', inset: 1.25 },
+        { id: newGuideId(), kind: 'even', inset: 1.25 },
       ],
       lines: [],
       dropBorder: margin,

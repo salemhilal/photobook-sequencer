@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { duplicatePhotos, importPhotos } from './actions';
 import { photoAsPng } from './images';
-import { docStore, newId } from './store';
+import type { PhotoId } from './ids';
+import { docStore } from './store';
 import { isTyping } from './input';
 import { deskCovered, ui } from './ui';
 
@@ -15,12 +16,12 @@ import { deskCovered, ui } from './ui';
 const MARKER = 'photobook-sequencer:';
 const PASTE_STEP = 0.25;
 
-let copied: { ids: string[]; token: string; pastes: number; systemFailed: boolean } | null = null;
+let copied: { ids: PhotoId[]; token: string; pastes: number; systemFailed: boolean } | null = null;
 
-export function copyPhotos(ids: string[]): Promise<void> {
+export function copyPhotos(ids: PhotoId[]): Promise<void> {
   const first = ids[0];
   if (!first) return Promise.resolve();
-  const entry = { ids, token: newId(), pastes: 0, systemFailed: false };
+  const entry = { ids, token: crypto.randomUUID(), pastes: 0, systemFailed: false };
   copied = entry;
   // The clipboard write must start inside the user's gesture, so it isn't awaited first.
   return navigator.clipboard
@@ -59,11 +60,11 @@ export async function pasteCopied(): Promise<void> {
 }
 
 /** Duplicate photos (⌘D, or the menu) and select the copies that are on the desk. */
-export async function duplicateAndSelect(ids: string[]): Promise<void> {
+export async function duplicateAndSelect(ids: PhotoId[]): Promise<void> {
   selectIfOnDesk(await duplicatePhotos(ids));
 }
 
-function selectIfOnDesk(ids: string[]): void {
+function selectIfOnDesk(ids: PhotoId[]): void {
   const onDesk = new Set(docStore.doc.pile.map((p) => p.photoId));
   const selection = ids.filter((id) => onDesk.has(id));
   if (selection.length) ui.set({ selection });

@@ -1,9 +1,10 @@
+import { toSpreadId, type PhotoId, type SpreadId } from './ids';
 import type { PageSide } from './types';
 import { ui } from './ui';
 
 /** What the pointer is over during a drag, as resolved by `hitTest`. */
 export type DropTarget =
-  | { kind: 'page'; spreadId: string; side: PageSide }
+  | { kind: 'page'; spreadId: SpreadId; side: PageSide }
   | { kind: 'desk' }
   /** The desk strip at the bottom of the spread editor. */
   | { kind: 'strip' }
@@ -11,12 +12,12 @@ export type DropTarget =
   | { kind: 'insert'; index: number }
   | null;
 
-/** A string identifying a drop target, compared against `ui.hoverKey` for highlighting. */
-export function targetKey(t: DropTarget): string | null {
-  if (!t) return null;
-  if (t.kind === 'page') return `page:${t.spreadId}:${t.side}`;
-  if (t.kind === 'insert') return `insert:${t.index}`;
-  return t.kind;
+/** Whether two drop targets are the same place (for highlighting the one under the pointer). */
+export function sameTarget(a: DropTarget, b: DropTarget): boolean {
+  if (!a || !b || a.kind !== b.kind) return false;
+  if (a.kind === 'page' && b.kind === 'page') return a.spreadId === b.spreadId && a.side === b.side;
+  if (a.kind === 'insert' && b.kind === 'insert') return a.index === b.index;
+  return true;
 }
 
 /** Resolve the drop target under a client point via `data-drop` attributes. */
@@ -27,7 +28,8 @@ export function hitTest(clientX: number, clientY: number): DropTarget {
     if (kind === 'page') {
       const spreadId = el.dataset.spread;
       const side = el.dataset.side;
-      if (spreadId && (side === 'left' || side === 'right')) return { kind: 'page', spreadId, side };
+      if (spreadId && (side === 'left' || side === 'right'))
+        return { kind: 'page', spreadId: toSpreadId(spreadId), side };
     }
     if (kind === 'desk') return { kind: 'desk' };
     if (kind === 'strip') return { kind: 'strip' };
@@ -121,16 +123,16 @@ export function startDrag(down: React.PointerEvent, h: DragHandlers): void {
 /** Show the floating thumbnail and highlight the drop target under the pointer. */
 export function trackGhost(
   e: PointerEvent,
-  ghost: { photoId: string; count: number; w: number; h: number } | null,
+  ghost: { photoId: PhotoId; count: number; w: number; h: number } | null,
 ): DropTarget {
   const target = hitTest(e.clientX, e.clientY);
   ui.set({
     ghost: ghost ? { ...ghost, clientX: e.clientX, clientY: e.clientY } : null,
-    hoverKey: targetKey(target),
+    hover: target,
   });
   return target;
 }
 
 export function clearGhost(): void {
-  ui.set({ ghost: null, hoverKey: null });
+  ui.set({ ghost: null, hover: null });
 }

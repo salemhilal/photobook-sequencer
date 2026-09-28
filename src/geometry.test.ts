@@ -16,10 +16,11 @@ import {
   spreadGuides,
   type Rect,
 } from './geometry';
+import { toGuideId, toSpreadId } from './ids';
 import type { BorderGuide, Settings, Spread } from './types';
 
 function even(id: string, inset: number): BorderGuide {
-  return { id, kind: 'even', inset };
+  return { id: toGuideId(id), kind: 'even', inset };
 }
 
 const settings: Settings = {
@@ -33,8 +34,8 @@ const settings: Settings = {
   dropBorder: null,
 };
 /** Wider at the gutter and the bottom, as books often are. */
-const book: BorderGuide = { id: 'book', kind: 'edges', top: 0.5, bottom: 1, inside: 1.5, outside: 0.75 };
-const spread = (kind: Spread['kind']): Spread => ({ id: 's', kind, items: [] });
+const book: BorderGuide = { id: toGuideId('book'), kind: 'edges', top: 0.5, bottom: 1, inside: 1.5, outside: 0.75 };
+const spread = (kind: Spread['kind']): Spread => ({ id: toSpreadId('s'), kind, items: [] });
 const photo = (pxW: number, pxH: number) => ({ id: 'p', name: 'p.jpg', pxW, pxH });
 const round = (r: Rect) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, Math.round(v * 1000) / 1000]));
 
@@ -51,9 +52,9 @@ describe('pages', () => {
   });
 
   it('fits dropped photos inside the border guide chosen for it, by id', () => {
-    expect(dropGuide({ ...settings, dropBorder: 'b' })?.id).toBe('b');
+    expect(dropGuide({ ...settings, dropBorder: toGuideId('b') })?.id).toBe('b');
     // A choice that's gone falls back to the largest.
-    expect(dropGuide({ ...settings, dropBorder: 'gone' })?.id).toBe('a');
+    expect(dropGuide({ ...settings, dropBorder: toGuideId('gone') })?.id).toBe('a');
   });
 
   it('keeps border guides on a page that shrinks', () => {
@@ -107,10 +108,10 @@ describe('guides', () => {
       centerH: false,
       borders: [],
       lines: [
-        { id: 'v', axis: 'vertical', at: 2 },
-        { id: 'h', axis: 'horizontal', at: 3 },
+        { id: toGuideId('v'), axis: 'vertical', at: 2 },
+        { id: toGuideId('h'), axis: 'horizontal', at: 3 },
         // Off the page: not drawn.
-        { id: 'off', axis: 'vertical', at: 12 },
+        { id: toGuideId('off'), axis: 'vertical', at: 12 },
       ],
     };
     const g = spreadGuides(spread('middle'), s);
@@ -119,7 +120,7 @@ describe('guides', () => {
   });
 
   it('finds a vertical guide’s distance from the outside edge on either page', () => {
-    const l = { id: 'v', axis: 'vertical' as const, at: 2 };
+    const l = { id: toGuideId('v'), axis: 'vertical' as const, at: 2 };
     for (const side of ['left', 'right'] as const) {
       expect(lineAt(side, settings, 'vertical', linePosition(side, settings, l))).toBeCloseTo(2);
     }
@@ -236,7 +237,7 @@ describe('relayoutRect', () => {
   });
 
   it('keeps a photo’s edge on a vertical line guide', () => {
-    const s: Settings = { ...settings, borders: [], lines: [{ id: 'v', axis: 'vertical', at: 2 }] };
+    const s: Settings = { ...settings, borders: [], lines: [{ id: toGuideId('v'), axis: 'vertical', at: 2 }] };
     const to = { ...s, pageW: 8, pageH: 6.4 };
     // On the right page, from the guide (8 in from the gutter) to the page's outside edge.
     const r = relayoutRect({ x: 8, y: 0, w: 2, h: 8 }, s, to);

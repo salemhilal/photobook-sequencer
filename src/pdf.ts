@@ -3,6 +3,7 @@ import { pageSides } from './geometry';
 import { platform } from '#platform';
 import { docStore } from './store';
 import { ui } from './ui';
+import { allSpreads } from './spreads';
 
 const PT_PER_INCH = 72;
 
@@ -18,7 +19,8 @@ export async function renderPdf(onProgress: (done: number, total: number) => voi
   pdf.setTitle('Photo book');
   pdf.setCreator('Sequence');
 
-  for (const [i, spread] of doc.spreads.entries()) {
+  const book = allSpreads(doc);
+  for (const [i, spread] of book.entries()) {
     const sides = pageSides(spread.kind);
     const left = sides[0] === 'left' ? -pageW : 0;
     const page = pdf.addPage([sides.length * pageW * PT_PER_INCH, pageH * PT_PER_INCH]);
@@ -41,7 +43,7 @@ export async function renderPdf(onProgress: (done: number, total: number) => voi
         height: p.h * PT_PER_INCH,
       });
     }
-    onProgress(i + 1, doc.spreads.length);
+    onProgress(i + 1, book.length);
   }
 
   const bytes = await pdf.save();

@@ -1,3 +1,4 @@
+import type { PhotoId } from './ids';
 import { useEffect } from 'react';
 import type { Platform } from './platform/types';
 import { deleteFromProject, importPhotos } from './actions';
@@ -79,7 +80,7 @@ function nudgeSelection(e?: KeyboardEvent): void | false {
 }
 
 /** Runs `fn` with the desk selection, or leaves the key alone when nothing is selected. */
-const withSelection = (fn: (ids: string[]) => void) => (): void | false => {
+const withSelection = (fn: (ids: PhotoId[]) => void) => (): void | false => {
   const ids = ui.get().selection;
   if (!ids.length) return false;
   fn(ids);

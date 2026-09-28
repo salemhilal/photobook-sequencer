@@ -28,7 +28,7 @@ export function Desk() {
   const { doc } = useDoc();
   const view = ui.use((s) => s.view);
   const selection = ui.use((s) => s.selection);
-  const dropHover = ui.use((s) => s.hoverKey === 'desk');
+  const dropHover = ui.use((s) => s.hover?.kind === 'desk');
   const ref = useRef<HTMLDivElement>(null);
   const spaceHeld = useRef(false);
   /** When Space went down over the uncovered desk; cleared if it's used to pan. */

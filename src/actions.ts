@@ -1,7 +1,9 @@
 import type { Draft } from 'immer';
 import { getImage, putImage, type StoredImage } from './db';
 import { importFiles, setUrl } from './images';
-import { docStore, newId } from './store';
+import { newPhotoId, newSpreadId, type PhotoId, type SpreadId } from './ids';
+import { allSpreads, findSpread, middleIndex } from './spreads';
+import { docStore } from './store';
 import { dropBox, fitCentered, pageRect, pileSize, PILE_PHOTO_SIZE } from './geometry';
 import type { DropTarget } from './drag';
 import type { Doc, PageSide, PhotoMeta, Placement } from './types';
@@ -42,7 +44,7 @@ export function addPhotosToPile(photos: PhotoMeta[]): void {
 }
 
 /** Placement for a photo freshly dropped on a page: fit inside the drop border guide, centered on the page. */
-export function placementOnPage(d: Draft<Doc> | Doc, photoId: string, side: PageSide): Placement | null {
+export function placementOnPage(d: Draft<Doc> | Doc, photoId: PhotoId, side: PageSide): Placement | null {
   const photo = d.photos[photoId];
   if (!photo) return null;
   const page = pageRect(side, d.settings);
@@ -53,13 +55,13 @@ export function placementOnPage(d: Draft<Doc> | Doc, photoId: string, side: Page
 /** Where a photo is: on the desk, on a spread, or (if unplaced) nowhere. */
 export type Location<D extends Doc | Draft<Doc>> =
   | { where: 'desk'; placement: D['pile'][number] }
-  | { where: 'spread'; spread: D['spreads'][number]; placement: D['pile'][number] }
+  | { where: 'spread'; spread: ReturnType<typeof allSpreads<D>>[number]; placement: D['pile'][number] }
   | null;
 
-export function locate<D extends Doc | Draft<Doc>>(d: D, photoId: string): Location<D> {
+export function locate<D extends Doc | Draft<Doc>>(d: D, photoId: PhotoId): Location<D> {
   const onDesk = d.pile.find((p) => p.photoId === photoId);
   if (onDesk) return { where: 'desk', placement: onDesk };
-  for (const spread of d.spreads) {
+  for (const spread of allSpreads(d)) {
     const placement = spread.items.find((p) => p.photoId === photoId);
     if (placement) return { where: 'spread', spread, placement };
   }
@@ -74,7 +76,7 @@ export function locate<D extends Doc | Draft<Doc>>(d: D, photoId: string): Locat
 export function dropPhotos(
   d: Draft<Doc>,
   target: DropTarget,
-  photoIds: string[],
+  photoIds: PhotoId[],
   at?: { x: number; y: number },
 ): boolean {
   if (!target) return false;
@@ -104,13 +106,13 @@ export function raise(d: Draft<Doc>, among: Placement[], p: Placement): void {
   if (among.some((o) => o !== p && o.z > p.z)) bump(d, p);
 }
 
-function removeFromSpreads(d: Draft<Doc>, photoId: string): void {
-  for (const s of d.spreads) s.items = s.items.filter((i) => i.photoId !== photoId);
+function removeFromSpreads(d: Draft<Doc>, photoId: PhotoId): void {
+  for (const s of allSpreads(d)) s.items = s.items.filter((i) => i.photoId !== photoId);
 }
 
 /** Recipe: put photos onto a page (from anywhere), each centered and fitted. */
-export function putOnPage(d: Draft<Doc>, photoIds: string[], spreadId: string, side: PageSide): void {
-  const spread = d.spreads.find((s) => s.id === spreadId);
+export function putOnPage(d: Draft<Doc>, photoIds: PhotoId[], spreadId: SpreadId, side: PageSide): void {
+  const spread = findSpread(d, spreadId);
   if (!spread) return;
   for (const id of photoIds) {
     const p = placementOnPage(d, id, side);
@@ -122,16 +124,15 @@ export function putOnPage(d: Draft<Doc>, photoIds: string[], spreadId: string, s
   }
 }
 
-/** Recipe: add a spread before `index` and put photos on its left page. */
-export function putOnNewSpread(d: Draft<Doc>, photoIds: string[], index: number): void {
-  const i = Math.min(Math.max(1, index), d.spreads.length - 1);
-  const id = newId();
-  d.spreads.splice(i, 0, { id, kind: 'middle', items: [] });
+/** Recipe: add a spread before book position `index` and put photos on its left page. */
+export function putOnNewSpread(d: Draft<Doc>, photoIds: PhotoId[], index: number): void {
+  const id = newSpreadId();
+  d.spreads.splice(middleIndex(d, index), 0, { kind: 'middle', id, items: [] });
   putOnPage(d, photoIds, id, 'left');
 }
 
 /** Recipe: return a photo to the pile, centered on a desk point (defaults to the visible center). */
-export function putInPile(d: Draft<Doc>, photoId: string, at?: { x: number; y: number }): void {
+export function putInPile(d: Draft<Doc>, photoId: PhotoId, at?: { x: number; y: number }): void {
   const photo = d.photos[photoId];
   if (!photo) return;
   removeFromSpreads(d, photoId);
@@ -156,7 +157,7 @@ const TIDY_GAP = 0.3;
  * otherwise the whole pile. The grid starts at the photos' top-left corner;
  * rows that are wider than the visible desk wrap.
  */
-export function tidyPile(photoIds?: string[]): void {
+export function tidyPile(photoIds?: PhotoId[]): void {
   const ids = photoIds && photoIds.length > 1 ? new Set(photoIds) : null;
   const items = docStore.doc.pile.filter((p) => !ids || ids.has(p.photoId));
   if (items.length < 2) return;
@@ -180,7 +181,7 @@ export function tidyPile(photoIds?: string[]): void {
   const cols = Math.max(1, Math.floor((vis.x + vis.w - left) / cell));
 
   // Each existing row stays a row, wrapping if it's wider than the view.
-  const slot = new Map<string, { col: number; row: number }>();
+  const slot = new Map<PhotoId, { col: number; row: number }>();
   let gridRow = 0;
   for (const row of rows) {
     row
@@ -214,11 +215,11 @@ const DUPLICATE_OFFSET = 0.25;
  * data), placed `offset` inches down and right of the originals: on the desk, or on
  * the same spread. One undo step. Returns the new photos' ids.
  */
-export async function duplicatePhotos(photoIds: string[], offset = DUPLICATE_OFFSET): Promise<string[]> {
-  const sources: { from: string; id: string; img: StoredImage }[] = [];
+export async function duplicatePhotos(photoIds: PhotoId[], offset = DUPLICATE_OFFSET): Promise<PhotoId[]> {
+  const sources: { from: PhotoId; id: PhotoId; img: StoredImage }[] = [];
   for (const from of photoIds) {
     const img = await getImage(from);
-    if (img && docStore.doc.photos[from]) sources.push({ from, id: newId(), img });
+    if (img && docStore.doc.photos[from]) sources.push({ from, id: newPhotoId(), img });
   }
   if (!sources.length) return [];
   for (const { id, img } of sources) setUrl(id, img.thumb);
@@ -244,29 +245,29 @@ export async function duplicatePhotos(photoIds: string[], offset = DUPLICATE_OFF
   return sources.map((s) => s.id);
 }
 
-export function deleteFromProject(photoIds: string[]): void {
+export function deleteFromProject(photoIds: PhotoId[]): void {
   const ids = new Set(photoIds);
   docStore.apply((d) => {
     d.pile = d.pile.filter((p) => !ids.has(p.photoId));
-    for (const s of d.spreads) s.items = s.items.filter((p) => !ids.has(p.photoId));
+    for (const s of allSpreads(d)) s.items = s.items.filter((p) => !ids.has(p.photoId));
     for (const id of ids) delete d.photos[id];
   });
   ui.set((s) => ({ selection: s.selection.filter((id) => !ids.has(id)) }));
 }
 
-/** Insert a new middle spread before `index`. First and last spreads stay put. */
+/** Insert a new middle spread before book position `index`. First and last spreads stay put. */
 export function insertSpread(index: number): void {
   docStore.apply((d) => {
-    const i = Math.min(Math.max(1, index), d.spreads.length - 1);
-    d.spreads.splice(i, 0, { id: newId(), kind: 'middle', items: [] });
+    d.spreads.splice(middleIndex(d, index), 0, { kind: 'middle', id: newSpreadId(), items: [] });
   });
 }
 
-export function deleteSpread(spreadId: string): void {
+/** Delete a middle spread (the first and last aren't in that list, so can't be), returning its photos to the desk. */
+export function deleteSpread(spreadId: SpreadId): void {
   docStore.apply((d) => {
     const idx = d.spreads.findIndex((s) => s.id === spreadId);
     const spread = d.spreads[idx];
-    if (!spread || spread.kind !== 'middle') return;
+    if (!spread) return;
     const ids = spread.items.map((i) => i.photoId);
     d.spreads.splice(idx, 1);
     const v = deskGeometry.visible();
@@ -280,15 +281,14 @@ export function deleteSpread(spreadId: string): void {
   if (ui.get().editingSpreadId === spreadId) ui.set({ editingSpreadId: null });
 }
 
-/** Move a middle spread so it sits at `toIndex` (among all spreads) after removal. */
-export function moveSpread(spreadId: string, toIndex: number): void {
+/** Move a middle spread so it sits at book position `toIndex` (counted after its removal). */
+export function moveSpread(spreadId: SpreadId, toIndex: number): void {
   docStore.apply((d) => {
     const from = d.spreads.findIndex((s) => s.id === spreadId);
     const spread = d.spreads[from];
-    if (!spread || spread.kind !== 'middle') return;
+    if (!spread) return;
     d.spreads.splice(from, 1);
-    const i = Math.min(Math.max(1, toIndex), d.spreads.length - 1);
-    d.spreads.splice(i, 0, spread);
+    d.spreads.splice(middleIndex(d, toIndex), 0, spread);
   });
 }
 

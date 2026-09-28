@@ -6,6 +6,7 @@ import { uniqueName } from './project';
 import { docStore } from './store';
 import { ui } from './ui';
 import { createZip, type ZipInput } from './zip';
+import { allSpreads } from './spreads';
 
 /** Enough of a file to cover its metadata segments. */
 const HEADER_BYTES = 512 * 1024;
@@ -19,7 +20,7 @@ const REENCODE_QUALITY = 0.95;
 export async function exportIndesign(): Promise<void> {
   if (ui.get().busy || ui.get().importing) return;
   const doc = docStore.doc;
-  const placed = [...new Set(doc.spreads.flatMap((s) => s.items.map((i) => i.photoId)))];
+  const placed = [...new Set(allSpreads(doc).flatMap((s) => s.items.map((i) => i.photoId)))];
   const setBusy = (busy: string | null) => ui.set({ busy });
   const date = new Date().toISOString().slice(0, 10);
   let missing = 0;

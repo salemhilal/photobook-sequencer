@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { sameTarget } from '../drag';
 import { pageRect, pageSides, spreadGuides, type SnapFeedback } from '../geometry';
 import type { Placement, Settings, Spread } from '../types';
 import { ui } from '../ui';
@@ -38,7 +39,7 @@ export function SpreadCanvas({
   onPointerDown,
   className,
 }: Props) {
-  const hoverKey = ui.use((s) => s.hoverKey);
+  const hovered = ui.use((s) => s.hover);
   const sides = pageSides(spread.kind);
   const originX = (pad + settings.pageW) * scale;
   const originY = pad * scale;
@@ -76,7 +77,7 @@ export function SpreadCanvas({
     <div className={`spread-canvas ${className ?? ''}`} style={{ width, height }} onPointerDown={onPointerDown}>
       {sides.map((side) => {
         const r = pageRect(side, settings);
-        const hover = hoverKey === `page:${spread.id}:${side}`;
+        const hover = sameTarget(hovered, { kind: 'page', spreadId: spread.id, side });
         return (
           <div
             key={side}
