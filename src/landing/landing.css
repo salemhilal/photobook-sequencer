@@ -123,31 +123,11 @@ h1 em {
 .cta:hover {
   background: var(--accent-soft);
 }
-/* Stand-in for Apple's "Download on the Mac App Store" badge. */
-.store-badge {
-  display: inline-flex;
-  flex-direction: column;
-  justify-content: center;
+/* Apple's badge, at the buttons' height (never smaller than 40 px, per Apple). */
+.store-badge img {
+  display: block;
   height: 44px;
-  padding: 0 14px;
-  border: 1px solid #a6a6a6;
-  border-radius: 8px;
-  background: #000;
-  color: #fff;
-  text-decoration: none;
-  line-height: 1.05;
-}
-.store-badge small {
-  font-size: 10px;
-  letter-spacing: 0.02em;
-}
-.store-badge span {
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-.store-badge:hover {
-  border-color: #fff;
+  width: auto;
 }
 
 /* The viewer: one screenshot at a time, like the app's Preview. */
