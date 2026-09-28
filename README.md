@@ -61,6 +61,12 @@ Hold ⌘ / Ctrl to see them on screen.
 
 Right-click the desk to tidy photos into a grid or change the desk color.
 
+**Guides** (in the toolbar) sets up the guides photos snap to, on every spread and mirrored
+on facing pages: center lines, border guides (a distance from each edge: top, bottom,
+inside at the gutter, and outside), and straight guides you drag out of the rulers (hold
+Shift to snap to ¼ in; drag one off the page to remove it). Photos dropped on a page fit
+inside the largest border guide.
+
 File → Take the tour walks through the app with a few sample photos (it also runs on your first visit). Your own project is set aside while it runs and comes back when it ends.
 
 ## Mac app

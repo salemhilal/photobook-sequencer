@@ -357,11 +357,11 @@ export function Desk() {
               <p className="help">
                 You can change this anytime.
                 <br />
-                Guides, appearance, and more are in{' '}
-                <button className="link" onClick={() => openModal('settings')}>
-                  Settings
-                </button>
-                .
+                Set up{' '}
+                <button className="link" onClick={() => openModal('guides')}>
+                  Guides
+                </button>{' '}
+                for photos to fit and snap to.
               </p>
             </div>
           )}

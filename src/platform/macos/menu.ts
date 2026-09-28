@@ -98,7 +98,13 @@ export async function setUpMenu(): Promise<void> {
       }),
       await Submenu.new({
         text: 'View',
-        items: [await command('preview'), sidebar, await separator(), await predefined('Fullscreen')],
+        items: [
+          await command('preview'),
+          await command('guides'),
+          sidebar,
+          await separator(),
+          await predefined('Fullscreen'),
+        ],
       }),
       await Submenu.new({
         text: 'Window',

@@ -40,7 +40,7 @@ export interface ConfirmRequest {
   resolve: (value: string | null) => void;
 }
 
-export type Modal = 'settings' | 'about' | 'preview';
+export type Modal = 'settings' | 'about' | 'preview' | 'guides';
 
 export interface UiState {
   selection: string[];

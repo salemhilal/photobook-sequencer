@@ -1,14 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import {
+  borderBox,
+  dropBox,
+  dropGuide,
   fitCentered,
   inset,
-  largestBorder,
+  lineAt,
+  linePosition,
   pageRect,
   relayoutRect,
   resizeRect,
   snapLines,
   snapMove,
   spreadGuides,
+  uniformBorder,
   type Rect,
 } from './geometry';
 import type { Settings, Spread } from './types';
@@ -19,8 +24,11 @@ const settings: Settings = {
   centerV: true,
   centerH: true,
   keepRelative: true,
-  borders: [0.5, 1.25],
+  borders: [uniformBorder(0.5), uniformBorder(1.25)],
+  lines: [],
 };
+/** Wider at the gutter and the bottom, as books often are. */
+const book = { top: 0.5, bottom: 1, inside: 1.5, outside: 0.75 };
 const spread = (kind: Spread['kind']): Spread => ({ id: 's', kind, items: [] });
 const photo = (pxW: number, pxH: number) => ({ id: 'p', name: 'p.jpg', pxW, pxH });
 const round = (r: Rect) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, Math.round(v * 1000) / 1000]));
@@ -31,9 +39,16 @@ describe('pages', () => {
     expect(pageRect('right', settings)).toEqual({ x: 0, y: 0, w: 10, h: 8 });
   });
 
-  it('treats the smallest inset as the largest border guide', () => {
-    expect(largestBorder(settings)).toBe(0.5);
-    expect(largestBorder({ ...settings, borders: [] })).toBe(0);
+  it('fits dropped photos inside the border guide with the largest box', () => {
+    expect(dropGuide(settings)).toEqual(uniformBorder(0.5));
+    expect(dropBox('right', settings)).toEqual({ x: 0.5, y: 0.5, w: 9, h: 7 });
+    expect(dropBox('right', { ...settings, borders: [] })).toEqual(pageRect('right', settings));
+  });
+
+  it('mirrors a border guide on facing pages: inside is at the gutter', () => {
+    const s = { ...settings, borders: [book] };
+    expect(borderBox('right', s, book)).toEqual({ x: 1.5, y: 0.5, w: 7.75, h: 6.5 });
+    expect(borderBox('left', s, book)).toEqual({ x: -9.25, y: 0.5, w: 7.75, h: 6.5 });
   });
 });
 
@@ -54,6 +69,37 @@ describe('guides', () => {
     const g = spreadGuides(spread('middle'), settings);
     expect(g.xs).toEqual(expect.arrayContaining([-5, 5, -9.5, -0.5, 0.5, 9.5, -8.75, 8.75]));
     expect(g.ys).toEqual(expect.arrayContaining([4, 0.5, 7.5, 1.25, 6.75]));
+  });
+
+  it('draws per-edge border guides mirrored on each page', () => {
+    const g = spreadGuides(spread('middle'), { ...settings, centerV: false, centerH: false, borders: [book] });
+    expect(g.xs.sort((a, b) => a - b)).toEqual([-9.25, -1.5, 1.5, 9.25]);
+    expect(g.ys).toEqual([0.5, 7]);
+  });
+
+  it('places vertical line guides from each page’s outside edge, and horizontal ones from the top', () => {
+    const s: Settings = {
+      ...settings,
+      centerV: false,
+      centerH: false,
+      borders: [],
+      lines: [
+        { axis: 'vertical', at: 2 },
+        { axis: 'horizontal', at: 3 },
+        // Off the page: not drawn.
+        { axis: 'vertical', at: 12 },
+      ],
+    };
+    const g = spreadGuides(spread('middle'), s);
+    expect(g.xs.sort((a, b) => a - b)).toEqual([-8, 8]);
+    expect(g.ys).toEqual([3]);
+  });
+
+  it('finds a vertical guide’s distance from the outside edge on either page', () => {
+    const l = { axis: 'vertical' as const, at: 2 };
+    for (const side of ['left', 'right'] as const) {
+      expect(lineAt(side, settings, 'vertical', linePosition(side, settings, l))).toBeCloseTo(2);
+    }
   });
 
   it('omits the missing page on the first spread', () => {
@@ -152,6 +198,27 @@ describe('relayoutRect', () => {
   it('preserves proportions when the page shape changes, centered on the page', () => {
     const r = relayoutRect({ x: 0, y: 0, w: 10, h: 8 }, settings, to(9, 6));
     expect(round(r)).toEqual({ x: 0.75, y: 0, w: 7.5, h: 6 });
+  });
+
+  it('keeps a photo on per-edge border guides, on either page', () => {
+    const s = { ...settings, borders: [book] };
+    const to = { ...s, pageW: 8, pageH: 6.4 };
+    for (const side of ['left', 'right'] as const) {
+      const r = relayoutRect(borderBox(side, s, book), s, to);
+      const target = borderBox(side, to, book);
+      // Same proportions, so it fits the new box by one dimension and is centered in it.
+      expect(r.x + r.w / 2).toBeCloseTo(target.x + target.w / 2);
+      expect(r.y + r.h / 2).toBeCloseTo(target.y + target.h / 2);
+    }
+  });
+
+  it('keeps a photo’s edge on a vertical line guide', () => {
+    const s: Settings = { ...settings, borders: [], lines: [{ axis: 'vertical', at: 2 }] };
+    const to = { ...s, pageW: 8, pageH: 6.4 };
+    // On the right page, from the guide (8 in from the gutter) to the page's outside edge.
+    const r = relayoutRect({ x: 8, y: 0, w: 2, h: 8 }, s, to);
+    expect(r.x + r.w).toBeLessThanOrEqual(8 + 1e-9);
+    expect(r.x).toBeGreaterThanOrEqual(6 - 1e-9);
   });
 
   it('changes nothing when the size is unchanged', () => {

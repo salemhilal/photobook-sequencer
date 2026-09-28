@@ -1,4 +1,4 @@
-import type { PageSide, PhotoMeta, Settings, Spread, SpreadKind } from './types';
+import type { BorderGuide, LineGuide, PageSide, PhotoMeta, Settings, Spread, SpreadKind } from './types';
 
 export interface Rect {
   x: number;
@@ -25,8 +25,55 @@ export function sideAt(x: number): PageSide {
   return x < 0 ? 'left' : 'right';
 }
 
-export function largestBorder(s: Settings): number {
-  return s.borders.length ? Math.min(...s.borders) : 0;
+export function uniformBorder(b: number): BorderGuide {
+  return { top: b, bottom: b, inside: b, outside: b };
+}
+
+export function isUniform(g: BorderGuide): boolean {
+  return g.top === g.bottom && g.top === g.inside && g.top === g.outside;
+}
+
+/** How far a border guide is from a page's left and right edges: outside and inside swap on left pages. */
+function sideInsets(side: PageSide, g: BorderGuide): { left: number; right: number } {
+  return side === 'left' ? { left: g.outside, right: g.inside } : { left: g.inside, right: g.outside };
+}
+
+/** A border guide's box on one page. */
+export function borderBox(side: PageSide, s: Settings, g: BorderGuide): Rect {
+  const p = pageRect(side, s);
+  const { left, right } = sideInsets(side, g);
+  return { x: p.x + left, y: g.top, w: Math.max(0.1, p.w - left - right), h: Math.max(0.1, p.h - g.top - g.bottom) };
+}
+
+/** The border guide photos fit inside when dropped on a page: the one with the largest box. */
+export function dropGuide(s: Settings): BorderGuide | null {
+  const area = (g: BorderGuide) => (s.pageW - g.inside - g.outside) * (s.pageH - g.top - g.bottom);
+  return s.borders.reduce<BorderGuide | null>((best, g) => (!best || area(g) > area(best) ? g : best), null);
+}
+
+/** Where a photo dropped on a page is fitted: the drop guide's box, or the page. */
+export function dropBox(side: PageSide, s: Settings): Rect {
+  const g = dropGuide(s);
+  return g ? borderBox(side, s, g) : pageRect(side, s);
+}
+
+/** A line guide's position on a page, in spread coordinates: x for vertical guides, y for horizontal. */
+export function linePosition(side: PageSide, s: Settings, l: LineGuide): number {
+  if (l.axis === 'horizontal') return l.at;
+  const p = pageRect(side, s);
+  return side === 'left' ? p.x + l.at : p.x + p.w - l.at;
+}
+
+/** The inverse of linePosition: the `at` for a guide through `v` on a page. */
+export function lineAt(side: PageSide, s: Settings, axis: LineGuide['axis'], v: number): number {
+  if (axis === 'horizontal') return v;
+  const p = pageRect(side, s);
+  return side === 'left' ? v - p.x : p.x + p.w - v;
+}
+
+/** Whether a line guide falls on the page (it can end up off it when the page shrinks). */
+export function lineOnPage(s: Settings, l: LineGuide): boolean {
+  return l.at > 0 && l.at < (l.axis === 'vertical' ? s.pageW : s.pageH);
 }
 
 export function inset(r: Rect, by: number): Rect {
@@ -57,17 +104,23 @@ export interface GuideLines {
   ys: number[];
 }
 
-/** Visible guides for a spread: center lines and border boxes, per page. */
+/** Visible guides for a spread: center lines, border boxes, and line guides, per page. */
 export function spreadGuides(spread: Spread, s: Settings): GuideLines {
   const xs: number[] = [];
   const ys: number[] = [];
+  const lines = s.lines.filter((l) => lineOnPage(s, l));
   for (const side of pageSides(spread.kind)) {
     const p = pageRect(side, s);
     if (s.centerV) xs.push(p.x + p.w / 2);
-    for (const b of s.borders) xs.push(p.x + b, p.x + p.w - b);
+    for (const g of s.borders) {
+      const { left, right } = sideInsets(side, g);
+      xs.push(p.x + left, p.x + p.w - right);
+    }
+    for (const l of lines) if (l.axis === 'vertical') xs.push(linePosition(side, s, l));
   }
   if (s.centerH) ys.push(s.pageH / 2);
-  for (const b of s.borders) ys.push(b, s.pageH - b);
+  for (const g of s.borders) ys.push(g.top, s.pageH - g.bottom);
+  for (const l of lines) if (l.axis === 'horizontal') ys.push(l.at);
   return { xs, ys };
 }
 
@@ -208,21 +261,31 @@ export function fmt(n: number): string {
 type Knots = [old: number, next: number][];
 
 /**
- * Guide positions along one axis for a run of pages, paired old → new:
- * page edges, border guides, and the page center.
+ * Guide positions along one axis of one page, paired old → new: its edges and center
+ * always, then each guide (inches from the page's start or end), kept only if it's on
+ * the page at both sizes and in the same order among the others.
  */
-function axisKnots(pages: number[], oldSize: number, newSize: number, borders: number[]): Knots {
-  const limit = Math.min(oldSize, newSize) / 2;
-  const knots: Knots = [];
-  for (const p of pages) {
-    const o0 = p * oldSize;
-    const n0 = p * newSize;
-    knots.push([o0, n0], [o0 + oldSize / 2, n0 + newSize / 2], [o0 + oldSize, n0 + newSize]);
-    for (const b of borders) {
-      if (b <= 0 || b >= limit) continue;
-      knots.push([o0 + b, n0 + b], [o0 + oldSize - b, n0 + newSize - b]);
-    }
+function pageKnots(
+  knots: Knots,
+  o0: number,
+  n0: number,
+  oldSize: number,
+  newSize: number,
+  fromStart: number[],
+  fromEnd: number[],
+): void {
+  const candidates: Knots = [
+    ...fromStart.map((d): [number, number] => [o0 + d, n0 + d]),
+    ...fromEnd.map((d): [number, number] => [o0 + oldSize - d, n0 + newSize - d]),
+  ];
+  knots.push([o0, n0], [o0 + oldSize / 2, n0 + newSize / 2], [o0 + oldSize, n0 + newSize]);
+  for (const k of candidates) {
+    const onPage = k[0] > o0 && k[0] < o0 + oldSize && k[1] > n0 && k[1] < n0 + newSize;
+    if (onPage && knots.every(([o, n]) => (k[0] - o) * (k[1] - n) > 1e-12)) knots.push(k);
   }
+}
+
+function sorted(knots: Knots): Knots {
   knots.sort((a, b) => a[0] - b[0]);
   return knots.filter((k, i) => i === 0 || k[0] - (knots[i - 1]?.[0] ?? -Infinity) > 1e-9);
 }
@@ -253,9 +316,29 @@ function mapAxis(v: number, knots: Knots): number {
  * the photo is refit into that box, keeping its proportions, around the box's center.
  */
 export function relayoutRect(r: Rect, from: Settings, to: Settings): Rect {
-  const borders = from.borders;
-  const xs = axisKnots([-1, 0], from.pageW, to.pageW, borders);
-  const ys = axisKnots([0], from.pageH, to.pageH, borders);
+  const b = from.borders;
+  const vertical = from.lines.filter((l) => l.axis === 'vertical').map((l) => l.at);
+  const horizontal = from.lines.filter((l) => l.axis === 'horizontal').map((l) => l.at);
+  const outside = [...b.map((g) => g.outside), ...vertical];
+  const inside = b.map((g) => g.inside);
+  // Left page: outside at its start. Right page: inside at its start.
+  const xs: Knots = [];
+  pageKnots(xs, -from.pageW, -to.pageW, from.pageW, to.pageW, outside, inside);
+  pageKnots(xs, 0, 0, from.pageW, to.pageW, inside, outside);
+  const ys: Knots = [];
+  pageKnots(
+    ys,
+    0,
+    0,
+    from.pageH,
+    to.pageH,
+    [...b.map((g) => g.top), ...horizontal],
+    b.map((g) => g.bottom),
+  );
+  return refit(r, sorted(xs), sorted(ys));
+}
+
+function refit(r: Rect, xs: Knots, ys: Knots): Rect {
   const x1 = mapAxis(r.x, xs);
   const x2 = mapAxis(r.x + r.w, xs);
   const y1 = mapAxis(r.y, ys);

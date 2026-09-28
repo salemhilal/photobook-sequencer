@@ -14,6 +14,7 @@ import {
   Settings,
   Undo2,
   X,
+  Ruler,
 } from 'lucide-react';
 import { usePasteHandler } from './clipboard';
 import { platform } from '#platform';
@@ -23,6 +24,7 @@ import { ConfirmDialog } from './components/ConfirmDialog';
 import { ContextMenus } from './components/ContextMenu';
 import { Desk } from './components/Desk';
 import { FileMenu } from './components/FileMenu';
+import { GuidesEditor } from './components/GuidesEditor';
 import { PhotoImg } from './components/PhotoImg';
 import { Preview } from './components/Preview';
 import { QuickLook } from './components/QuickLook';
@@ -141,6 +143,10 @@ export default function App() {
         <span className="status" data-tauri-drag-region>
           {status}
         </span>
+        <button className="btn ghost" data-tour="guides" onClick={() => openModal('guides')} title="Guides">
+          <Ruler />
+          Guides
+        </button>
         <button
           className="btn accent has-hint"
           data-tour="preview"
@@ -178,6 +184,7 @@ export default function App() {
       {modal === 'settings' && <SettingsDialog />}
       {modal === 'about' && <AboutDialog />}
       {modal === 'preview' && <Preview />}
+      {modal === 'guides' && <GuidesEditor />}
       <QuickLook />
       <Tour />
       <ConfirmDialog />

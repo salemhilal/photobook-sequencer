@@ -33,6 +33,26 @@ export interface Spread {
 
 export type PageSide = 'left' | 'right';
 
+/**
+ * A border guide: a box inset from every page's edges, in inches. Inside is the edge at
+ * the gutter, outside the one opposite, so the box mirrors on facing pages.
+ */
+export interface BorderGuide {
+  top: number;
+  bottom: number;
+  inside: number;
+  outside: number;
+}
+
+/**
+ * A straight guide across every page, mirrored on facing pages. A vertical guide's `at`
+ * is inches from the page's outside edge; a horizontal guide's, from its top.
+ */
+export interface LineGuide {
+  axis: 'vertical' | 'horizontal';
+  at: number;
+}
+
 export interface Settings {
   pageW: number;
   pageH: number;
@@ -40,15 +60,15 @@ export interface Settings {
   centerH: boolean;
   /** When the page size changes, move photos with the guides instead of keeping absolute positions. */
   keepRelative: boolean;
-  /** Border guide insets, in inches from each page's outside edges. */
-  borders: number[];
+  borders: BorderGuide[];
+  lines: LineGuide[];
 }
 
 /**
  * The version of the saved project's shape. Bump it (and add a migration and a
  * test sample in schema.ts / schema.test.ts) whenever what gets saved changes.
  */
-export const CURRENT_SCHEMA = 1;
+export const CURRENT_SCHEMA = 2;
 
 export interface Doc {
   /** Which shape this project was saved in; see CURRENT_SCHEMA. */

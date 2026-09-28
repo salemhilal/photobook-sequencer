@@ -138,6 +138,12 @@ export const commands = {
     inFields: true,
     run: () => toggleModal('preview'),
   },
+  guides: {
+    title: 'Guides',
+    bindings: [],
+    scope: 'app',
+    run: () => toggleModal('guides'),
+  },
   settings: {
     title: 'Settings…',
     bindings: [{ key: ',', mod: true }],

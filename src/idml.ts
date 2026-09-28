@@ -1,5 +1,5 @@
-import { largestBorder, pageRect, pageSides } from './geometry';
-import type { Doc, Settings, Spread } from './types';
+import { dropGuide, linePosition, lineOnPage, pageRect, pageSides } from './geometry';
+import type { Doc, PageSide, Settings, Spread } from './types';
 import type { ZipInput } from './zip';
 
 /**
@@ -82,9 +82,15 @@ ${marginXml(s)}
 </idPkg:Preferences>`;
 }
 
-function marginXml(s: Settings): string {
-  const m = largestBorder(s) * PT;
-  return `<MarginPreference ColumnCount="1" ColumnGutter="12" Top="${n(m)}" Bottom="${n(m)}" Left="${n(m)}" Right="${n(m)}" ColumnDirection="Horizontal" ColumnsPositions="0 ${n(s.pageW * PT - 2 * m)}"/>`;
+/**
+ * Margins from the drop guide (the largest border guide). For the document, with facing
+ * pages, Left and Right are inside and outside; on a page, they're its own left and right.
+ */
+function marginXml(s: Settings, side?: PageSide): string {
+  const g = dropGuide(s) ?? { top: 0, bottom: 0, inside: 0, outside: 0 };
+  const [left, right] = side === 'left' ? [g.outside, g.inside] : [g.inside, g.outside];
+  const m = (v: number) => n(v * PT);
+  return `<MarginPreference ColumnCount="1" ColumnGutter="12" Top="${m(g.top)}" Bottom="${m(g.bottom)}" Left="${m(left)}" Right="${m(right)}" ColumnDirection="Horizontal" ColumnsPositions="0 ${m(s.pageW - left - right)}"/>`;
 }
 
 function spreadXml(
@@ -103,8 +109,8 @@ function spreadXml(
   const pages = sides.map((side, i) => {
     const x = pageRect(side, s).x * PT;
     return `<Page Self="${id()}" Name="${first + i + 1}" AppliedMaster="n" GeometricBounds="0 0 ${n(s.pageH * PT)} ${n(s.pageW * PT)}" ItemTransform="1 0 0 1 ${n(x)} ${n(top)}" MasterPageTransform="1 0 0 1 0 0">
-${marginXml(s)}
-${guidesXml(s, i, id)}
+${marginXml(s, side)}
+${guidesXml(s, side, i, id)}
 </Page>`;
   });
 
@@ -145,25 +151,36 @@ ${frames.join('\n')}
 </idPkg:Spread>`;
 }
 
-/** Ruler guides for the center lines and every border guide but the one used as margins. */
-function guidesXml(s: Settings, pageIndex: number, id: () => string): string {
+/** Ruler guides: the center lines, line guides, and every border guide but the margins' one. */
+function guidesXml(s: Settings, side: PageSide, pageIndex: number, id: () => string): string {
   const w = s.pageW * PT;
   const h = s.pageH * PT;
-  const margin = largestBorder(s);
+  const margin = dropGuide(s);
   const vertical: number[] = [];
   const horizontal: number[] = [];
   if (s.centerV) vertical.push(w / 2);
   if (s.centerH) horizontal.push(h / 2);
-  for (const b of new Set(s.borders)) {
-    if (b === margin) continue;
-    vertical.push(b * PT, w - b * PT);
-    horizontal.push(b * PT, h - b * PT);
+  for (const g of s.borders) {
+    if (g === margin) continue;
+    const [left, right] = side === 'left' ? [g.outside, g.inside] : [g.inside, g.outside];
+    vertical.push(left * PT, w - right * PT);
+    horizontal.push(g.top * PT, h - g.bottom * PT);
+  }
+  // Line guides' positions from the page's left edge.
+  const page = pageRect(side, s);
+  for (const l of s.lines.filter((l) => lineOnPage(s, l))) {
+    if (l.axis === 'vertical') vertical.push((linePosition(side, s, l) - page.x) * PT);
+    else horizontal.push(l.at * PT);
   }
   // Vertical guides are placed from the spread's left edge, not the page's.
   const left = pageIndex * w;
   const guide = (orientation: string, at: number) =>
     `<Guide Self="${id()}" Orientation="${orientation}" Location="${n(orientation === 'Vertical' ? left + at : at)}" FitToPage="true" ViewThreshold="0" Locked="false" ItemLayer="${LAYER}" PageIndex="${pageIndex}" GuideType="Ruler"/>`;
-  return [...vertical.map((v) => guide('Vertical', v)), ...horizontal.map((y) => guide('Horizontal', y))].join('\n');
+  const unique = (v: number[]) => [...new Set(v.map((x) => Math.round(x * 1000) / 1000))];
+  return [
+    ...unique(vertical).map((v) => guide('Vertical', v)),
+    ...unique(horizontal).map((y) => guide('Horizontal', y)),
+  ].join('\n');
 }
 
 /** A linked image filling its frame: scaled from its size at its stored resolution. */

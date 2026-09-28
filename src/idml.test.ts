@@ -65,6 +65,38 @@ describe('buildIdml', () => {
     expect(horizontals).toEqual(['288', '90', '486']);
   });
 
+  it('mirrors per-edge margins and line guides on facing pages', async () => {
+    const doc = sample();
+    doc.settings.borders = [{ top: 0.5, bottom: 1, inside: 1.5, outside: 0.75 }];
+    doc.settings.centerV = false;
+    doc.settings.centerH = false;
+    doc.settings.lines = [
+      { axis: 'vertical', at: 2 },
+      { axis: 'horizontal', at: 3 },
+    ];
+    const { files } = await build(doc);
+    // The document's margins: with facing pages, Left is inside and Right is outside.
+    const docMargins = files.get('Resources/Preferences.xml')!.querySelector('MarginPreference')!;
+    expect(['Top', 'Bottom', 'Left', 'Right'].map((a) => docMargins.getAttribute(a))).toEqual([
+      '36',
+      '72',
+      '108',
+      '54',
+    ]);
+    const spread = [...files.entries()].filter(([name]) => name.startsWith('Spreads/'))[1]![1];
+    const [left, right] = [...spread.querySelectorAll('Page')];
+    // A page's own margins are its left and right: the left page's left edge is its outside.
+    const margins = (p: Element) => ['Left', 'Right'].map((a) => p.querySelector('MarginPreference')!.getAttribute(a));
+    expect(margins(left!)).toEqual(['54', '108']);
+    expect(margins(right!)).toEqual(['108', '54']);
+    // The vertical guide is 2 in from each outside edge (from the spread's left edge: 2 in, and 18 in).
+    const at = (p: Element, o: string) =>
+      [...p.querySelectorAll(`Guide[Orientation="${o}"]`)].map((g) => g.getAttribute('Location'));
+    expect(at(left!, 'Vertical')).toEqual(['144']);
+    expect(at(right!, 'Vertical')).toEqual(['1296']);
+    expect(at(right!, 'Horizontal')).toEqual(['216']);
+  });
+
   it('frames each photo where it sits, with its image scaled by its resolution', async () => {
     const links = new Map([
       ['a', { path: 'Links/a & b.jpg', format: 'jpeg' as const, ppi: 300, pxW: 3000, pxH: 2000 }],

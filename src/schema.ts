@@ -17,7 +17,16 @@ const migrations: Record<number, (doc: Raw) => Raw> = {
   /** 0 → 1: projects from before versioning. Fill in any missing settings. */
   0: (doc) => {
     const base = emptyDoc();
-    return { ...doc, settings: { ...base.settings, ...(doc.settings as object) } };
+    // Version 1's defaults: borders were numbers, and there were no line guides.
+    const v1 = { ...base.settings, borders: [0.5, 1.25] } as Raw;
+    delete v1.lines;
+    return { ...doc, settings: { ...v1, ...(doc.settings as object) } };
+  },
+  /** 1 → 2: border guides get a distance per edge; line guides arrive. */
+  1: (doc) => {
+    const settings = doc.settings as Raw;
+    const borders = (settings.borders as number[]).map((b) => ({ top: b, bottom: b, inside: b, outside: b }));
+    return { ...doc, settings: { ...settings, borders, lines: [] } };
   },
 };
 

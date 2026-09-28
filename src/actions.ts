@@ -2,7 +2,7 @@ import type { Draft } from 'immer';
 import { getImage, putImage, type StoredImage } from './db';
 import { importFiles, setUrl } from './images';
 import { docStore, newId } from './store';
-import { fitCentered, inset, largestBorder, pageRect, pileSize, PILE_PHOTO_SIZE } from './geometry';
+import { dropBox, fitCentered, pageRect, pileSize, PILE_PHOTO_SIZE } from './geometry';
 import type { DropTarget } from './drag';
 import type { Doc, PageSide, PhotoMeta, Placement } from './types';
 import { DESK_PPI, deskGeometry } from './deskGeometry';
@@ -41,12 +41,12 @@ export function addPhotosToPile(photos: PhotoMeta[]): void {
   }
 }
 
-/** Placement for a photo freshly dropped on a page: fit to the largest border guide, centered. */
+/** Placement for a photo freshly dropped on a page: fit inside the largest border guide, centered on the page. */
 export function placementOnPage(d: Draft<Doc> | Doc, photoId: string, side: PageSide): Placement | null {
   const photo = d.photos[photoId];
   if (!photo) return null;
   const page = pageRect(side, d.settings);
-  const r = fitCentered(photo, inset(page, largestBorder(d.settings)), page);
+  const r = fitCentered(photo, dropBox(side, d.settings), page);
   return { photoId, ...r, z: 0 };
 }
 
