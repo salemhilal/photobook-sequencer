@@ -1,3 +1,4 @@
+import type { PhotoId } from '../ids';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { getImage } from '../db';
@@ -21,12 +22,13 @@ export function QuickLook() {
   return state && <QuickLookView ids={state.ids} index={state.index} />;
 }
 
-function QuickLookView(props: { ids: string[]; index: number }) {
+function QuickLookView(props: { ids: PhotoId[]; index: number }) {
   const { doc } = useDoc();
   // Undo can remove a photo while it's showing.
   const ids = props.ids.filter((id) => doc.photos[id]);
   const index = Math.min(props.index, ids.length - 1);
-  const photo = doc.photos[ids[index] ?? ''];
+  const current = ids[index];
+  const photo = current && doc.photos[current];
 
   useEffect(() => {
     if (!photo) closeQuickLook();

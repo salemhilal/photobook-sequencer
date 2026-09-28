@@ -1,7 +1,9 @@
+import type { GuideId, PhotoId, SpreadId } from './ids';
+
 /** All positions and sizes are in inches. */
 
 export interface PhotoMeta {
-  id: string;
+  id: PhotoId;
   name: string;
   /** Pixel dimensions of the original, after EXIF orientation. */
   pxW: number;
@@ -9,7 +11,7 @@ export interface PhotoMeta {
 }
 
 export interface Placement {
-  photoId: string;
+  photoId: PhotoId;
   x: number;
   y: number;
   w: number;
@@ -18,18 +20,25 @@ export interface Placement {
   z: number;
 }
 
-export type SpreadKind = 'first' | 'middle' | 'last';
-
 /**
  * A spread's items use coordinates where x = 0 is the gutter
  * (left page spans -pageW..0, right page spans 0..pageW) and y = 0 is the top edge.
  * Anchoring to the gutter keeps layouts stable when the page size changes.
+ *
+ * The book opens on a single right page (the first spread) and closes on a single left
+ * page (the last); every spread between is a pair. Each kind has its own type, and its
+ * own place in the Doc, so one can't end up in another's.
  */
-export interface Spread {
-  id: string;
-  kind: SpreadKind;
+interface SpreadOf<K extends string> {
+  kind: K;
+  id: SpreadId;
   items: Placement[];
 }
+export type FirstSpread = SpreadOf<'first'>;
+export type MiddleSpread = SpreadOf<'middle'>;
+export type LastSpread = SpreadOf<'last'>;
+export type Spread = FirstSpread | MiddleSpread | LastSpread;
+export type SpreadKind = Spread['kind'];
 
 export type PageSide = 'left' | 'right';
 
@@ -48,14 +57,14 @@ export interface Edges {
  * A border guide: a box inset from every page's edges, either the same distance from
  * each (`even`, shown as linked) or its own distance per edge.
  */
-export type BorderGuide = { id: string } & ({ kind: 'even'; inset: number } | ({ kind: 'edges' } & Edges));
+export type BorderGuide = { id: GuideId } & ({ kind: 'even'; inset: number } | ({ kind: 'edges' } & Edges));
 
 /**
  * A straight guide across every page, mirrored on facing pages. A vertical guide's `at`
  * is inches from the page's outside edge; a horizontal guide's, from its top.
  */
 export interface LineGuide {
-  id: string;
+  id: GuideId;
   axis: 'vertical' | 'horizontal';
   at: number;
 }
@@ -73,7 +82,7 @@ export interface Settings {
    * The border guide photos dropped on a page fit inside, by id. Null (or a guide that's
    * gone) means the one with the largest box; with no border guides, the page.
    */
-  dropBorder: string | null;
+  dropBorder: GuideId | null;
 }
 
 /**
@@ -83,12 +92,15 @@ export interface Settings {
 export const CURRENT_SCHEMA = 2;
 
 export interface Doc {
-  /** Which shape this project was saved in; see CURRENT_SCHEMA. */
-  schemaVersion: number;
-  photos: Record<string, PhotoMeta>;
+  /** Always the current shape: older ones are upgraded on load (see schema.ts). */
+  schemaVersion: typeof CURRENT_SCHEMA;
+  photos: Record<PhotoId, PhotoMeta>;
   /** Photos on the desktop; x/y are desk coordinates. */
   pile: Placement[];
-  spreads: Spread[];
+  /** The book, in order: the first spread, the ones between, and the last (see `allSpreads`). */
+  firstSpread: FirstSpread;
+  spreads: MiddleSpread[];
+  lastSpread: LastSpread;
   settings: Settings;
   nextZ: number;
 }

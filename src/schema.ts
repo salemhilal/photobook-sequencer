@@ -1,5 +1,7 @@
-import { emptyDoc, newId } from './store';
+import { newGuideId } from './ids';
+import { emptyDoc } from './store';
 import { CURRENT_SCHEMA, type Doc } from './types';
+import { InvalidProjectError, validateDoc } from './validate';
 
 /**
  * Upgrading saved projects. Projects are saved in the browser and in exported
@@ -18,7 +20,7 @@ const migrations: Record<number, (doc: Raw) => Raw> = {
   0: (doc) => {
     const base = emptyDoc();
     // Version 1's defaults: borders were numbers, and there were no line guides.
-    const v1 = { ...base.settings, borders: [0.5, 1.25] } as Raw;
+    const v1: Raw = { ...base.settings, borders: [0.5, 1.25] };
     delete v1.lines;
     delete v1.dropBorder;
     return { ...doc, settings: { ...v1, ...(doc.settings as object) } };
@@ -26,13 +28,25 @@ const migrations: Record<number, (doc: Raw) => Raw> = {
   /**
    * 1 → 2: guides get ids, border guides can have a distance per edge (these stay even),
    * line guides arrive, and the guide dropped photos fit is chosen: as before, the largest.
+   * The spreads, one list with each one's kind, become the first spread, the ones between,
+   * and the last, each in its own place (whatever kinds the list claimed).
    */
   1: (doc) => {
     const settings = doc.settings as Raw;
     const insets = settings.borders as number[];
-    const borders = insets.map((inset) => ({ id: newId(), kind: 'even', inset }));
+    const borders = insets.map((inset) => ({ id: newGuideId(), kind: 'even', inset }));
     const largest = borders.reduce<(typeof borders)[number] | null>((a, b) => (!a || b.inset < a.inset ? b : a), null);
-    return { ...doc, settings: { ...settings, borders, lines: [], dropBorder: largest?.id ?? null } };
+    const { spreads, ...rest } = doc;
+    const list = [...(spreads as Raw[])];
+    const first = list.shift();
+    const last = list.pop();
+    return {
+      ...rest,
+      firstSpread: first && { ...first, kind: 'first' },
+      spreads: list.map((s) => ({ ...s, kind: 'middle' })),
+      lastSpread: last && { ...last, kind: 'last' },
+      settings: { ...settings, borders, lines: [], dropBorder: largest?.id ?? null },
+    };
   },
 };
 
@@ -48,16 +62,25 @@ export function schemaVersionOf(doc: unknown): number {
   return typeof v === 'number' ? v : 0;
 }
 
-/** Upgrade saved data to the current shape. Throws NewerProjectError if it's from a newer app. */
+/**
+ * Upgrade saved data to the current shape, then check all of it (see validate.ts), so
+ * nothing past here meets a project in any other shape. Throws NewerProjectError if it's
+ * from a newer app, and InvalidProjectError if it's damaged.
+ */
 export function migrateDoc(stored: unknown): Doc {
   let version = schemaVersionOf(stored);
   if (version > CURRENT_SCHEMA) throw new NewerProjectError();
   let doc = stored as Raw;
-  while (version < CURRENT_SCHEMA) {
-    const step = migrations[version];
-    if (!step) throw new Error(`No migration from project version ${version}`);
-    doc = step(doc);
-    version += 1;
+  try {
+    while (version < CURRENT_SCHEMA) {
+      const step = migrations[version];
+      if (!step) throw new InvalidProjectError(`no upgrade from version ${version}`);
+      doc = step(doc);
+      version += 1;
+    }
+  } catch (e) {
+    // An upgrade step meeting something it didn't expect: the project is damaged.
+    throw e instanceof InvalidProjectError ? e : new InvalidProjectError(`version ${version}: ${String(e)}`);
   }
-  return { ...doc, schemaVersion: CURRENT_SCHEMA } as unknown as Doc;
+  return validateDoc({ ...doc, schemaVersion: CURRENT_SCHEMA });
 }

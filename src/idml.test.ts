@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { toGuideId, toPhotoId } from './ids';
 import { describe, expect, it } from 'vitest';
 import { buildIdml } from './idml';
 import { emptyDoc } from './store';
@@ -15,8 +16,9 @@ async function build(doc: Doc, links = new Map()) {
 
 function sample(): Doc {
   const doc = emptyDoc(); // 10 × 8 in pages; borders 0.5 and 1.25; four spreads
-  doc.photos.a = { id: 'a', name: 'a & b.jpg', pxW: 3000, pxH: 2000 };
-  doc.spreads[1]!.items.push({ photoId: 'a', x: -9, y: 1, w: 6, h: 4, z: 1 });
+  const a = toPhotoId('a');
+  doc.photos[a] = { id: a, name: 'a & b.jpg', pxW: 3000, pxH: 2000 };
+  doc.spreads[0]!.items.push({ photoId: a, x: -9, y: 1, w: 6, h: 4, z: 1 });
   return doc;
 }
 
@@ -67,13 +69,13 @@ describe('buildIdml', () => {
 
   it('mirrors per-edge margins and line guides on facing pages', async () => {
     const doc = sample();
-    doc.settings.borders = [{ id: 'book', kind: 'edges', top: 0.5, bottom: 1, inside: 1.5, outside: 0.75 }];
-    doc.settings.dropBorder = 'book';
+    doc.settings.borders = [{ id: toGuideId('book'), kind: 'edges', top: 0.5, bottom: 1, inside: 1.5, outside: 0.75 }];
+    doc.settings.dropBorder = toGuideId('book');
     doc.settings.centerV = false;
     doc.settings.centerH = false;
     doc.settings.lines = [
-      { id: 'v', axis: 'vertical', at: 2 },
-      { id: 'h', axis: 'horizontal', at: 3 },
+      { id: toGuideId('v'), axis: 'vertical', at: 2 },
+      { id: toGuideId('h'), axis: 'horizontal', at: 3 },
     ];
     const { files } = await build(doc);
     // The document's margins: with facing pages, Left is inside and Right is outside.

@@ -1,6 +1,7 @@
 import { dropGuide, edgesOf, linePosition, lineOnPage, pageRect, pageSides } from './geometry';
 import type { Doc, PageSide, Settings, Spread } from './types';
 import type { ZipInput } from './zip';
+import { allSpreads } from './spreads';
 
 /**
  * Build an IDML file (InDesign Markup Language: a ZIP of XML that InDesign opens
@@ -36,7 +37,7 @@ export function buildIdml(doc: Doc, links: Map<string, LinkedImage>): ZipInput[]
   // InDesign names its own objects u1, u2, …; a distinct prefix keeps ours from matching them.
   const id = () => `pbs${++nextId}`;
   const { settings } = doc;
-  const spreadFiles = doc.spreads.map((spread, i) => {
+  const spreadFiles = allSpreads(doc).map((spread, i) => {
     const spreadId = id();
     return {
       name: `Spreads/Spread_${spreadId}.xml`,
@@ -104,7 +105,9 @@ function spreadXml(
 ): string {
   const s = doc.settings;
   const sides = pageSides(spread.kind);
-  const first = doc.spreads.slice(0, index).reduce((n, sp) => n + pageSides(sp.kind).length, 0);
+  const first = allSpreads(doc)
+    .slice(0, index)
+    .reduce((n, sp) => n + pageSides(sp.kind).length, 0);
   const top = (-s.pageH * PT) / 2;
 
   const pages = sides.map((side, i) => {

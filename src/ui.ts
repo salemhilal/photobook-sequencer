@@ -1,4 +1,6 @@
 import { applyDeskColor } from './deskColor';
+import type { DropTarget } from './drag';
+import type { PhotoId, SpreadId } from './ids';
 import { deskColorPref, sidebarOpenPref, sidebarWidthPref, themePref } from './prefs';
 import { createStore } from './store';
 import { applyTheme, type ThemePref } from './theme';
@@ -15,7 +17,7 @@ export interface DeskView {
 }
 
 export interface Ghost {
-  photoId: string;
+  photoId: PhotoId;
   count: number;
   clientX: number;
   clientY: number;
@@ -24,7 +26,7 @@ export interface Ghost {
 }
 
 export type ContextMenuState =
-  { kind: 'desk'; x: number; y: number } | { kind: 'photo'; x: number; y: number; photoId: string };
+  { kind: 'desk'; x: number; y: number } | { kind: 'photo'; x: number; y: number; photoId: PhotoId };
 
 export interface ConfirmAction {
   label: string;
@@ -43,14 +45,14 @@ export interface ConfirmRequest {
 export type Modal = 'settings' | 'about' | 'preview' | 'guides';
 
 export interface UiState {
-  selection: string[];
-  editingSpreadId: string | null;
+  selection: PhotoId[];
+  editingSpreadId: SpreadId | null;
   /** The open full-window dialog, if any. (The spread editor is tracked by editingSpreadId.) */
   modal: Modal | null;
   view: DeskView;
   ghost: Ghost | null;
-  /** The drop target under the pointer during a drag (see targetKey), for highlighting. */
-  hoverKey: string | null;
+  /** The drop target under the pointer during a drag, for highlighting (compare with `sameTarget`). */
+  hover: DropTarget;
   importing: { done: number; total: number } | null;
   /** Status text for long-running work like exporting. */
   busy: string | null;
@@ -75,7 +77,7 @@ export interface UiState {
   /** The last save failed (e.g. storage full); cleared by the next successful save. */
   saveFailed: boolean;
   /** Photos open in Quick Look, and which one is showing. */
-  quickLook: { ids: string[]; index: number } | null;
+  quickLook: { ids: PhotoId[]; index: number } | null;
   /** Mac app: the project's name and whether it has unsaved changes, shown centered in the toolbar. */
   windowTitle: { name: string; edited: boolean } | null;
   /** The product tour's current step, while it's running (see tour.ts). */
@@ -88,7 +90,7 @@ export const ui = createStore<UiState>({
   modal: null,
   view: { panX: 40, panY: 40, zoom: 1 },
   ghost: null,
-  hoverKey: null,
+  hover: null,
   importing: null,
   busy: null,
   notice: null,
@@ -128,7 +130,7 @@ export function deskCovered(): boolean {
 }
 
 /** Show photos full-size, starting with the first. */
-export function openQuickLook(ids: string[]): void {
+export function openQuickLook(ids: PhotoId[]): void {
   if (ids.length) ui.set({ quickLook: { ids, index: 0 }, contextMenu: null });
 }
 
@@ -155,7 +157,7 @@ export function ask(request: Omit<ConfirmRequest, 'resolve'>): Promise<string | 
 /** Right-click handler for a photo, wherever it's shown. */
 export function openPhotoMenu(
   e: { preventDefault(): void; stopPropagation(): void; clientX: number; clientY: number },
-  photoId: string,
+  photoId: PhotoId,
 ): void {
   e.preventDefault();
   e.stopPropagation();

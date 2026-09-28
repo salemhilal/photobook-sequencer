@@ -39,6 +39,7 @@ import { docStore, useDoc } from './store';
 import { openModal, toggleSidebar, ui } from './ui';
 import { takeOver } from './tabLock';
 import { checkForUpdate, reloadToUpdate } from './update';
+import { allSpreads } from './spreads';
 
 const NOTICE_MS = 6000;
 
@@ -77,7 +78,7 @@ export default function App() {
   if (!loaded) return <div className="loading">Opening your book…</div>;
 
   const working = importing !== null || busy !== null;
-  const placed = doc.spreads.reduce((n, s) => n + s.items.length, 0);
+  const placed = allSpreads(doc).reduce((n, s) => n + s.items.length, 0);
   const status = importing?.total
     ? `Importing ${importing.done} of ${importing.total}…`
     : (busy ?? (importing ? 'Importing…' : `${doc.pile.length} on desk · ${placed} placed`));

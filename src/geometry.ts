@@ -97,7 +97,7 @@ export function lineOnPage(s: Settings, l: LineGuide): boolean {
 }
 
 /** Largest rect with the photo's aspect ratio that fits in `box`, centered in `center`. */
-export function fitCentered(photo: PhotoMeta, box: Rect, center: Rect = box): Rect {
+export function fitCentered(photo: Pick<PhotoMeta, 'pxW' | 'pxH'>, box: Rect, center: Rect = box): Rect {
   const aspect = photo.pxW / photo.pxH;
   let w = box.w;
   let h = w / aspect;

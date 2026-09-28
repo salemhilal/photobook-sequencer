@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { GripVertical, Plus, X } from 'lucide-react';
 import { deleteSpread, dropPhotos, folioLabel, insertSpread, moveSpread } from '../actions';
-import { clearGhost, startDrag, trackGhost } from '../drag';
+import { clearGhost, sameTarget, startDrag, trackGhost } from '../drag';
 import { docStore, useDoc } from '../store';
 import type { Placement, Settings, Spread } from '../types';
 import { DESK_PPI, deskGeometry } from '../deskGeometry';
@@ -9,6 +9,7 @@ import { SIDEBAR_DEFAULT_WIDTH, SIDEBAR_MIN_WIDTH } from '../prefs';
 import { openPhotoMenu, setSidebarWidth, ui } from '../ui';
 import { PhotoImg } from './PhotoImg';
 import { SpreadCanvas } from './SpreadCanvas';
+import { allSpreads } from '../spreads';
 
 const GHOST_MAX = 140;
 /** Narrowest a spread can be before the list falls back to one column. */
@@ -31,7 +32,9 @@ export function Sidebar() {
   const { doc } = useDoc();
   const listRef = useRef<HTMLDivElement>(null);
   const [reorder, setReorder] = useState<{ id: string; dropIndex: number } | null>(null);
-  const { spreads, settings } = doc;
+  const { settings } = doc;
+  // The whole book, in order; indexes below count through it.
+  const spreads = allSpreads(doc);
   const preferredWidth = ui.use((s) => s.sidebarWidth);
   const width = Math.max(SIDEBAR_MIN_WIDTH, Math.min(preferredWidth, window.innerWidth - MIN_DESK_WIDTH));
   const [contentWidth, setContentWidth] = useState(width - 32);
@@ -162,7 +165,7 @@ export function Sidebar() {
  * to add a spread holding them.
  */
 function InsertGap({ index, active, vertical }: { index: number; active: boolean; vertical: boolean }) {
-  const dropHover = ui.use((s) => s.hoverKey === `insert:${index}`);
+  const dropHover = ui.use((s) => sameTarget(s.hover, { kind: 'insert', index }));
   const photoDrag = ui.use((s) => s.ghost !== null);
   return (
     <div

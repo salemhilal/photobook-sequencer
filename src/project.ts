@@ -1,8 +1,10 @@
 import { getImage, putImage } from './db';
+import { toPhotoId, type PhotoId } from './ids';
+import { allSpreads } from './spreads';
 import { setUrl, thumbFromBlob } from './images';
 import { migrateDoc, NewerProjectError } from './schema';
+import { InvalidProjectError } from './validate';
 import { docStore, emptyDoc } from './store';
-import type { Doc } from './types';
 import { MOD_LABEL } from './input';
 import { ask, ui } from './ui';
 import { createZip, readZip, type ZipInput } from './zip';
@@ -23,8 +25,9 @@ interface Manifest {
   format: typeof FORMAT;
   version: number;
   exportedAt: string;
-  doc: Doc;
-  files: Record<string, { image: string; thumb?: string }>;
+  /** A Doc as saved, in whatever version: `migrateDoc` upgrades and checks it. */
+  doc: unknown;
+  files: Record<PhotoId, { image: string; thumb?: string }>;
 }
 
 export class ProjectFileError extends Error {}
@@ -32,7 +35,7 @@ export class ProjectFileError extends Error {}
 /** The project as a .photo-sequence file (a ZIP), reporting progress in the UI. */
 export async function buildProjectFile(verb = 'Exporting'): Promise<Blob> {
   const doc = docStore.doc;
-  const ids = Object.keys(doc.photos);
+  const ids = Object.keys(doc.photos).map(toPhotoId);
   const entries: ZipInput[] = [];
   const files: Manifest['files'] = {};
   const usedNames = new Set<string>();
@@ -86,10 +89,12 @@ export async function importProject(file: File): Promise<void> {
     try {
       doc = migrateDoc(manifest.doc);
     } catch (e) {
-      throw e instanceof NewerProjectError ? newer : e;
+      if (e instanceof NewerProjectError) throw newer;
+      if (e instanceof InvalidProjectError) throw new ProjectFileError('The project file is damaged.');
+      throw e;
     }
-    const ids = Object.keys(doc.photos);
-    const missing = new Set<string>();
+    const ids = Object.keys(doc.photos).map(toPhotoId);
+    const missing = new Set<PhotoId>();
     let done = 0;
     ui.set({ importing: { done, total: ids.length } });
 
@@ -111,7 +116,7 @@ export async function importProject(file: File): Promise<void> {
     for (const id of missing) {
       delete doc.photos[id];
       doc.pile = doc.pile.filter((p) => p.photoId !== id);
-      for (const s of doc.spreads) s.items = s.items.filter((p) => p.photoId !== id);
+      for (const s of allSpreads(doc)) s.items = s.items.filter((p) => p.photoId !== id);
     }
 
     docStore.replace(doc);
@@ -149,18 +154,15 @@ function parseManifest(text: string): Manifest {
   if (!isRecord(m) || m.format !== FORMAT || typeof m.version !== 'number' || !isRecord(m.files)) {
     throw new ProjectFileError("This file isn't a Sequence project.");
   }
-  const d = m.doc;
-  if (
-    !isRecord(d) ||
-    !isRecord(d.photos) ||
-    !Array.isArray(d.pile) ||
-    !Array.isArray(d.spreads) ||
-    d.spreads.length < 2 ||
-    !isRecord(d.settings)
-  ) {
-    throw new ProjectFileError('The project file is damaged.');
+  const files: Manifest['files'] = {};
+  for (const [id, f] of Object.entries(m.files)) {
+    if (!isRecord(f) || typeof f.image !== 'string' || (f.thumb !== undefined && typeof f.thumb !== 'string')) {
+      throw new ProjectFileError('The project file is damaged.');
+    }
+    files[toPhotoId(id)] = { image: f.image, ...(typeof f.thumb === 'string' && { thumb: f.thumb }) };
   }
-  return m as unknown as Manifest;
+  // The project inside is checked, all of it, once it's upgraded (see migrateDoc).
+  return { format: FORMAT, version: m.version, exportedAt: String(m.exportedAt ?? ''), doc: m.doc, files };
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
