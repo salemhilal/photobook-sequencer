@@ -27,3 +27,4 @@ jobs:
       - run: node scripts/check-web-bundle.mjs
       # The Mac app's web side (its native side needs macOS; see npm run test:app).
       - run: npm run build:web-ui-for-app
+      - run: node scripts/check-app-bundle.mjs

@@ -108,6 +108,8 @@ try {
     { stdio: 'inherit' },
   );
   if (tauri.status !== 0) fail('The app failed to build.');
+  // What it just bundled from dist/: the app alone, none of the website.
+  if (spawnSync('node', ['scripts/check-app-bundle.mjs'], { stdio: 'inherit' }).status !== 0) fail('See above.');
 
   const verify = spawnSync('codesign', ['--verify', '--deep', '--strict', APP], { stdio: 'inherit' });
   if (verify.status !== 0) fail('The app’s signature doesn’t verify.');

@@ -104,6 +104,9 @@ export default defineConfig(({ mode }) => {
         input: app ? 'app/index.html' : { landing: 'index.html', app: 'app/index.html', privacy: 'privacy/index.html' },
       },
     },
+    // public/ is the website's (its icons, share image, and old service worker's
+    // remover); the Mac app uses none of it. See scripts/check-app-bundle.mjs.
+    publicDir: app ? false : 'public',
     // Pre-bundle lucide-react with React up front; discovering it mid-session
     // can load it against a second copy of React ("Invalid hook call").
     optimizeDeps: { include: ['lucide-react'] },
