@@ -27,7 +27,7 @@ export interface Placement {
  *
  * The book opens on a single right page (the first spread) and closes on a single left
  * page (the last); every spread between is a pair. Each kind has its own type, and its
- * own place in the Doc, so one can't end up in another's.
+ * own place in the Project, so one can't end up in another's.
  */
 interface SpreadOf<K extends string> {
   kind: K;
@@ -91,7 +91,7 @@ export interface Settings {
  */
 export const CURRENT_SCHEMA = 2;
 
-export interface Doc {
+export interface Project {
   /** Always the current shape: older ones are upgraded on load (see schema.ts). */
   schemaVersion: typeof CURRENT_SCHEMA;
   photos: Record<PhotoId, PhotoMeta>;

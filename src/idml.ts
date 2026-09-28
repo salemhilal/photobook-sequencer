@@ -1,5 +1,5 @@
 import { dropGuide, edgesOf, linePosition, lineOnPage, pageRect, pageSides } from './geometry';
-import type { Doc, PageSide, Settings, Spread } from './types';
+import type { Project, PageSide, Settings, Spread } from './types';
 import type { ZipInput } from './zip';
 import { allSpreads } from './spreads';
 
@@ -32,7 +32,7 @@ export interface LinkedImage {
   pxH: number;
 }
 
-export function buildIdml(doc: Doc, links: Map<string, LinkedImage>): ZipInput[] {
+export function buildIdml(doc: Project, links: Map<string, LinkedImage>): ZipInput[] {
   let nextId = 0;
   // InDesign names its own objects u1, u2, …; a distinct prefix keeps ours from matching them.
   const id = () => `pbs${++nextId}`;
@@ -96,7 +96,7 @@ function marginXml(s: Settings, side?: PageSide): string {
 }
 
 function spreadXml(
-  doc: Doc,
+  doc: Project,
   spread: Spread,
   index: number,
   spreadId: string,

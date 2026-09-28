@@ -5,7 +5,7 @@ import { tourSeenPref } from '../../prefs';
 import { newProject } from '../../project';
 import { docStore } from '../../store';
 import { endTour } from '../../tour';
-import type { Doc } from '../../types';
+import type { Project } from '../../types';
 import { ui } from '../../ui';
 import { readZip } from '../../zip';
 import { openPath, save, saveAs } from './documents';
@@ -29,10 +29,10 @@ const pause = (ms = 50) => new Promise((r) => setTimeout(r, ms));
 const photoCount = () => Object.keys(docStore.doc.photos).length;
 const title = () => ui.get().windowTitle;
 
-async function savedDoc(path: string): Promise<Doc> {
+async function savedDoc(path: string): Promise<Project> {
   const bytes = await invoke<ArrayBuffer>('read_project', { path });
   const manifest = (await (await (await readZip(new Blob([bytes]))).get('project.json')?.blob())?.text()) ?? '{}';
-  return (JSON.parse(manifest) as { doc: Doc }).doc;
+  return (JSON.parse(manifest) as { doc: Project }).doc;
 }
 
 async function scenarios(dir: string): Promise<void> {
@@ -91,7 +91,7 @@ async function scenarios(dir: string): Promise<void> {
   await pause();
   const asked = ui.get().confirm;
   check('asks before replacing unsaved changes', !!asked);
-  asked?.resolve('cancel');
+  asked?.choose(asked.actions.findIndex((a) => a.label === 'Cancel'));
   await opening;
   check('cancelling keeps the project', title()?.name === 'Fixture B' && docStore.doc.settings.pageW === 9);
 

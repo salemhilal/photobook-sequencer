@@ -1,7 +1,7 @@
 import { newGuideId } from './ids';
-import { emptyDoc } from './store';
-import { CURRENT_SCHEMA, type Doc } from './types';
-import { InvalidProjectError, validateDoc } from './validate';
+import { emptyProject } from './store';
+import { CURRENT_SCHEMA, type Project } from './types';
+import { InvalidProjectError, validateProject } from './validate';
 
 /**
  * Upgrading saved projects. Projects are saved in the browser and in exported
@@ -12,13 +12,13 @@ import { InvalidProjectError, validateDoc } from './validate';
  * previous version to schema.test.ts. Each step only needs to know its neighbors.
  */
 
-/** Loosely typed: older shapes don't match today's Doc type. */
+/** Loosely typed: older shapes don't match today's Project type. */
 type Raw = Record<string, unknown>;
 
 const migrations: Record<number, (doc: Raw) => Raw> = {
   /** 0 → 1: projects from before versioning. Fill in any missing settings. */
   0: (doc) => {
-    const base = emptyDoc();
+    const base = emptyProject();
     // Version 1's defaults: borders were numbers, and there were no line guides.
     const v1: Raw = { ...base.settings, borders: [0.5, 1.25] };
     delete v1.lines;
@@ -67,7 +67,7 @@ export function schemaVersionOf(doc: unknown): number {
  * nothing past here meets a project in any other shape. Throws NewerProjectError if it's
  * from a newer app, and InvalidProjectError if it's damaged.
  */
-export function migrateDoc(stored: unknown): Doc {
+export function migrateProject(stored: unknown): Project {
   let version = schemaVersionOf(stored);
   if (version > CURRENT_SCHEMA) throw new NewerProjectError();
   let doc = stored as Raw;
@@ -82,5 +82,5 @@ export function migrateDoc(stored: unknown): Doc {
     // An upgrade step meeting something it didn't expect: the project is damaged.
     throw e instanceof InvalidProjectError ? e : new InvalidProjectError(`version ${version}: ${String(e)}`);
   }
-  return validateDoc({ ...doc, schemaVersion: CURRENT_SCHEMA });
+  return validateProject({ ...doc, schemaVersion: CURRENT_SCHEMA });
 }

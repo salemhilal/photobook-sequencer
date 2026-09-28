@@ -7,7 +7,7 @@ import { createPref } from '../../prefs';
 import { buildProjectFile, confirmReplace, importProject, PROJECT_EXTENSION, ProjectFileError } from '../../project';
 import { docStore } from '../../store';
 import { endTour } from '../../tour';
-import type { Doc } from '../../types';
+import type { Project } from '../../types';
 import { ask, ui } from '../../ui';
 import { chooseSaveLocation, writeFile } from './files';
 
@@ -18,11 +18,16 @@ import { chooseSaveLocation, writeFile } from './files';
  * so unsaved changes survive quitting; the window's title says when there are some.
  */
 
-/** The open project's file, and the doc as it was last saved there (or opened from it). */
-let path: string | null = null;
-let saved: Doc | null = null;
-/** A bookmark to the file, so it can still be saved after the app restarts (see bookmarks in src-tauri/src/lib.rs). */
-let bookmark: string | null = null;
+/** The project's file, when it has one. */
+interface OpenFile {
+  path: string;
+  /** Lets the file be saved after the app restarts (see bookmarks in src-tauri/src/lib.rs); null if none could be made. */
+  bookmark: string | null;
+  /** The doc as last saved there (or opened from it); null when that's unknown (remembered with changes). */
+  saved: Project | null;
+}
+
+let file: OpenFile | null = null;
 
 interface RememberedFile {
   path: string;
@@ -46,36 +51,36 @@ const filePref = createPref<RememberedFile | null>(
   JSON.stringify,
 );
 
-/** The project now lives in this file: remember where, and keep a bookmark to it. */
-async function attach(target: string): Promise<void> {
-  path = target;
+/** The project now lives at `path`, as `saved`: remember the file, with a bookmark to it. */
+async function attach(path: string, saved: Project): Promise<void> {
+  let bookmark: string | null = null;
   try {
-    const bytes = await invoke<number[]>('bookmark_file', { path: target });
+    const bytes = await invoke<number[]>('bookmark_file', { path });
     bookmark = btoa(String.fromCharCode(...bytes));
   } catch {
     // Without one, saving after a restart asks where (see save).
-    bookmark = null;
   }
+  file = { path, bookmark, saved };
 }
 
 /** Whether there's anything the file doesn't have. */
 function edited(): boolean {
-  if (saved) return docStore.doc !== saved;
+  if (file?.saved) return docStore.doc !== file.saved;
   return Object.keys(docStore.doc.photos).length > 0 || docStore.getSnapshot().canUndo;
 }
 
 /** Whether the project is safe in its file, so replacing it loses nothing. */
 export function isSaved(): boolean {
-  return path !== null && !edited();
+  return file !== null && !edited();
 }
 
-function name(p = path): string {
+function name(p = file?.path): string {
   const base = p?.split('/').pop() ?? 'Untitled';
   return base.endsWith(PROJECT_EXTENSION) ? base.slice(0, -PROJECT_EXTENSION.length) : base;
 }
 
 function remember(): void {
-  filePref.save(path ? { path, clean: !edited(), ...(bookmark && { bookmark }) } : null);
+  filePref.save(file ? { path: file.path, clean: !edited(), ...(file.bookmark && { bookmark: file.bookmark }) } : null);
 }
 
 let shownTitle = '';
@@ -101,16 +106,14 @@ function showState(): void {
  */
 export function forgetFile(): void {
   docStore.reset(docStore.doc);
-  path = null;
-  bookmark = null;
-  saved = null;
+  file = null;
   showState();
   remember();
 }
 
 /** Save over the project's file (or ask where, if it has none). Resolves to whether it was saved. */
 export async function save(): Promise<boolean> {
-  return path ? writeTo(path) : saveAs();
+  return file ? writeTo(file.path) : saveAs();
 }
 
 /** Save to a new file, asking where first (`target` skips asking; the end-to-end test uses it). */
@@ -131,9 +134,8 @@ async function writeTo(target: string): Promise<boolean> {
   } finally {
     ui.set({ busy: null });
   }
-  await attach(target);
   // Changes made while saving aren't in the file.
-  saved = doc;
+  await attach(target, doc);
   showState();
   remember();
   return true;
@@ -184,7 +186,7 @@ async function open(target: string, launching: boolean): Promise<void> {
   // Opened from Finder mid-tour: the tour gives way.
   endTour();
   if (!launching) {
-    if (target === path && !edited()) return;
+    if (target === file?.path && !edited()) return;
     const hasWork = Object.keys(docStore.doc.photos).length > 0;
     if (hasWork && !(await confirmReplace('Open another project?', `“${name(target)}”`, 'Open'))) return;
   }
@@ -194,8 +196,7 @@ async function open(target: string, launching: boolean): Promise<void> {
     await importProject(new File([bytes], target.split('/').pop() ?? 'project'));
     // Undo shouldn't lead back into a different file's project.
     docStore.reset(docStore.doc);
-    await attach(target);
-    saved = docStore.doc;
+    await attach(target, docStore.doc);
     // The title bar names the file; the import's "undo to go back" no longer applies.
     ui.set({ selection: [], editingSpreadId: null, modal: null, notice: null });
     showState();
@@ -230,14 +231,15 @@ export async function startDocuments(): Promise<void> {
   const launchedWith = (await invoke<string[]>('take_opened_files')).at(-1);
   const remembered = filePref.load();
   if (remembered) {
-    path = remembered.path;
-    bookmark = remembered.bookmark ?? null;
-    saved = remembered.clean ? docStore.doc : null;
+    const { bookmark = null } = remembered;
+    const saved = remembered.clean ? docStore.doc : null;
+    let path = remembered.path;
     // Get access to the file again, wherever it is now.
     if (bookmark) {
       const bytes = Uint8Array.from(atob(bookmark), (c) => c.charCodeAt(0));
       path = await invoke<string>('open_bookmark', { bookmark: [...bytes] }).catch(() => path);
     }
+    file = { path, bookmark, saved };
   }
   showState();
   docStore.subscribe(showState);

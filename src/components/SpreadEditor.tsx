@@ -20,7 +20,7 @@ import type { Draft } from 'immer';
 import type { PhotoId, SpreadId } from '../ids';
 import { allSpreads, findSpread } from '../spreads';
 import { docStore, useDoc } from '../store';
-import type { BorderGuide, Doc, Placement } from '../types';
+import type { BorderGuide, Project, Placement } from '../types';
 import { isTyping } from '../input';
 import { openPhotoMenu, toggleGuides, ui } from '../ui';
 import { shortcutLabel } from '../commands';
@@ -313,12 +313,12 @@ function guideSummary(g: BorderGuide): string {
   return `Top ${fmt(e.top)} · Outside ${fmt(e.outside)} · Bottom ${fmt(e.bottom)} · Inside ${fmt(e.inside)} in`;
 }
 
-function findItem(d: Doc | Draft<Doc>, spreadId: SpreadId, photoId: PhotoId): Placement | undefined {
+function findItem(d: Project | Draft<Project>, spreadId: SpreadId, photoId: PhotoId): Placement | undefined {
   return findSpread(d, spreadId)?.items.find((i) => i.photoId === photoId);
 }
 
 interface InspectorProps {
-  doc: Doc;
+  doc: Project;
   item: Placement | null;
   onChange: (patch: Partial<Placement>, coalesce?: string) => void;
   onToPile: () => void;

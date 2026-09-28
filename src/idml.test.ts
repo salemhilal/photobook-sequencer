@@ -2,10 +2,10 @@
 import { toGuideId, toPhotoId } from './ids';
 import { describe, expect, it } from 'vitest';
 import { buildIdml } from './idml';
-import { emptyDoc } from './store';
-import type { Doc } from './types';
+import { emptyProject } from './store';
+import type { Project } from './types';
 
-async function build(doc: Doc, links = new Map()) {
+async function build(doc: Project, links = new Map()) {
   const entries = buildIdml(doc, links);
   const files = new Map<string, Document>();
   for (const e of entries) {
@@ -14,8 +14,8 @@ async function build(doc: Doc, links = new Map()) {
   return { entries, files };
 }
 
-function sample(): Doc {
-  const doc = emptyDoc(); // 10 × 8 in pages; borders 0.5 and 1.25; four spreads
+function sample(): Project {
+  const doc = emptyProject(); // 10 × 8 in pages; borders 0.5 and 1.25; four spreads
   const a = toPhotoId('a');
   doc.photos[a] = { id: a, name: 'a & b.jpg', pxW: 3000, pxH: 2000 };
   doc.spreads[0]!.items.push({ photoId: a, x: -9, y: 1, w: 6, h: 4, z: 1 });

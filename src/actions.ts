@@ -6,7 +6,7 @@ import { allSpreads, findSpread, middleIndex } from './spreads';
 import { docStore } from './store';
 import { dropBox, fitCentered, pageRect, pileSize, PILE_PHOTO_SIZE } from './geometry';
 import type { DropTarget } from './drag';
-import type { Doc, PageSide, PhotoMeta, Placement } from './types';
+import type { Project, PageSide, PhotoMeta, Placement } from './types';
 import { DESK_PPI, deskGeometry } from './deskGeometry';
 import { ui } from './ui';
 
@@ -44,7 +44,7 @@ export function addPhotosToPile(photos: PhotoMeta[]): void {
 }
 
 /** Placement for a photo freshly dropped on a page: fit inside the drop border guide, centered on the page. */
-export function placementOnPage(d: Draft<Doc> | Doc, photoId: PhotoId, side: PageSide): Placement | null {
+export function placementOnPage(d: Draft<Project> | Project, photoId: PhotoId, side: PageSide): Placement | null {
   const photo = d.photos[photoId];
   if (!photo) return null;
   const page = pageRect(side, d.settings);
@@ -53,12 +53,12 @@ export function placementOnPage(d: Draft<Doc> | Doc, photoId: PhotoId, side: Pag
 }
 
 /** Where a photo is: on the desk, on a spread, or (if unplaced) nowhere. */
-export type Location<D extends Doc | Draft<Doc>> =
+export type Location<D extends Project | Draft<Project>> =
   | { where: 'desk'; placement: D['pile'][number] }
   | { where: 'spread'; spread: ReturnType<typeof allSpreads<D>>[number]; placement: D['pile'][number] }
   | null;
 
-export function locate<D extends Doc | Draft<Doc>>(d: D, photoId: PhotoId): Location<D> {
+export function locate<D extends Project | Draft<Project>>(d: D, photoId: PhotoId): Location<D> {
   const onDesk = d.pile.find((p) => p.photoId === photoId);
   if (onDesk) return { where: 'desk', placement: onDesk };
   for (const spread of allSpreads(d)) {
@@ -74,7 +74,7 @@ export function locate<D extends Doc | Draft<Doc>>(d: D, photoId: PhotoId): Loca
  * editor's desk strip return them to the desk. Returns false for no target.
  */
 export function dropPhotos(
-  d: Draft<Doc>,
+  d: Draft<Project>,
   target: DropTarget,
   photoIds: PhotoId[],
   at?: { x: number; y: number },
@@ -94,7 +94,7 @@ export function dropPhotos(
   }
 }
 
-export function bump(d: Draft<Doc>, p: Placement): void {
+export function bump(d: Draft<Project>, p: Placement): void {
   p.z = d.nextZ++;
 }
 
@@ -102,16 +102,16 @@ export function bump(d: Draft<Doc>, p: Placement): void {
  * Bring a clicked photo to the front of `among` (the desk, or its page), unless it's
  * already there: a click alone shouldn't count as a change to the project.
  */
-export function raise(d: Draft<Doc>, among: Placement[], p: Placement): void {
+export function raise(d: Draft<Project>, among: Placement[], p: Placement): void {
   if (among.some((o) => o !== p && o.z > p.z)) bump(d, p);
 }
 
-function removeFromSpreads(d: Draft<Doc>, photoId: PhotoId): void {
+function removeFromSpreads(d: Draft<Project>, photoId: PhotoId): void {
   for (const s of allSpreads(d)) s.items = s.items.filter((i) => i.photoId !== photoId);
 }
 
 /** Recipe: put photos onto a page (from anywhere), each centered and fitted. */
-export function putOnPage(d: Draft<Doc>, photoIds: PhotoId[], spreadId: SpreadId, side: PageSide): void {
+export function putOnPage(d: Draft<Project>, photoIds: PhotoId[], spreadId: SpreadId, side: PageSide): void {
   const spread = findSpread(d, spreadId);
   if (!spread) return;
   for (const id of photoIds) {
@@ -125,14 +125,14 @@ export function putOnPage(d: Draft<Doc>, photoIds: PhotoId[], spreadId: SpreadId
 }
 
 /** Recipe: add a spread before book position `index` and put photos on its left page. */
-export function putOnNewSpread(d: Draft<Doc>, photoIds: PhotoId[], index: number): void {
+export function putOnNewSpread(d: Draft<Project>, photoIds: PhotoId[], index: number): void {
   const id = newSpreadId();
   d.spreads.splice(middleIndex(d, index), 0, { kind: 'middle', id, items: [] });
   putOnPage(d, photoIds, id, 'left');
 }
 
 /** Recipe: return a photo to the pile, centered on a desk point (defaults to the visible center). */
-export function putInPile(d: Draft<Doc>, photoId: PhotoId, at?: { x: number; y: number }): void {
+export function putInPile(d: Draft<Project>, photoId: PhotoId, at?: { x: number; y: number }): void {
   const photo = d.photos[photoId];
   if (!photo) return;
   removeFromSpreads(d, photoId);

@@ -1,13 +1,13 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { runFromMenu } from './commands';
-import { docStore, emptyDoc } from './store';
+import { docStore, emptyProject } from './store';
 import { ui } from './ui';
 
 afterEach(() => {
   document.body.replaceChildren();
   ui.set({ modal: null });
-  docStore.reset(emptyDoc());
+  docStore.reset(emptyProject());
 });
 
 describe('runFromMenu', () => {

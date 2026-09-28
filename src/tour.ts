@@ -7,8 +7,8 @@ import { pileSize } from './geometry';
 import { showUrl } from './images';
 import { isMac } from './input';
 import { tourSeenPref } from './prefs';
-import { docStore, emptyDoc } from './store';
-import type { Doc, PhotoMeta } from './types';
+import { docStore, emptyProject } from './store';
+import type { Project, PhotoMeta } from './types';
 import { ui, type Modal, type UiState } from './ui';
 import taxi from './tour/taxi.jpg';
 import spire from './tour/spire.jpg';
@@ -96,8 +96,8 @@ const SAMPLES: [string, string][] = [
 const SAMPLE_PX = { pxW: 795, pxH: 1200 };
 
 /** The sample project: four photos on the desk, two on the first middle spread. */
-export function sampleDoc(): Doc {
-  const doc = emptyDoc();
+export function sampleProject(): Project {
+  const doc = emptyProject();
   SAMPLES.forEach(([name], i) => {
     const photo: PhotoMeta = { id: toPhotoId(`tour-${name}`), name: `${name}.jpg`, ...SAMPLE_PX };
     doc.photos[photo.id] = photo;
@@ -134,7 +134,7 @@ export function startTour(): void {
     sidebarOpen: true,
     view: frameSamples(),
   });
-  restoreProject = docStore.swap(sampleDoc());
+  restoreProject = docStore.swap(sampleProject());
 }
 
 export function goToStep(index: number): void {

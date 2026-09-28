@@ -51,9 +51,8 @@ export default function App() {
   const notice = ui.use((s) => s.notice);
   const busy = ui.use((s) => s.busy);
   const sidebarOpen = ui.use((s) => s.sidebarOpen);
-  const outdated = ui.use((s) => s.outdated);
+  const blocked = ui.use((s) => s.blocked);
   const updateReady = ui.use((s) => s.updateReady);
-  const elsewhere = ui.use((s) => s.elsewhere);
   const saveFailed = ui.use((s) => s.saveFailed);
   const windowTitle = ui.use((s) => s.windowTitle);
   const loaded = usePersistence();
@@ -73,8 +72,8 @@ export default function App() {
     if (fresh && !tourSeenPref.load()) startTour();
   }, [fresh]);
 
-  if (elsewhere) return <ElsewhereScreen />;
-  if (outdated) return <OutdatedScreen />;
+  if (blocked === 'elsewhere') return <ElsewhereScreen />;
+  if (blocked === 'outdated') return <OutdatedScreen />;
   if (!loaded) return <div className="loading">Opening your book…</div>;
 
   const working = importing !== null || busy !== null;

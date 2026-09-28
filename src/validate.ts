@@ -2,7 +2,7 @@ import { toGuideId, toPhotoId, toSpreadId, type PhotoId } from './ids';
 import {
   CURRENT_SCHEMA,
   type BorderGuide,
-  type Doc,
+  type Project,
   type FirstSpread,
   type LastSpread,
   type LineGuide,
@@ -16,9 +16,9 @@ import {
  * Checking a whole project before the app uses it. Projects come from outside the code's
  * control (a file someone opened, or what the browser kept), so this is where their shape
  * is established: every field of the right type and in range, every id unique, every
- * placement's photo real, and each photo in one place at most. Past here, a Doc is a Doc.
+ * placement's photo real, and each photo in one place at most. Past here, a Project is a Project.
  *
- * It builds the Doc as it goes, so what comes out holds only what was checked.
+ * It builds the Project as it goes, so what comes out holds only what was checked.
  */
 
 export class InvalidProjectError extends Error {
@@ -142,7 +142,7 @@ function settings(v: unknown, where: string): Settings {
 }
 
 /** The project, checked; throws InvalidProjectError, naming the first problem, if it's damaged. */
-export function validateDoc(v: unknown): Doc {
+export function validateProject(v: unknown): Project {
   const d = record(v, 'project');
   if (d.schemaVersion !== CURRENT_SCHEMA) fail('schemaVersion');
 

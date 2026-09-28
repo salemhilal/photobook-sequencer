@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { deleteImage, imageIds, loadDoc, saveDoc } from './db';
 import { forgetUrl } from './images';
-import { migrateDoc, NewerProjectError, schemaVersionOf } from './schema';
-import { docStore, emptyDoc } from './store';
+import { migrateProject, NewerProjectError, schemaVersionOf } from './schema';
+import { docStore, emptyProject } from './store';
 import { claimEditor } from './tabLock';
-import { CURRENT_SCHEMA, type Doc } from './types';
-import { ui } from './ui';
+import { CURRENT_SCHEMA, type Project } from './types';
+import { block, ui } from './ui';
 
 const SAVE_DELAY = 400;
 
@@ -19,7 +19,7 @@ export const projectLoaded = new Promise<void>((resolve) => (markLoaded = resolv
  */
 function maySave(): boolean {
   const s = ui.get();
-  return !s.outdated && !s.elsewhere && s.tour === null;
+  return s.blocked === null && s.tour === null;
 }
 
 /**
@@ -27,10 +27,10 @@ function maySave(): boolean {
  * (say, in another tab after a deploy). Overwriting it would lose data this code
  * doesn't understand, so this tab stops instead and asks for a reload.
  */
-export async function saveUnlessNewer(doc: Doc): Promise<'saved' | 'newer'> {
+export async function saveUnlessNewer(doc: Project): Promise<'saved' | 'newer'> {
   const stored = await loadDoc();
   if (stored && schemaVersionOf(stored) > CURRENT_SCHEMA) {
-    ui.set({ outdated: true });
+    block('outdated');
     return 'newer';
   }
   await saveDoc(doc);
@@ -74,16 +74,16 @@ export function usePersistence(): boolean {
     };
 
     const start = async () => {
-      if (!(await claimEditor(() => ui.set({ elsewhere: true })))) {
-        ui.set({ elsewhere: true });
+      if (!(await claimEditor(() => block('elsewhere')))) {
+        block('elsewhere');
         return;
       }
       const stored = await loadDoc();
       if (cancelled) return;
       try {
-        docStore.reset(stored ? migrateDoc(stored) : emptyDoc());
+        docStore.reset(stored ? migrateProject(stored) : emptyProject());
       } catch (e) {
-        if (e instanceof NewerProjectError) return ui.set({ outdated: true });
+        if (e instanceof NewerProjectError) return block('outdated');
         throw e;
       }
       setLoaded(true);

@@ -13,11 +13,11 @@ vi.mock('./db', () => ({
 }));
 
 const { addPhotosToPile, copyName, duplicatePhotos, putOnPage } = await import('./actions');
-const { docStore, emptyDoc } = await import('./store');
+const { docStore, emptyProject } = await import('./store');
 
 beforeEach(() => {
   images.clear();
-  docStore.reset(emptyDoc());
+  docStore.reset(emptyProject());
   addPhotosToPile([{ id: A, name: 'IMG_1.jpg', pxW: 1200, pxH: 800 }]);
   images.set(A, { full: new Blob(['full']), thumb: new Blob(['thumb']) });
 });
