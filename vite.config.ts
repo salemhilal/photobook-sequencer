@@ -38,8 +38,8 @@ export default defineConfig(({ mode }) => {
         includeManifestIcons: false,
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,png,jpg,woff,woff2}'],
-          // Not the landing page's (index.html, assets/landing-*) or the privacy policy's.
-          globIgnores: ['index.html', 'assets/landing-*', 'privacy/**', 'og.jpg'],
+          // Not the other pages' (index.html, assets/landing-*, privacy/, support/).
+          globIgnores: ['index.html', 'assets/landing-*', 'privacy/**', 'support/**', 'og.jpg'],
           // Its files are listed from the site's root, not from /app/ where it lives.
           modifyURLPrefix: { '': '/' },
           navigateFallback: '/app/index.html',
@@ -99,9 +99,16 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       rollupOptions: {
-        // The website: a landing page (/), the app (/app/), and a privacy policy (/privacy/,
-        // which the Mac app links to). The Mac app is just the app.
-        input: app ? 'app/index.html' : { landing: 'index.html', app: 'app/index.html', privacy: 'privacy/index.html' },
+        // The website: a landing page (/), the app (/app/), a privacy policy (/privacy/, which
+        // the Mac app links to), and a support page (/support/). The Mac app is just the app.
+        input: app
+          ? 'app/index.html'
+          : {
+              landing: 'index.html',
+              app: 'app/index.html',
+              privacy: 'privacy/index.html',
+              support: 'support/index.html',
+            },
       },
     },
     // public/ is the website's (its icons, share image, and old service worker's
