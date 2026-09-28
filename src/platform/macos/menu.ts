@@ -2,7 +2,7 @@ import { Menu, MenuItem, PredefinedMenuItem, Submenu } from '@tauri-apps/api/men
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { commandTitle, runFromMenu, shortcutAccelerator, type CommandId } from '../../commands';
 import { isTextField } from '../../input';
-import { docStore } from '../../store';
+import { projectStore } from '../../store';
 import { ui } from '../../ui';
 import { quit } from './documents';
 
@@ -127,7 +127,7 @@ export async function setUpMenu(): Promise<void> {
   // and Redo stay enabled in text fields, where they undo typing.
   let shown = '';
   const sync = () => {
-    const { canUndo, canRedo } = docStore.getSnapshot();
+    const { canUndo, canRedo } = projectStore.getSnapshot();
     const typing = isTextField(document.activeElement);
     const { sidebarOpen, guidesHidden } = ui.get();
     const state = { undo: canUndo || typing, redo: canRedo || typing, sidebar: sidebarOpen, guides: !guidesHidden };
@@ -140,7 +140,7 @@ export async function setUpMenu(): Promise<void> {
     void guides.setText(state.guides ? 'Hide Guides' : 'Show Guides');
   };
   sync();
-  docStore.subscribe(sync);
+  projectStore.subscribe(sync);
   ui.subscribe(sync);
   document.addEventListener('focusin', sync);
   document.addEventListener('focusout', () => setTimeout(sync));

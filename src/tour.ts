@@ -7,7 +7,7 @@ import { pileSize } from './geometry';
 import { showUrl } from './images';
 import { isMac } from './input';
 import { tourSeenPref } from './prefs';
-import { docStore, emptyProject } from './store';
+import { projectStore, emptyProject } from './store';
 import type { Project, PhotoMeta } from './types';
 import { ui, type Modal, type UiState } from './ui';
 import taxi from './tour/taxi.jpg';
@@ -97,16 +97,23 @@ const SAMPLE_PX = { pxW: 795, pxH: 1200 };
 
 /** The sample project: four photos on the desk, two on the first middle spread. */
 export function sampleProject(): Project {
-  const doc = emptyProject();
+  const project = emptyProject();
   SAMPLES.forEach(([name], i) => {
     const photo: PhotoMeta = { id: toPhotoId(`tour-${name}`), name: `${name}.jpg`, ...SAMPLE_PX };
-    doc.photos[photo.id] = photo;
+    project.photos[photo.id] = photo;
     if (i >= 4) return;
     const { w, h } = pileSize(photo);
     // A loose row, like prints set down by hand.
-    doc.pile.push({ photoId: photo.id, x: 0.4 + i * 1.8, y: 0.4 + [0.1, 0, 0.25, 0.05][i]!, w, h, z: doc.nextZ++ });
+    project.pile.push({
+      photoId: photo.id,
+      x: 0.4 + i * 1.8,
+      y: 0.4 + [0.1, 0, 0.25, 0.05][i]!,
+      w,
+      h,
+      z: project.nextZ++,
+    });
   });
-  return produce(doc, (d) => {
+  return produce(project, (d) => {
     const spread = d.spreads[0]!;
     putOnPage(d, [toPhotoId('tour-leaves')], spread.id, 'left');
     putOnPage(d, [toPhotoId('tour-lily')], spread.id, 'right');
@@ -134,7 +141,7 @@ export function startTour(): void {
     sidebarOpen: true,
     view: frameSamples(),
   });
-  restoreProject = docStore.swap(sampleProject());
+  restoreProject = projectStore.swap(sampleProject());
 }
 
 export function goToStep(index: number): void {
@@ -143,7 +150,7 @@ export function goToStep(index: number): void {
   ui.set({
     tour: index,
     modal: step.modal ?? null,
-    editingSpreadId: step.editor ? (docStore.doc.spreads[0]?.id ?? null) : null,
+    editingSpreadId: step.editor ? (projectStore.project.spreads[0]?.id ?? null) : null,
   });
 }
 

@@ -19,7 +19,7 @@ import {
 import type { Draft } from 'immer';
 import type { PhotoId, SpreadId } from '../ids';
 import { allSpreads, findSpread } from '../spreads';
-import { docStore, useDoc } from '../store';
+import { projectStore, useProject } from '../store';
 import type { BorderGuide, Project, Placement } from '../types';
 import { isTyping } from '../input';
 import { openPhotoMenu, toggleGuides, ui } from '../ui';
@@ -36,11 +36,11 @@ const NUDGE = 1 / 16;
 const NUDGE_BIG = 1 / 2;
 
 export function SpreadEditor({ spreadId }: { spreadId: SpreadId }) {
-  const { doc } = useDoc();
-  const book = allSpreads(doc);
+  const { project } = useProject();
+  const book = allSpreads(project);
   const index = book.findIndex((s) => s.id === spreadId);
   const spread = book[index];
-  const { settings } = doc;
+  const { settings } = project;
   const stageRef = useRef<HTMLDivElement>(null);
   const [stage, setStage] = useState({ w: 800, h: 500 });
   const [selected, setSelected] = useState<PhotoId | null>(null);
@@ -77,7 +77,7 @@ export function SpreadEditor({ spreadId }: { spreadId: SpreadId }) {
   };
 
   const updateItem = (photoId: PhotoId, patch: Partial<Placement>, coalesce?: string) =>
-    docStore.apply(
+    projectStore.apply(
       (d) => {
         const item = findItem(d, spreadId, photoId);
         if (item) Object.assign(item, patch);
@@ -86,7 +86,7 @@ export function SpreadEditor({ spreadId }: { spreadId: SpreadId }) {
     );
 
   const toPile = (photoId: PhotoId) => {
-    docStore.apply((d) => putInPile(d, photoId));
+    projectStore.apply((d) => putInPile(d, photoId));
     setSelected(null);
   };
 
@@ -94,7 +94,7 @@ export function SpreadEditor({ spreadId }: { spreadId: SpreadId }) {
   useWindowEvent('keydown', (e) => {
     if (isTyping(e) || e.metaKey || e.ctrlKey) return;
     if (ui.get().modal) return;
-    const d = docStore.doc;
+    const d = projectStore.project;
     const item = selected ? findItem(d, spreadId, selected) : null;
     if (e.key === 'Escape') {
       if (selected) setSelected(null);
@@ -130,13 +130,13 @@ export function SpreadEditor({ spreadId }: { spreadId: SpreadId }) {
     setSelected(p.photoId);
     const start: Rect = { x: p.x, y: p.y, w: p.w, h: p.h };
     startDrag(e, {
-      onStart: () => docStore.begin(),
+      onStart: () => projectStore.begin(),
       onMove: ({ e: ev, dx, dy }) => {
         trackGhost(ev, null);
         const moved = { ...start, x: start.x + dx / scale, y: start.y + dy / scale };
         const { rect, hit } = ev.altKey ? { rect: moved, hit: null } : snapMove(moved, lines, threshold);
         setSnapHit(hit);
-        docStore.preview((d) => {
+        projectStore.preview((d) => {
           const item = findItem(d, spreadId, p.photoId);
           if (!item) return;
           item.x = rect.x;
@@ -147,7 +147,7 @@ export function SpreadEditor({ spreadId }: { spreadId: SpreadId }) {
       onEnd: ({ e: ev }, moved) => {
         setSnapHit(null);
         if (!moved) {
-          docStore.silent((d) => {
+          projectStore.silent((d) => {
             const spread = findSpread(d, spreadId);
             const item = spread?.items.find((i) => i.photoId === p.photoId);
             if (spread && item) raise(d, spread.items, item);
@@ -158,15 +158,15 @@ export function SpreadEditor({ spreadId }: { spreadId: SpreadId }) {
         clearGhost();
         // Moves within the spread stay put; dropping on the desk strip returns the photo to the desk.
         if (target?.kind === 'strip') {
-          docStore.preview((d) => void dropPhotos(d, target, [p.photoId]));
+          projectStore.preview((d) => void dropPhotos(d, target, [p.photoId]));
           setSelected(null);
         }
-        docStore.end();
+        projectStore.end();
       },
       onCancel: () => {
         setSnapHit(null);
         clearGhost();
-        docStore.cancel();
+        projectStore.cancel();
       },
     });
   };
@@ -175,7 +175,7 @@ export function SpreadEditor({ spreadId }: { spreadId: SpreadId }) {
     if (e.button !== 0) return;
     e.stopPropagation();
     startDrag(e, {
-      onStart: () => docStore.begin(),
+      onStart: () => projectStore.begin(),
       onMove: ({ e: ev, dx, dy }) => {
         const { rect, hit } = resizeRect(
           p,
@@ -187,18 +187,18 @@ export function SpreadEditor({ spreadId }: { spreadId: SpreadId }) {
           threshold,
         );
         setSnapHit(hit);
-        docStore.preview((d) => {
+        projectStore.preview((d) => {
           const item = findItem(d, spreadId, p.photoId);
           if (item) Object.assign(item, rect);
         });
       },
       onEnd: (_, moved) => {
         setSnapHit(null);
-        if (moved) docStore.end();
+        if (moved) projectStore.end();
       },
       onCancel: () => {
         setSnapHit(null);
-        docStore.cancel();
+        projectStore.cancel();
       },
     });
   };
@@ -287,7 +287,7 @@ export function SpreadEditor({ spreadId }: { spreadId: SpreadId }) {
             </div>
           </div>
           <Inspector
-            doc={doc}
+            project={project}
             item={selectedItem}
             onChange={(patch, key) => selectedItem && updateItem(selectedItem.photoId, patch, key)}
             onToPile={() => selectedItem && toPile(selectedItem.photoId)}
@@ -318,7 +318,7 @@ function findItem(d: Project | Draft<Project>, spreadId: SpreadId, photoId: Phot
 }
 
 interface InspectorProps {
-  doc: Project;
+  project: Project;
   item: Placement | null;
   onChange: (patch: Partial<Placement>, coalesce?: string) => void;
   onToPile: () => void;
@@ -326,9 +326,9 @@ interface InspectorProps {
   onHoverBox: (box: Rect | null) => void;
 }
 
-function Inspector({ doc, item, onChange, onToPile, onHoverBox }: InspectorProps) {
+function Inspector({ project, item, onChange, onToPile, onHoverBox }: InspectorProps) {
   const [lock, setLock] = useState(true);
-  const { settings } = doc;
+  const { settings } = project;
   if (!item) {
     return (
       <aside className="inspector">
@@ -339,7 +339,7 @@ function Inspector({ doc, item, onChange, onToPile, onHoverBox }: InspectorProps
   }
   const side = sideAt(item.x + item.w / 2);
   const page = pageRect(side, settings);
-  const photo = doc.photos[item.photoId];
+  const photo = project.photos[item.photoId];
   const aspect = item.w / item.h;
   const key = (f: string) => `inspect:${item.photoId}:${f}`;
   const fit = (box: Rect) => onChange(fitCentered({ pxW: item.w, pxH: item.h }, box, page));
@@ -416,9 +416,9 @@ function Inspector({ doc, item, onChange, onToPile, onHoverBox }: InspectorProps
 }
 
 function PileStrip({ spreadId }: { spreadId: SpreadId }) {
-  const { doc } = useDoc();
+  const { project } = useProject();
   const hover = ui.use((s) => s.hover?.kind === 'strip');
-  const pile = [...doc.pile].sort((a, b) => a.y - b.y || a.x - b.x);
+  const pile = [...project.pile].sort((a, b) => a.y - b.y || a.x - b.x);
 
   const onDown = (e: React.PointerEvent, p: Placement) => {
     if (e.button !== 0) return;
@@ -431,15 +431,15 @@ function PileStrip({ spreadId }: { spreadId: SpreadId }) {
         clearGhost();
         if (!moved) {
           // A click places the photo on the first empty page, or the right page.
-          const spread = findSpread(docStore.doc, spreadId);
+          const spread = findSpread(projectStore.project, spreadId);
           if (!spread) return;
           const side = spread.kind === 'last' ? 'left' : spread.kind === 'first' ? 'right' : 'left';
           const taken = spread.items.some((i) => sideAt(i.x + i.w / 2) === side);
           const pick = spread.kind === 'middle' && taken ? 'right' : side;
-          docStore.apply((d) => putOnPage(d, [p.photoId], spreadId, pick));
+          projectStore.apply((d) => putOnPage(d, [p.photoId], spreadId, pick));
           return;
         }
-        if (target?.kind === 'page') docStore.apply((d) => void dropPhotos(d, target, [p.photoId]));
+        if (target?.kind === 'page') projectStore.apply((d) => void dropPhotos(d, target, [p.photoId]));
       },
       onCancel: clearGhost,
     });

@@ -16,7 +16,7 @@ import {
 import { useWindowEvent } from '../hooks';
 import { isTyping } from '../input';
 import { newGuideId, toSpreadId, type GuideId } from '../ids';
-import { docStore, useDoc } from '../store';
+import { projectStore, useProject } from '../store';
 import type { BorderGuide, Edges, LineGuide, Settings, Spread } from '../types';
 import { closeModal } from '../ui';
 import { NumberField } from './NumberField';
@@ -51,8 +51,8 @@ function same(a: Selection | null, b: Selection): boolean {
 }
 
 export function GuidesEditor() {
-  const { doc } = useDoc();
-  const s = doc.settings;
+  const { project } = useProject();
+  const s = project.settings;
   const stageRef = useRef<HTMLDivElement>(null);
   const [stage, setStage] = useState({ w: 800, h: 500 });
   const [selected, setSelected] = useState<Selection | null>(null);
@@ -70,7 +70,7 @@ export function GuidesEditor() {
 
   const remove = (sel: Selection) => {
     if (sel.kind === 'center') return;
-    docStore.apply((d) => {
+    projectStore.apply((d) => {
       const g = d.settings;
       if (sel.kind === 'line') g.lines = g.lines.filter((l) => l.id !== sel.id);
       else {
@@ -130,10 +130,10 @@ export function GuidesEditor() {
       return g ? start.map((l) => (l.id === id ? g : l)) : start.filter((l) => l.id !== id);
     };
     startDrag(e, {
-      onStart: () => docStore.begin(),
+      onStart: () => projectStore.begin(),
       onMove: ({ e: ev }) => {
         const g = guideAt(axis, id, ev);
-        docStore.preview((d) => void (d.settings.lines = place(g)));
+        projectStore.preview((d) => void (d.settings.lines = place(g)));
         const r = stageRef.current?.getBoundingClientRect();
         const from = axis === 'horizontal' ? 'from top' : 'from outside';
         setDragLabel({
@@ -149,12 +149,12 @@ export function GuidesEditor() {
           return;
         }
         const g = guideAt(axis, id, ev);
-        docStore.end();
+        projectStore.end();
         setSelected(g ? { kind: 'line', id } : null);
       },
       onCancel: () => {
         setDragLabel(null);
-        docStore.cancel();
+        projectStore.cancel();
       },
     });
   };
@@ -356,12 +356,12 @@ function GuidesPanel({ s, selected, onSelect, onRemove }: PanelProps) {
   const addLine = (axis: Axis) => {
     const size = axis === 'vertical' ? s.pageW : s.pageH;
     const id = newGuideId();
-    docStore.apply((d) => void d.settings.lines.push({ id, axis, at: Math.round(size / 3 / SNAP) * SNAP }));
+    projectStore.apply((d) => void d.settings.lines.push({ id, axis, at: Math.round(size / 3 / SNAP) * SNAP }));
     onSelect({ kind: 'line', id });
   };
   const addBorder = () => {
     const id = newGuideId();
-    docStore.apply((d) => {
+    projectStore.apply((d) => {
       const last = d.settings.borders.at(-1);
       const b: BorderGuide = { id, kind: 'even', inset: (last ? edgesOf(last).top : 0.25) + 0.25 };
       clampBorder(b, d.settings);
@@ -377,7 +377,7 @@ function GuidesPanel({ s, selected, onSelect, onRemove }: PanelProps) {
         <input
           type="checkbox"
           checked={s[key]}
-          onChange={(e) => docStore.apply((d) => void (d.settings[key] = e.target.checked))}
+          onChange={(e) => projectStore.apply((d) => void (d.settings[key] = e.target.checked))}
         />
         {label}
       </label>
@@ -451,7 +451,7 @@ function GuidesPanel({ s, selected, onSelect, onRemove }: PanelProps) {
               value={l.at}
               min={0}
               onCommit={(n) =>
-                docStore.apply(
+                projectStore.apply(
                   (d) => {
                     const line = d.settings.lines.find((x) => x.id === l.id);
                     const size = l.axis === 'vertical' ? d.settings.pageW : d.settings.pageH;
@@ -493,7 +493,7 @@ function BorderRow({ g, isDrop, selected, onSelect, onRemove }: BorderRowProps) 
   const e = edgesOf(g);
   const linked = g.kind === 'even';
   const update = (change: (b: BorderGuide) => BorderGuide, coalesce?: string) =>
-    docStore.apply(
+    projectStore.apply(
       (d) => {
         const i = d.settings.borders.findIndex((x) => x.id === g.id);
         const current = d.settings.borders[i];
@@ -530,7 +530,7 @@ function BorderRow({ g, isDrop, selected, onSelect, onRemove }: BorderRowProps) 
         <button
           className={`drop-toggle${isDrop ? ' on' : ''}`}
           aria-pressed={isDrop}
-          onClick={() => docStore.apply((d) => void (d.settings.dropBorder = g.id))}
+          onClick={() => projectStore.apply((d) => void (d.settings.dropBorder = g.id))}
           data-tip={
             isDrop
               ? 'Photos dropped on a page fit inside this guide.'

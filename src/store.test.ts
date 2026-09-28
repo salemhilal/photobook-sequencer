@@ -1,102 +1,102 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { docStore, emptyProject } from './store';
+import { projectStore, emptyProject } from './store';
 
-const pageW = () => docStore.doc.settings.pageW;
+const pageW = () => projectStore.project.settings.pageW;
 const setPageW = (n: number, coalesce?: string) =>
-  docStore.apply((d) => void (d.settings.pageW = n), coalesce ? { coalesce } : {});
+  projectStore.apply((d) => void (d.settings.pageW = n), coalesce ? { coalesce } : {});
 
-beforeEach(() => docStore.reset(emptyProject()));
+beforeEach(() => projectStore.reset(emptyProject()));
 
 describe('undo and redo', () => {
   it('undoes and redoes discrete changes', () => {
     setPageW(11);
     setPageW(12);
-    docStore.undo();
+    projectStore.undo();
     expect(pageW()).toBe(11);
-    docStore.undo();
+    projectStore.undo();
     expect(pageW()).toBe(10);
-    docStore.redo();
+    projectStore.redo();
     expect(pageW()).toBe(11);
   });
 
   it('clears redo after a new change', () => {
     setPageW(11);
-    docStore.undo();
+    projectStore.undo();
     setPageW(9);
-    expect(docStore.getSnapshot().canRedo).toBe(false);
+    expect(projectStore.getSnapshot().canRedo).toBe(false);
   });
 
   it('merges rapid changes that share a coalesce key into one step', () => {
     setPageW(11, 'w');
     setPageW(12, 'w');
-    docStore.undo();
+    projectStore.undo();
     expect(pageW()).toBe(10);
   });
 
   it('ignores changes that change nothing', () => {
     setPageW(10);
-    expect(docStore.getSnapshot().canUndo).toBe(false);
+    expect(projectStore.getSnapshot().canUndo).toBe(false);
   });
 });
 
 describe('gestures', () => {
   it('records a whole gesture as a single step, each preview starting from the beginning', () => {
-    docStore.begin();
-    docStore.preview((d) => void (d.settings.pageW += 1));
-    docStore.preview((d) => void (d.settings.pageW += 2));
-    docStore.end();
+    projectStore.begin();
+    projectStore.preview((d) => void (d.settings.pageW += 1));
+    projectStore.preview((d) => void (d.settings.pageW += 2));
+    projectStore.end();
     expect(pageW()).toBe(12);
-    docStore.undo();
+    projectStore.undo();
     expect(pageW()).toBe(10);
   });
 
-  it('restores the starting doc on cancel', () => {
-    docStore.begin();
-    docStore.preview((d) => void (d.settings.pageW = 20));
-    docStore.cancel();
+  it('restores the starting project on cancel', () => {
+    projectStore.begin();
+    projectStore.preview((d) => void (d.settings.pageW = 20));
+    projectStore.cancel();
     expect(pageW()).toBe(10);
-    expect(docStore.getSnapshot().canUndo).toBe(false);
+    expect(projectStore.getSnapshot().canUndo).toBe(false);
   });
 
   it('records nothing for a gesture that changes nothing', () => {
-    docStore.begin();
-    docStore.end();
-    expect(docStore.getSnapshot().canUndo).toBe(false);
+    projectStore.begin();
+    projectStore.end();
+    expect(projectStore.getSnapshot().canUndo).toBe(false);
   });
 });
 
 describe('replace and silent', () => {
-  it('replaces the whole doc as one undoable step', () => {
+  it('replaces the whole project as one undoable step', () => {
     const other = { ...emptyProject(), nextZ: 99 };
-    docStore.replace(other);
-    expect(docStore.doc).toBe(other);
-    docStore.undo();
-    expect(docStore.doc.nextZ).toBe(1);
+    projectStore.replace(other);
+    expect(projectStore.project).toBe(other);
+    projectStore.undo();
+    expect(projectStore.project.nextZ).toBe(1);
   });
 
-  it('changes the doc without recording history', () => {
-    docStore.silent((d) => void (d.nextZ = 5));
-    expect(docStore.doc.nextZ).toBe(5);
-    expect(docStore.getSnapshot().canUndo).toBe(false);
+  it('changes the project without recording history', () => {
+    projectStore.silent((d) => void (d.nextZ = 5));
+    expect(projectStore.project.nextZ).toBe(5);
+    expect(projectStore.getSnapshot().canUndo).toBe(false);
   });
 });
 
 describe('swap', () => {
-  it('shows another doc, then brings back the project with its history', () => {
+  it('shows another project, then brings back the project with its history', () => {
     setPageW(11);
     setPageW(12);
-    docStore.undo();
-    const restore = docStore.swap({ ...emptyProject(), nextZ: 42 });
-    expect(docStore.doc.nextZ).toBe(42);
-    expect(docStore.getSnapshot().canUndo).toBe(false);
+    projectStore.undo();
+    const restore = projectStore.swap({ ...emptyProject(), nextZ: 42 });
+    expect(projectStore.project.nextZ).toBe(42);
+    expect(projectStore.getSnapshot().canUndo).toBe(false);
     setPageW(3);
 
     restore();
     expect(pageW()).toBe(11);
-    docStore.redo();
+    projectStore.redo();
     expect(pageW()).toBe(12);
-    docStore.undo();
-    docStore.undo();
+    projectStore.undo();
+    projectStore.undo();
     expect(pageW()).toBe(10);
   });
 });

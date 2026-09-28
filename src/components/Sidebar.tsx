@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { GripVertical, Plus, X } from 'lucide-react';
 import { deleteSpread, dropPhotos, folioLabel, insertSpread, moveSpread } from '../actions';
 import { clearGhost, sameTarget, startDrag, trackGhost } from '../drag';
-import { docStore, useDoc } from '../store';
+import { projectStore, useProject } from '../store';
 import type { Placement, Settings, Spread } from '../types';
 import { DESK_PPI, deskGeometry } from '../deskGeometry';
 import { SIDEBAR_DEFAULT_WIDTH, SIDEBAR_MIN_WIDTH } from '../prefs';
@@ -29,12 +29,12 @@ function listLayout(contentWidth: number): { cols: number; thumbW: number } {
 }
 
 export function Sidebar() {
-  const { doc } = useDoc();
+  const { project } = useProject();
   const listRef = useRef<HTMLDivElement>(null);
   const [reorder, setReorder] = useState<{ id: string; dropIndex: number } | null>(null);
-  const { settings } = doc;
+  const { settings } = project;
   // The whole book, in order; indexes below count through it.
-  const spreads = allSpreads(doc);
+  const spreads = allSpreads(project);
   const preferredWidth = ui.use((s) => s.sidebarWidth);
   const width = Math.max(SIDEBAR_MIN_WIDTH, Math.min(preferredWidth, window.innerWidth - MIN_DESK_WIDTH));
   const [contentWidth, setContentWidth] = useState(width - 32);
@@ -228,7 +228,7 @@ function SpreadRow({ spread, index, total, settings, thumbW, dragging, onHeaderD
         // Dropping back on the page it came from leaves it where it was.
         if (target?.kind === 'page' && target.spreadId === spread.id && target.side === fromSide) return;
         const at = deskGeometry.toDesk(ev.clientX, ev.clientY);
-        docStore.apply((d) => void dropPhotos(d, target, [p.photoId], at));
+        projectStore.apply((d) => void dropPhotos(d, target, [p.photoId], at));
       },
       onCancel: clearGhost,
     });

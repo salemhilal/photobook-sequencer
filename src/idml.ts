@@ -32,16 +32,16 @@ export interface LinkedImage {
   pxH: number;
 }
 
-export function buildIdml(doc: Project, links: Map<string, LinkedImage>): ZipInput[] {
+export function buildIdml(project: Project, links: Map<string, LinkedImage>): ZipInput[] {
   let nextId = 0;
   // InDesign names its own objects u1, u2, …; a distinct prefix keeps ours from matching them.
   const id = () => `pbs${++nextId}`;
-  const { settings } = doc;
-  const spreadFiles = allSpreads(doc).map((spread, i) => {
+  const { settings } = project;
+  const spreadFiles = allSpreads(project).map((spread, i) => {
     const spreadId = id();
     return {
       name: `Spreads/Spread_${spreadId}.xml`,
-      xml: spreadXml(doc, spread, i, spreadId, id, links),
+      xml: spreadXml(project, spread, i, spreadId, id, links),
     };
   });
 
@@ -96,16 +96,16 @@ function marginXml(s: Settings, side?: PageSide): string {
 }
 
 function spreadXml(
-  doc: Project,
+  project: Project,
   spread: Spread,
   index: number,
   spreadId: string,
   id: () => string,
   links: Map<string, LinkedImage>,
 ): string {
-  const s = doc.settings;
+  const s = project.settings;
   const sides = pageSides(spread.kind);
-  const first = allSpreads(doc)
+  const first = allSpreads(project)
     .slice(0, index)
     .reduce((n, sp) => n + pageSides(sp.kind).length, 0);
   const top = (-s.pageH * PT) / 2;
@@ -136,7 +136,7 @@ ${guidesXml(s, side, i, id)}
           return `<PathPointType Anchor="${at}" LeftDirection="${at}" RightDirection="${at}"/>`;
         })
         .join('');
-      const meta = doc.photos[p.photoId];
+      const meta = project.photos[p.photoId];
       const link = links.get(p.photoId);
       const image = link ? imageXml(id, link, { x: x1, y: y1, w: x2 - x1, h: y2 - y1 }) : '';
       return `<Rectangle Self="${id()}" Name="${esc(meta?.name ?? '$ID/')}" ContentType="GraphicType" StoredState="Normal" ItemLayer="${LAYER}" Locked="false" Visible="true" AppliedObjectStyle="ObjectStyle/$ID/[None]" FillColor="Swatch/None" StrokeColor="Swatch/None" StrokeWeight="0" ItemTransform="1 0 0 1 0 0">

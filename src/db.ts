@@ -6,7 +6,9 @@ const DB_NAME = 'photobook';
 const DB_VERSION = 1;
 const STATE = 'state';
 const IMAGES = 'images';
-const DOC_KEY = 'doc';
+// Saved under 'doc', the project's name in the code when this was written; a new key
+// would lose everyone's saved work.
+const PROJECT_KEY = 'doc';
 
 export interface StoredImage {
   /** The original file, kept for future export. */
@@ -44,12 +46,12 @@ async function store(name: string, mode: IDBTransactionMode): Promise<IDBObjectS
 }
 
 /** The saved project as stored; it may be from an older (or newer) version, so run it through migrateProject. */
-export async function loadDoc(): Promise<unknown> {
-  return wrap((await store(STATE, 'readonly')).get(DOC_KEY) as IDBRequest<unknown>);
+export async function loadSavedProject(): Promise<unknown> {
+  return wrap((await store(STATE, 'readonly')).get(PROJECT_KEY) as IDBRequest<unknown>);
 }
 
-export async function saveDoc(doc: Project): Promise<void> {
-  await wrap((await store(STATE, 'readwrite')).put(doc, DOC_KEY));
+export async function storeProject(project: Project): Promise<void> {
+  await wrap((await store(STATE, 'readwrite')).put(project, PROJECT_KEY));
 }
 
 export async function putImage(id: string, img: StoredImage): Promise<void> {

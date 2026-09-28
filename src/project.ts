@@ -4,7 +4,7 @@ import { allSpreads } from './spreads';
 import { setUrl, thumbFromBlob } from './images';
 import { migrateProject, NewerProjectError } from './schema';
 import { InvalidProjectError } from './validate';
-import { docStore, emptyProject } from './store';
+import { projectStore, emptyProject } from './store';
 import { MOD_LABEL } from './input';
 import { ask, ui } from './ui';
 import { createZip, readZip, type ZipInput } from './zip';
@@ -25,7 +25,10 @@ interface Manifest {
   format: typeof FORMAT;
   version: number;
   exportedAt: string;
-  /** A Project as saved, in whatever version: `migrateProject` upgrades and checks it. */
+  /**
+   * The project as saved, in whatever version: `migrateProject` upgrades and checks it.
+   * Called `doc` (from before), since files carry the name.
+   */
   doc: unknown;
   files: Record<PhotoId, { image: string; thumb?: string }>;
 }
@@ -34,8 +37,8 @@ export class ProjectFileError extends Error {}
 
 /** The project as a .photo-sequence file (a ZIP), reporting progress in the UI. */
 export async function buildProjectFile(verb = 'Exporting'): Promise<Blob> {
-  const doc = docStore.doc;
-  const ids = Object.keys(doc.photos).map(toPhotoId);
+  const project = projectStore.project;
+  const ids = Object.keys(project.photos).map(toPhotoId);
   const entries: ZipInput[] = [];
   const files: Manifest['files'] = {};
   const usedNames = new Set<string>();
@@ -45,14 +48,20 @@ export async function buildProjectFile(verb = 'Exporting'): Promise<Blob> {
     setBusy(`${verb}…`);
     for (const id of ids) {
       const img = await getImage(id);
-      const meta = doc.photos[id];
+      const meta = project.photos[id];
       if (!img || !meta) continue;
       const image = `images/${uniqueName(meta.name, id, usedNames)}`;
       const thumb = `thumbs/${id}.jpg`;
       entries.push({ name: image, data: img.full }, { name: thumb, data: img.thumb });
       files[id] = { image, thumb };
     }
-    const manifest: Manifest = { format: FORMAT, version: VERSION, exportedAt: new Date().toISOString(), doc, files };
+    const manifest: Manifest = {
+      format: FORMAT,
+      version: VERSION,
+      exportedAt: new Date().toISOString(),
+      doc: project,
+      files,
+    };
     entries.unshift({
       name: MANIFEST,
       data: new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' }),
@@ -85,15 +94,15 @@ export async function importProject(file: File): Promise<void> {
     );
     // `version` is the file's layout; the project inside has its own schema version.
     if (manifest.version > VERSION) throw newer;
-    let doc;
+    let project;
     try {
-      doc = migrateProject(manifest.doc);
+      project = migrateProject(manifest.doc);
     } catch (e) {
       if (e instanceof NewerProjectError) throw newer;
       if (e instanceof InvalidProjectError) throw new ProjectFileError('The project file is damaged.');
       throw e;
     }
-    const ids = Object.keys(doc.photos).map(toPhotoId);
+    const ids = Object.keys(project.photos).map(toPhotoId);
     const missing = new Set<PhotoId>();
     let done = 0;
     ui.set({ importing: { done, total: ids.length } });
@@ -114,12 +123,12 @@ export async function importProject(file: File): Promise<void> {
     }
 
     for (const id of missing) {
-      delete doc.photos[id];
-      doc.pile = doc.pile.filter((p) => p.photoId !== id);
-      for (const s of allSpreads(doc)) s.items = s.items.filter((p) => p.photoId !== id);
+      delete project.photos[id];
+      project.pile = project.pile.filter((p) => p.photoId !== id);
+      for (const s of allSpreads(project)) s.items = s.items.filter((p) => p.photoId !== id);
     }
 
-    docStore.replace(doc);
+    projectStore.replace(project);
     ui.set({
       selection: [],
       editingSpreadId: null,
@@ -202,7 +211,7 @@ function mimeFor(path: string): string {
 export async function confirmReplace(title: string, what: string, confirmLabel: string): Promise<boolean> {
   if (platform.projectIsSafe()) return true;
   const app = platform.kind === 'macos';
-  const photoCount = Object.keys(docStore.doc.photos).length;
+  const photoCount = Object.keys(projectStore.project.photos).length;
   const choice = await ask({
     title,
     message:
@@ -223,7 +232,7 @@ export async function confirmReplace(title: string, what: string, confirmLabel: 
 }
 
 export async function openProjectFile(file: File): Promise<void> {
-  const hasWork = Object.keys(docStore.doc.photos).length > 0;
+  const hasWork = Object.keys(projectStore.project.photos).length > 0;
   if (hasWork && !(await confirmReplace('Replace your current project?', `“${file.name}”`, 'Replace'))) return;
   try {
     await importProject(file);
@@ -237,7 +246,7 @@ export async function openProjectFile(file: File): Promise<void> {
 /** Start over with an empty project, after confirming. Undoable on the website. */
 export async function newProject(): Promise<void> {
   if (!(await confirmReplace('Start a new project?', 'A new, empty project', 'New project'))) return;
-  docStore.replace(emptyProject());
+  projectStore.replace(emptyProject());
   ui.set({ selection: [], editingSpreadId: null, modal: null });
   platform.projectReplaced();
 }

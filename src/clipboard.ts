@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { duplicatePhotos, importPhotos } from './actions';
 import { photoAsPng } from './images';
 import type { PhotoId } from './ids';
-import { docStore } from './store';
+import { projectStore } from './store';
 import { isTyping } from './input';
 import { deskCovered, ui } from './ui';
 
@@ -52,7 +52,7 @@ export function isInternalPaste(data: DataTransfer | null): boolean {
 /** Paste the copied photos as duplicates, each paste cascading a little further. Selects them. */
 export async function pasteCopied(): Promise<void> {
   if (!copied) return;
-  const ids = copied.ids.filter((id) => docStore.doc.photos[id]);
+  const ids = copied.ids.filter((id) => projectStore.project.photos[id]);
   if (!ids.length) return;
   copied.pastes += 1;
   const created = await duplicatePhotos(ids, PASTE_STEP * copied.pastes);
@@ -65,7 +65,7 @@ export async function duplicateAndSelect(ids: PhotoId[]): Promise<void> {
 }
 
 function selectIfOnDesk(ids: PhotoId[]): void {
-  const onDesk = new Set(docStore.doc.pile.map((p) => p.photoId));
+  const onDesk = new Set(projectStore.project.pile.map((p) => p.photoId));
   const selection = ids.filter((id) => onDesk.has(id));
   if (selection.length) ui.set({ selection });
 }

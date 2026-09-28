@@ -3,7 +3,7 @@ import { platform } from '#platform';
 import { buildIdml, type LinkedImage } from './idml';
 import { readImageInfo } from './imageInfo';
 import { uniqueName } from './project';
-import { docStore } from './store';
+import { projectStore } from './store';
 import { ui } from './ui';
 import { createZip, type ZipInput } from './zip';
 import { allSpreads } from './spreads';
@@ -19,8 +19,8 @@ const REENCODE_QUALITY = 0.95;
  */
 export async function exportIndesign(): Promise<void> {
   if (ui.get().busy || ui.get().importing) return;
-  const doc = docStore.doc;
-  const placed = [...new Set(allSpreads(doc).flatMap((s) => s.items.map((i) => i.photoId)))];
+  const project = projectStore.project;
+  const placed = [...new Set(allSpreads(project).flatMap((s) => s.items.map((i) => i.photoId)))];
   const setBusy = (busy: string | null) => ui.set({ busy });
   const date = new Date().toISOString().slice(0, 10);
   let missing = 0;
@@ -32,7 +32,7 @@ export async function exportIndesign(): Promise<void> {
       for (const [i, id] of placed.entries()) {
         setBusy(`Preparing photo ${i + 1} of ${placed.length}…`);
         const img = await getImage(id);
-        const meta = doc.photos[id];
+        const meta = project.photos[id];
         if (!img || !meta) continue;
         const { data, format, ppi, size } = await linkable(img.full, img.thumb);
         const base = meta.name.replace(/\.[^.]*$/, '') || id;
@@ -42,7 +42,7 @@ export async function exportIndesign(): Promise<void> {
       }
       missing = placed.length - links.size;
       setBusy('Writing InDesign file…');
-      const idml = await createZip(buildIdml(doc, links));
+      const idml = await createZip(buildIdml(project, links));
       return createZip([{ name: `photo-book-${date}.idml`, data: idml }, ...files]);
     });
     if (saved && missing) ui.set({ notice: "Some photos' images were missing, so their frames are empty." });
