@@ -1135,6 +1135,8 @@ body.col-resizing * {
 }
 .line-guide.selected::after {
   background: var(--accent);
+  /* A quick fade in when selected (leaving is instant). */
+  transition: background-color 120ms ease-out;
 }
 .guide-drag-label {
   position: absolute;
@@ -1207,6 +1209,13 @@ body.col-resizing * {
 }
 .guides-panel .pick.selected {
   background: var(--accent-soft);
+  transition: background-color 120ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .line-guide.selected::after,
+  .guides-panel .pick.selected {
+    transition: none;
+  }
 }
 .border-guide {
   display: flex;
