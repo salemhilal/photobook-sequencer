@@ -1102,6 +1102,12 @@ body.col-resizing * {
   position: absolute;
   background: var(--guide-hit);
 }
+.line-guide.fixed {
+  cursor: pointer;
+}
+.line-guide.fixed::after {
+  background: var(--guide);
+}
 .line-guide-h {
   height: 9px;
   transform: translateY(-4px);
@@ -1124,6 +1130,9 @@ body.col-resizing * {
   left: 4px;
   width: 1px;
 }
+.line-guide.selected {
+  z-index: 4;
+}
 .line-guide.selected::after {
   background: var(--accent);
 }
@@ -1138,33 +1147,47 @@ body.col-resizing * {
   pointer-events: none;
   white-space: nowrap;
 }
-.guides-panel {
+/* .inspector (below) sets these too. */
+.inspector.guides-panel {
   width: 270px;
-  gap: 18px;
+  gap: 0;
+  padding: 0;
 }
 .guides-panel section {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 14px;
+  border-bottom: 1px solid var(--border);
 }
 .guides-panel h3 {
   margin: 0;
-  font-size: 10.5px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.section-head h3 {
+  flex: 1;
+}
+.section-head .btn {
+  color: var(--muted);
 }
 .guides-panel .help {
   margin: 0;
   font-size: 12px;
   color: var(--muted);
 }
+.guides-note {
+  padding: 14px;
+}
 .guides-panel .inline {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-.border-guide .num-field {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 2px;
 }
 .guides-panel .num-field {
   min-width: 0;
@@ -1176,28 +1199,53 @@ body.col-resizing * {
 .guides-panel .guide-row .num-field {
   flex: 1;
 }
-.guides-panel .tag {
-  white-space: nowrap;
+/* Rows that match a guide on the page: selecting either highlights both. */
+.guides-panel .pick {
+  margin: 0 -6px;
+  padding: 4px 6px;
+  border-radius: var(--radius);
+}
+.guides-panel .pick.selected {
+  background: var(--accent-soft);
 }
 .border-guide {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
+}
+.border-guide .num-field {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+}
+.border-tools {
+  gap: 2px;
+}
+/* Which border guide dropped photos fit: one is on; the others can be picked. */
+.drop-toggle {
+  padding: 1px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: none;
+  color: var(--muted);
+  font: 500 10.5px var(--mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.drop-toggle:hover {
+  color: var(--text);
+}
+.drop-toggle.on {
+  border-color: transparent;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  cursor: default;
 }
 .guide-kind {
   font-size: 12px;
   min-width: 64px;
-}
-.guides-panel .guide-row {
-  gap: 4px;
-  margin: 0 -6px;
-  padding: 2px 6px;
-  border-radius: var(--radius);
-}
-.guides-panel .guide-row.selected {
-  background: var(--accent-soft);
 }
 
 /* Modals */

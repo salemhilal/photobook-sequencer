@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   borderBox,
+  fmt,
   dropBox,
   dropGuide,
   fitCentered,
@@ -43,6 +44,11 @@ describe('pages', () => {
     expect(dropGuide(settings)).toEqual(uniformBorder(0.5));
     expect(dropBox('right', settings)).toEqual({ x: 0.5, y: 0.5, w: 9, h: 7 });
     expect(dropBox('right', { ...settings, borders: [] })).toEqual(pageRect('right', settings));
+  });
+
+  it('fits dropped photos inside the border guide marked for it', () => {
+    const marked = { ...uniformBorder(1.25), drop: true };
+    expect(dropGuide({ ...settings, borders: [uniformBorder(0.5), marked] })).toBe(marked);
   });
 
   it('mirrors a border guide on facing pages: inside is at the gutter', () => {
@@ -224,5 +230,14 @@ describe('relayoutRect', () => {
   it('changes nothing when the size is unchanged', () => {
     const r = { x: 1.3, y: 2.1, w: 3, h: 2 };
     expect(round(relayoutRect(r, settings, settings))).toEqual(r);
+  });
+});
+
+describe('fmt', () => {
+  it('shows eighths of an inch exactly, and anything else to the hundredth', () => {
+    expect(fmt(2.875)).toBe('2.875');
+    expect(fmt(0.125)).toBe('0.125');
+    expect(fmt(2.68333)).toBe('2.68');
+    expect(fmt(10)).toBe('10');
   });
 });

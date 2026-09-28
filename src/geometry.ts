@@ -45,8 +45,10 @@ export function borderBox(side: PageSide, s: Settings, g: BorderGuide): Rect {
   return { x: p.x + left, y: g.top, w: Math.max(0.1, p.w - left - right), h: Math.max(0.1, p.h - g.top - g.bottom) };
 }
 
-/** The border guide photos fit inside when dropped on a page: the one with the largest box. */
+/** The border guide photos fit inside when dropped on a page: the marked one, or the largest. */
 export function dropGuide(s: Settings): BorderGuide | null {
+  const marked = s.borders.find((g) => g.drop);
+  if (marked) return marked;
   const area = (g: BorderGuide) => (s.pageW - g.inside - g.outside) * (s.pageH - g.top - g.bottom);
   return s.borders.reduce<BorderGuide | null>((best, g) => (!best || area(g) > area(best) ? g : best), null);
 }
@@ -254,8 +256,10 @@ export function intersects(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
+/** Inches for display: to the hundredth, but eighths exactly (2.875, not 2.88). */
 export function fmt(n: number): string {
-  return (Math.round(n * 100) / 100).toString();
+  const eighths = Math.abs(n * 8 - Math.round(n * 8)) < 1e-9;
+  return (eighths ? Math.round(n * 1000) / 1000 : Math.round(n * 100) / 100).toString();
 }
 
 type Knots = [old: number, next: number][];
