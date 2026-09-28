@@ -56,10 +56,16 @@ Nothing to set up. Releases come from GitHub:
 
 - **Website:** every push to `main` deploys to sequence.photos (Netlify). Pull requests get
   a preview deploy.
-- **Mac app:** bump the version (in `package.json`, `package-lock.json`,
-  `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, and `src-tauri/Cargo.lock`), push to
-  `main`, and publish a GitHub release tagged `v` + that version (e.g. `v0.1.2`). The
-  **App Store** workflow tests the app, builds it, signs it, and uploads it to App Store
+- **Mac app:** set the new version, commit and push it, and publish a GitHub release tagged
+  `v` + that version:
+
+  ```bash
+  npm run bump 0.1.2   # package.json, package-lock.json, tauri.conf.json, Cargo.toml, Cargo.lock
+  git commit -am "Version 0.1.2" && git push
+  gh release create v0.1.2 --title "Sequence 0.1.2" --notes "…"
+  ```
+
+  The **App Store** workflow tests the app, builds it, signs it, and uploads it to App Store
   Connect, where you pick the build and submit it for review.
 
 The signing certificates, provisioning profile, and App Store Connect API key live in the

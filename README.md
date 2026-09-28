@@ -105,6 +105,14 @@ keychain, and the app's Mac App Store provisioning profile at
 does the same in CI, after the tests, when a GitHub release is published (tagged `v` +
 `package.json`'s version) or when run by hand; its header lists the secrets it needs.
 
+To release a new version:
+
+```bash
+npm run bump 0.1.2   # sets it in package.json, tauri.conf.json, and Cargo.toml (and their lockfiles)
+git commit -am "Version 0.1.2" && git push
+gh release create v0.1.2 --title "Sequence 0.1.2" --notes "…"   # → the App Store workflow
+```
+
 ## Offline and install
 
 The deployed app works offline once it has loaded: a service worker (scoped to `/app/`)
