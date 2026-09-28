@@ -28,18 +28,21 @@ export interface Ghost {
 export type ContextMenuState =
   { kind: 'desk'; x: number; y: number } | { kind: 'photo'; x: number; y: number; photoId: PhotoId };
 
-export interface ConfirmAction {
+export interface ConfirmAction<T extends string = string> {
   label: string;
-  value: string;
+  value: T;
   primary?: boolean;
 }
 
-/** An in-app confirmation; `resolve` gets the chosen action's value, or null if dismissed. */
+/**
+ * An in-app confirmation showing: the dialog calls `choose` with the index of the action
+ * picked, or null if dismissed (`ask` turns that back into the action's value).
+ */
 export interface ConfirmRequest {
   title: string;
   message: string;
-  actions: ConfirmAction[];
-  resolve: (value: string | null) => void;
+  actions: readonly Omit<ConfirmAction, 'value'>[];
+  choose: (index: number | null) => void;
 }
 
 export type Modal = 'settings' | 'about' | 'preview' | 'guides';
@@ -68,12 +71,13 @@ export interface UiState {
   deskColor: string;
   contextMenu: ContextMenuState | null;
   confirm: ConfirmRequest | null;
-  /** The saved project is from a newer version of the app; nothing is shown or saved until a reload. */
-  outdated: boolean;
+  /**
+   * Why this window shows (and saves) nothing, if it doesn't: the saved project is from a
+   * newer version of the app (until a reload), or another tab or window is the one editing.
+   */
+  blocked: null | 'outdated' | 'elsewhere';
   /** A new version of the app has downloaded and is waiting for a reload. */
   updateReady: boolean;
-  /** Another tab or window is the one editing the project; this one shows and saves nothing. */
-  elsewhere: boolean;
   /** The last save failed (e.g. storage full); cleared by the next successful save. */
   saveFailed: boolean;
   /** Photos open in Quick Look, and which one is showing. */
@@ -102,9 +106,8 @@ export const ui = createStore<UiState>({
   deskColor: deskColorPref.load(),
   contextMenu: null,
   confirm: null,
-  outdated: false,
+  blocked: null,
   updateReady: false,
-  elsewhere: false,
   saveFailed: false,
   quickLook: null,
   windowTitle: null,
@@ -138,16 +141,26 @@ export function closeQuickLook(): void {
   ui.set({ quickLook: null });
 }
 
-/** Ask the user to choose; resolves to the chosen action's value, or null if dismissed. */
-export function ask(request: Omit<ConfirmRequest, 'resolve'>): Promise<string | null> {
+/**
+ * Ask the user to choose; resolves to the chosen action's value, or null if dismissed.
+ * The values are the caller's own literals, so comparing the answer to one it can't be
+ * (a typo, say) doesn't compile.
+ */
+export function ask<const T extends string>(request: {
+  title: string;
+  message: string;
+  actions: readonly ConfirmAction<T>[];
+}): Promise<T | null> {
   return new Promise((resolve) => {
-    ui.get().confirm?.resolve(null);
+    ui.get().confirm?.choose(null);
     ui.set({
       confirm: {
-        ...request,
-        resolve: (value) => {
+        title: request.title,
+        message: request.message,
+        actions: request.actions,
+        choose: (index) => {
           ui.set({ confirm: null });
-          resolve(value);
+          resolve(index === null ? null : (request.actions[index]?.value ?? null));
         },
       },
     });
@@ -190,4 +203,9 @@ export function toggleSidebar(): void {
 
 export function toggleGuides(): void {
   ui.set((s) => ({ guidesHidden: !s.guidesHidden }));
+}
+
+/** Stop showing and saving the project, for this reason (the first one given stands). */
+export function block(reason: 'outdated' | 'elsewhere'): void {
+  ui.set((s) => ({ blocked: s.blocked ?? reason }));
 }

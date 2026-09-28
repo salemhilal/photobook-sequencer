@@ -1,15 +1,15 @@
 import { useSyncExternalStore } from 'react';
 import { produce, type Draft } from 'immer';
 import { newGuideId, newSpreadId } from './ids';
-import { CURRENT_SCHEMA, type Doc } from './types';
+import { CURRENT_SCHEMA, type Project } from './types';
 
 const HISTORY_LIMIT = 200;
 const COALESCE_MS = 1000;
 
-type Recipe = (d: Draft<Doc>) => void;
+type Recipe = (d: Draft<Project>) => void;
 
 export interface HistoryState {
-  doc: Doc;
+  doc: Project;
   canUndo: boolean;
   canRedo: boolean;
 }
@@ -20,15 +20,15 @@ export interface HistoryState {
  * - `begin` / `preview` / `end` wrap a gesture (like a drag) so it records a single step.
  */
 class DocStore {
-  private past: Doc[] = [];
-  private future: Doc[] = [];
-  private present: Doc;
-  private gestureBase: Doc | null = null;
+  private past: Project[] = [];
+  private future: Project[] = [];
+  private present: Project;
+  private gestureBase: Project | null = null;
   private lastCoalesce: { key: string; at: number } | null = null;
   private snapshot: HistoryState;
   private listeners = new Set<() => void>();
 
-  constructor(initial: Doc) {
+  constructor(initial: Project) {
     this.present = initial;
     this.snapshot = this.makeSnapshot();
   }
@@ -40,17 +40,17 @@ class DocStore {
 
   getSnapshot = (): HistoryState => this.snapshot;
 
-  get doc(): Doc {
+  get doc(): Project {
     return this.present;
   }
 
   /** The doc a gesture started from (or the present, outside a gesture). */
-  get gestureStart(): Doc {
+  get gestureStart(): Project {
     return this.gestureBase ?? this.present;
   }
 
   /** Every doc still reachable through undo/redo. */
-  allDocs(): Doc[] {
+  allDocs(): Project[] {
     return [...this.past, this.present, ...this.future, ...(this.gestureBase ? [this.gestureBase] : [])];
   }
 
@@ -58,7 +58,7 @@ class DocStore {
    * Show `doc` in place of the project for a while (e.g. a demo), with its own history.
    * Returns a function that brings back the project exactly as it was, history included.
    */
-  swap(doc: Doc): () => void {
+  swap(doc: Project): () => void {
     this.cancel();
     const { past, future, present } = this;
     this.reset(doc);
@@ -72,7 +72,7 @@ class DocStore {
     };
   }
 
-  reset(doc: Doc): void {
+  reset(doc: Project): void {
     this.past = [];
     this.future = [];
     this.gestureBase = null;
@@ -96,7 +96,7 @@ class DocStore {
   }
 
   /** Replace the whole document as one undoable step (e.g. importing a project). */
-  replace(doc: Doc): void {
+  replace(doc: Project): void {
     this.push(this.present);
     this.future = [];
     this.lastCoalesce = null;
@@ -158,7 +158,7 @@ class DocStore {
     this.emit();
   }
 
-  private push(doc: Doc): void {
+  private push(doc: Project): void {
     this.past.push(doc);
     if (this.past.length > HISTORY_LIMIT) this.past.shift();
   }
@@ -173,7 +173,7 @@ class DocStore {
   }
 }
 
-export function emptyDoc(): Doc {
+export function emptyProject(): Project {
   const margin = newGuideId();
   return {
     schemaVersion: CURRENT_SCHEMA,
@@ -202,7 +202,7 @@ export function emptyDoc(): Doc {
   };
 }
 
-export const docStore = new DocStore(emptyDoc());
+export const docStore = new DocStore(emptyProject());
 
 export function useDoc(): HistoryState {
   return useSyncExternalStore(docStore.subscribe, docStore.getSnapshot);

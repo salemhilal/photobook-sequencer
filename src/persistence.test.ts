@@ -16,7 +16,7 @@ vi.mock('./db', () => ({
 }));
 
 const { saveProject, saveUnlessNewer } = await import('./persistence');
-const { emptyDoc } = await import('./store');
+const { emptyProject } = await import('./store');
 const { CURRENT_SCHEMA } = await import('./types');
 const { ui } = await import('./ui');
 
@@ -24,21 +24,21 @@ beforeEach(() => {
   stored = undefined;
   saves.length = 0;
   saveError = null;
-  ui.set({ outdated: false, elsewhere: false, saveFailed: false });
+  ui.set({ blocked: null, saveFailed: false });
 });
 
 describe('saveUnlessNewer', () => {
   it('saves over older or current projects', async () => {
-    stored = { ...emptyDoc(), schemaVersion: 0 };
-    expect(await saveUnlessNewer(emptyDoc())).toBe('saved');
+    stored = { ...emptyProject(), schemaVersion: 0 };
+    expect(await saveUnlessNewer(emptyProject())).toBe('saved');
     expect(saves).toHaveLength(1);
   });
 
   it('refuses to overwrite a project saved by a newer version, and asks for a reload', async () => {
-    stored = { ...emptyDoc(), schemaVersion: CURRENT_SCHEMA + 1 };
-    expect(await saveUnlessNewer(emptyDoc())).toBe('newer');
+    stored = { ...emptyProject(), schemaVersion: CURRENT_SCHEMA + 1 };
+    expect(await saveUnlessNewer(emptyProject())).toBe('newer');
     expect(saves).toHaveLength(0);
-    expect(ui.get().outdated).toBe(true);
+    expect(ui.get().blocked).toBe('outdated');
   });
 });
 
@@ -53,7 +53,7 @@ describe('saveProject', () => {
   });
 
   it("doesn't save from a tab that isn't the one editing", async () => {
-    ui.set({ elsewhere: true });
+    ui.set({ blocked: 'elsewhere' });
     expect(await saveProject()).toBe('skipped');
     expect(saves).toHaveLength(0);
   });

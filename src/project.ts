@@ -2,9 +2,9 @@ import { getImage, putImage } from './db';
 import { toPhotoId, type PhotoId } from './ids';
 import { allSpreads } from './spreads';
 import { setUrl, thumbFromBlob } from './images';
-import { migrateDoc, NewerProjectError } from './schema';
+import { migrateProject, NewerProjectError } from './schema';
 import { InvalidProjectError } from './validate';
-import { docStore, emptyDoc } from './store';
+import { docStore, emptyProject } from './store';
 import { MOD_LABEL } from './input';
 import { ask, ui } from './ui';
 import { createZip, readZip, type ZipInput } from './zip';
@@ -25,7 +25,7 @@ interface Manifest {
   format: typeof FORMAT;
   version: number;
   exportedAt: string;
-  /** A Doc as saved, in whatever version: `migrateDoc` upgrades and checks it. */
+  /** A Project as saved, in whatever version: `migrateProject` upgrades and checks it. */
   doc: unknown;
   files: Record<PhotoId, { image: string; thumb?: string }>;
 }
@@ -87,7 +87,7 @@ export async function importProject(file: File): Promise<void> {
     if (manifest.version > VERSION) throw newer;
     let doc;
     try {
-      doc = migrateDoc(manifest.doc);
+      doc = migrateProject(manifest.doc);
     } catch (e) {
       if (e instanceof NewerProjectError) throw newer;
       if (e instanceof InvalidProjectError) throw new ProjectFileError('The project file is damaged.');
@@ -161,7 +161,7 @@ function parseManifest(text: string): Manifest {
     }
     files[toPhotoId(id)] = { image: f.image, ...(typeof f.thumb === 'string' && { thumb: f.thumb }) };
   }
-  // The project inside is checked, all of it, once it's upgraded (see migrateDoc).
+  // The project inside is checked, all of it, once it's upgraded (see migrateProject).
   return { format: FORMAT, version: m.version, exportedAt: String(m.exportedAt ?? ''), doc: m.doc, files };
 }
 
@@ -214,7 +214,7 @@ export async function confirmReplace(title: string, what: string, confirmLabel: 
           'To keep a copy, export it first.'),
     actions: [
       { label: 'Cancel', value: 'cancel' },
-      ...(photoCount ? [{ label: app ? 'Save first' : 'Export current first', value: 'export' }] : []),
+      ...(photoCount ? [{ label: app ? 'Save first' : 'Export current first', value: 'export' as const }] : []),
       { label: confirmLabel, value: 'replace', primary: true },
     ],
   });
@@ -237,7 +237,7 @@ export async function openProjectFile(file: File): Promise<void> {
 /** Start over with an empty project, after confirming. Undoable on the website. */
 export async function newProject(): Promise<void> {
   if (!(await confirmReplace('Start a new project?', 'A new, empty project', 'New project'))) return;
-  docStore.replace(emptyDoc());
+  docStore.replace(emptyProject());
   ui.set({ selection: [], editingSpreadId: null, modal: null });
   platform.projectReplaced();
 }

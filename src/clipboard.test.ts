@@ -36,7 +36,7 @@ vi.stubGlobal('navigator', {
 
 const { addPhotosToPile } = await import('./actions');
 const { copyPhotos, isInternalPaste, pasteCopied } = await import('./clipboard');
-const { docStore, emptyDoc } = await import('./store');
+const { docStore, emptyProject } = await import('./store');
 const { ui } = await import('./ui');
 
 /** What a paste event would carry after our copy (or after copying something else). */
@@ -47,7 +47,7 @@ beforeEach(() => {
   images.clear();
   written = {};
   failWrites = false;
-  docStore.reset(emptyDoc());
+  docStore.reset(emptyProject());
   addPhotosToPile([
     { id: A, name: 'a.jpg', pxW: 100, pxH: 100 },
     { id: B, name: 'b.jpg', pxW: 100, pxH: 100 },

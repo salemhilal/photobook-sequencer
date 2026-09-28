@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { docStore, emptyDoc } from './store';
+import { docStore, emptyProject } from './store';
 
 const pageW = () => docStore.doc.settings.pageW;
 const setPageW = (n: number, coalesce?: string) =>
   docStore.apply((d) => void (d.settings.pageW = n), coalesce ? { coalesce } : {});
 
-beforeEach(() => docStore.reset(emptyDoc()));
+beforeEach(() => docStore.reset(emptyProject()));
 
 describe('undo and redo', () => {
   it('undoes and redoes discrete changes', () => {
@@ -67,7 +67,7 @@ describe('gestures', () => {
 
 describe('replace and silent', () => {
   it('replaces the whole doc as one undoable step', () => {
-    const other = { ...emptyDoc(), nextZ: 99 };
+    const other = { ...emptyProject(), nextZ: 99 };
     docStore.replace(other);
     expect(docStore.doc).toBe(other);
     docStore.undo();
@@ -86,7 +86,7 @@ describe('swap', () => {
     setPageW(11);
     setPageW(12);
     docStore.undo();
-    const restore = docStore.swap({ ...emptyDoc(), nextZ: 42 });
+    const restore = docStore.swap({ ...emptyProject(), nextZ: 42 });
     expect(docStore.doc.nextZ).toBe(42);
     expect(docStore.getSnapshot().canUndo).toBe(false);
     setPageW(3);

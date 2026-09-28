@@ -1,4 +1,4 @@
-import type { Doc } from './types';
+import type { Project } from './types';
 
 // Named for the app's old name (Photobook Sequencer), as are the `photobook-*` prefs: renaming
 // them would lose everyone's saved work.
@@ -43,12 +43,12 @@ async function store(name: string, mode: IDBTransactionMode): Promise<IDBObjectS
   return db.transaction(name, mode).objectStore(name);
 }
 
-/** The saved project as stored; it may be from an older (or newer) version, so run it through migrateDoc. */
+/** The saved project as stored; it may be from an older (or newer) version, so run it through migrateProject. */
 export async function loadDoc(): Promise<unknown> {
   return wrap((await store(STATE, 'readonly')).get(DOC_KEY) as IDBRequest<unknown>);
 }
 
-export async function saveDoc(doc: Doc): Promise<void> {
+export async function saveDoc(doc: Project): Promise<void> {
   await wrap((await store(STATE, 'readwrite')).put(doc, DOC_KEY));
 }
 

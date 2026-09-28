@@ -18,7 +18,7 @@ import {
 } from './actions';
 import { toPhotoId } from './ids';
 import { allSpreads } from './spreads';
-import { docStore, emptyDoc } from './store';
+import { docStore, emptyProject } from './store';
 import type { PhotoMeta } from './types';
 
 const LAND = toPhotoId('land');
@@ -40,7 +40,7 @@ const middle = (i = 1) => {
 };
 
 beforeEach(() => {
-  docStore.reset(emptyDoc());
+  docStore.reset(emptyProject());
   addPhotosToPile(photos);
 });
 
@@ -256,7 +256,7 @@ describe('dropPhotos', () => {
 
 describe('raise', () => {
   it('brings a photo to the front, and leaves the one already there alone', () => {
-    const doc = produce(sampleDocForRaise(), (d) => {
+    const doc = produce(sampleProjectForRaise(), (d) => {
       raise(d, d.pile, d.pile[0]!);
     });
     expect(doc.pile[0]!.z).toBe(3);
@@ -268,8 +268,8 @@ describe('raise', () => {
   });
 });
 
-function sampleDocForRaise() {
-  const doc = emptyDoc();
+function sampleProjectForRaise() {
+  const doc = emptyProject();
   doc.pile = [
     { photoId: toPhotoId('a'), x: 0, y: 0, w: 1, h: 1, z: 1 },
     { photoId: toPhotoId('b'), x: 0, y: 0, w: 1, h: 1, z: 2 },
