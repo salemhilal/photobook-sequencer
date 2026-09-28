@@ -8,6 +8,8 @@ A tool for playing with photo sequences.
 
 ## Run locally
 
+On a new machine, see [docs/setup.md](docs/setup.md).
+
 ```bash
 nvm use        # Node 24 (needs ≥ 20.19)
 npm install
