@@ -42,6 +42,8 @@ export interface BorderGuide {
   bottom: number;
   inside: number;
   outside: number;
+  /** Photos dropped on a page fit inside this guide. Without one marked, the largest guide. */
+  drop?: boolean;
 }
 
 /**
