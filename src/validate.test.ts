@@ -76,6 +76,19 @@ describe('validateProject', () => {
       expect(check((d) => (d.photos.a.pxW = 0))).toThrow(/photos.a.pxW/);
       expect(check((d) => (d.photos.b.pxH = -5))).toThrow(/photos.b.pxH/);
     });
+
+    it('refuses a photo filed under __proto__', () => {
+      expect(() =>
+        validateProject(
+          JSON.parse(
+            JSON.stringify(sound()).replace(
+              '"photos":{',
+              '"photos":{"__proto__":{"id":"__proto__","name":"x","pxW":1,"pxH":1},',
+            ),
+          ),
+        ),
+      ).toThrow(/photos.__proto__/);
+    });
   });
 
   describe('placements', () => {

@@ -50,7 +50,7 @@ class ProjectStore {
   }
 
   /** Every project still reachable through undo/redo. */
-  allDocs(): Project[] {
+  allProjects(): Project[] {
     return [...this.past, this.present, ...this.future, ...(this.gestureBase ? [this.gestureBase] : [])];
   }
 
