@@ -54,7 +54,22 @@ export function SpreadCanvas({
 
   const pagesX = sides[0] === 'left' ? -settings.pageW : 0;
   const pagesW = sides.length * settings.pageW;
-  const g = guides ? spreadGuides(spread, settings) : null;
+  // Center lines are drawn in their own color.
+  const g = guides ? spreadGuides(spread, { ...settings, centerV: false, centerH: false }) : null;
+  const vLines = g
+    ? [
+        ...g.xs.map((at) => ({ at, center: false })),
+        ...(settings.centerV
+          ? sides.map((side) => ({ at: pageRect(side, settings).x + settings.pageW / 2, center: true }))
+          : []),
+      ]
+    : [];
+  const hLines = g
+    ? [
+        ...g.ys.map((at) => ({ at, center: false })),
+        ...(settings.centerH ? [{ at: settings.pageH / 2, center: true }] : []),
+      ]
+    : [];
   const items = [...spread.items].sort((a, b) => a.z - b.z);
 
   return (
@@ -108,20 +123,20 @@ export function SpreadCanvas({
 
       {g && (
         <div className="guides">
-          {g.xs.map((x, i) => (
+          {vLines.map(({ at, center }, i) => (
             <div
               key={`x${i}`}
-              className={`guide guide-v${snapHit?.xs.includes(round(x)) ? ' hit' : ''}`}
-              style={{ left: originX + x * scale, top: originY, height: settings.pageH * scale }}
+              className={`guide guide-v${center ? ' center' : ''}${snapHit?.xs.includes(round(at)) ? ' hit' : ''}`}
+              style={{ left: originX + at * scale, top: originY, height: settings.pageH * scale }}
             />
           ))}
           {sides.map((side) =>
-            g.ys.map((y, i) => (
+            hLines.map(({ at, center }, i) => (
               <div
                 key={`${side}y${i}`}
-                className={`guide guide-h${snapHit?.ys.includes(round(y)) ? ' hit' : ''}`}
+                className={`guide guide-h${center ? ' center' : ''}${snapHit?.ys.includes(round(at)) ? ' hit' : ''}`}
                 style={{
-                  top: originY + y * scale,
+                  top: originY + at * scale,
                   left: originX + pageRect(side, settings).x * scale,
                   width: settings.pageW * scale,
                 }}

@@ -20,6 +20,8 @@
   --accent-soft: rgba(224, 161, 58, 0.2);
   --guide: rgba(74, 178, 214, 0.5);
   --guide-hit: #1f9fcc;
+  /* Center lines: magenta, as in InDesign, to tell them from the other guides. */
+  --guide-center: rgba(206, 70, 170, 0.55);
   --page: #ffffff;
   --page-edge: rgba(0, 0, 0, 0.28);
   --warn: #a8620a;
@@ -1046,6 +1048,9 @@ body.col-resizing * {
   height: 0;
   border-top: 1px solid var(--guide);
 }
+.guide.center {
+  border-color: var(--guide-center);
+}
 .guide.hit {
   border-color: var(--guide-hit);
 }
@@ -1107,6 +1112,9 @@ body.col-resizing * {
 }
 .line-guide.fixed::after {
   background: var(--guide);
+}
+.line-guide.center::after {
+  background: var(--guide-center);
 }
 .line-guide-h {
   height: 9px;
