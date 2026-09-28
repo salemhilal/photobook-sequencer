@@ -19,6 +19,8 @@ tabs.forEach((t, i) => t.addEventListener('click', () => show(i)));
 document.querySelector('.prev')?.addEventListener('click', () => show(at - 1));
 document.querySelector('.next')?.addEventListener('click', () => show(at + 1));
 addEventListener('keydown', (e) => {
+  // With a modifier, the arrows are the browser's (⌘← goes back).
+  if (e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) return;
   if (e.key === 'ArrowLeft') show(at - 1);
   if (e.key === 'ArrowRight') show(at + 1);
 });
