@@ -1,6 +1,8 @@
 interface ImportMetaEnv {
   /** The website's domain (see .env). */
   readonly VITE_SITE_DOMAIN: string;
+  /** The Mac app's App Store page (see .env). */
+  readonly VITE_APP_STORE_URL: string;
 }
 
 /** The app's version from package.json, inlined by Vite at build time. */
