@@ -1050,6 +1050,156 @@ body.col-resizing * {
   border-color: var(--guide-hit);
 }
 
+/* The guides view: rulers along the top and left of the stage, guides to drag. */
+.ruler {
+  position: absolute;
+  z-index: 2;
+  background: var(--panel);
+  color: var(--muted);
+  font: 9px var(--mono);
+}
+.ruler line {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+.ruler text {
+  fill: currentColor;
+}
+.ruler-top {
+  top: 0;
+  left: 0;
+  border-bottom: 1px solid var(--border);
+  cursor: row-resize;
+}
+.ruler-left {
+  top: 0;
+  left: 0;
+  border-right: 1px solid var(--border);
+  cursor: col-resize;
+}
+.ruler-corner {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.guides-canvas {
+  position: absolute;
+}
+/* A guide from the rulers: a 1px line in a wider band, easy to grab. */
+.line-guide {
+  position: absolute;
+  z-index: 3;
+}
+.line-guide::after {
+  content: '';
+  position: absolute;
+  background: var(--guide-hit);
+}
+.line-guide-h {
+  height: 9px;
+  transform: translateY(-4px);
+  cursor: row-resize;
+}
+.line-guide-h::after {
+  left: 0;
+  right: 0;
+  top: 4px;
+  height: 1px;
+}
+.line-guide-v {
+  width: 9px;
+  transform: translateX(-4px);
+  cursor: col-resize;
+}
+.line-guide-v::after {
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  width: 1px;
+}
+.line-guide.selected::after {
+  background: var(--accent);
+}
+.guide-drag-label {
+  position: absolute;
+  z-index: 4;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  font-size: 11px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.guides-panel {
+  width: 270px;
+  gap: 18px;
+}
+.guides-panel section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.guides-panel h3 {
+  margin: 0;
+  font-size: 10.5px;
+}
+.guides-panel .help {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.guides-panel .inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.border-guide .num-field {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+}
+.guides-panel .num-field {
+  min-width: 0;
+}
+.guides-panel .num-field input {
+  flex: 1;
+  width: auto;
+}
+.guides-panel .guide-row .num-field {
+  flex: 1;
+}
+.guides-panel .tag {
+  white-space: nowrap;
+}
+.border-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.guide-kind {
+  font-size: 12px;
+  min-width: 64px;
+}
+.guides-panel .guide-row {
+  gap: 4px;
+  margin: 0 -6px;
+  padding: 2px 6px;
+  border-radius: var(--radius);
+}
+.guides-panel .guide-row.selected {
+  background: var(--accent-soft);
+}
+
 /* Modals */
 .modal-backdrop {
   position: absolute;

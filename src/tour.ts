@@ -49,13 +49,19 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     title: 'Arrange a spread',
-    body: 'Click a spread to open it. Move and resize photos; they snap to the page edges, center lines, and border guides.',
+    body: 'Click a spread to open it. Move and resize photos; they snap to the page edges and guides.',
     target: '.modal.editor',
     editor: true,
   },
   {
+    title: 'Guides',
+    body: 'Set the border guides photos fit to when you drop them on a page, and drag guides out of the rulers. They apply to every spread, mirrored on facing pages.',
+    target: '.modal.guides-editor',
+    modal: 'guides',
+  },
+  {
     title: 'Settings',
-    body: 'Set the page size and the border guides photos fit to, and change how the app looks.',
+    body: 'Set the page size, and change how the app looks.',
     target: '.modal.settings',
     modal: 'settings',
   },

@@ -18,6 +18,18 @@ const samples: Record<number, unknown> = {
     settings: { pageW: 10, pageH: 8, centerV: true, centerH: false, borders: [0.5] },
     nextZ: 2,
   },
+  // Border guides as one distance from every edge, and no line guides.
+  1: {
+    schemaVersion: 1,
+    photos: { a: { id: 'a', name: 'a.jpg', pxW: 1200, pxH: 800 } },
+    pile: [{ photoId: 'a', x: 1, y: 1, w: 2, h: 1.33, z: 1 }],
+    spreads: [
+      { id: 's1', kind: 'first', items: [] },
+      { id: 's2', kind: 'last', items: [] },
+    ],
+    settings: { pageW: 10, pageH: 8, centerV: true, centerH: false, keepRelative: true, borders: [0.5] },
+    nextZ: 2,
+  },
 };
 
 /** What every sample should become. */
@@ -29,7 +41,15 @@ const expected = {
     { id: 's1', kind: 'first', items: [] },
     { id: 's2', kind: 'last', items: [] },
   ],
-  settings: { pageW: 10, pageH: 8, centerV: true, centerH: false, keepRelative: true, borders: [0.5] },
+  settings: {
+    pageW: 10,
+    pageH: 8,
+    centerV: true,
+    centerH: false,
+    keepRelative: true,
+    borders: [{ top: 0.5, bottom: 0.5, inside: 0.5, outside: 0.5 }],
+    lines: [],
+  },
   nextZ: 2,
 };
 
@@ -48,5 +68,16 @@ describe('migrateDoc', () => {
 
   it('refuses projects from a newer version', () => {
     expect(() => migrateDoc({ ...expected, schemaVersion: CURRENT_SCHEMA + 1 })).toThrow(NewerProjectError);
+  });
+});
+
+describe('migrating version 0 without border guides', () => {
+  it('gives it version 1’s default guides, then upgrades them', () => {
+    const doc = migrateDoc({ ...(samples[0] as object), settings: { pageW: 10, pageH: 8 } });
+    expect(doc.settings.borders).toEqual([
+      { top: 0.5, bottom: 0.5, inside: 0.5, outside: 0.5 },
+      { top: 1.25, bottom: 1.25, inside: 1.25, outside: 1.25 },
+    ]);
+    expect(doc.settings.lines).toEqual([]);
   });
 });

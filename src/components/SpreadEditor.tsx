@@ -3,9 +3,10 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { bump, dropPhotos, folioLabel, putInPile, putOnPage, raise } from '../actions';
 import { clearGhost, startDrag, trackGhost } from '../drag';
 import {
+  borderBox,
   fitCentered,
   fmt,
-  inset,
+  isUniform,
   pageRect,
   resizeRect,
   sideAt,
@@ -16,7 +17,7 @@ import {
   type SnapFeedback,
 } from '../geometry';
 import { docStore, useDoc } from '../store';
-import type { Doc, Placement } from '../types';
+import type { BorderGuide, Doc, Placement } from '../types';
 import { isTyping } from '../input';
 import { openPhotoMenu, ui } from '../ui';
 import { useWindowEvent } from '../hooks';
@@ -260,6 +261,11 @@ export function SpreadEditor({ spreadId }: { spreadId: string }) {
   );
 }
 
+/** A border guide's distances, for a tooltip: top, outside, bottom, inside. */
+function guideSummary(g: BorderGuide): string {
+  return `Top ${fmt(g.top)} · Outside ${fmt(g.outside)} · Bottom ${fmt(g.bottom)} · Inside ${fmt(g.inside)} in`;
+}
+
 function findItem(d: Doc, spreadId: string, photoId: string): Placement | undefined {
   return d.spreads.find((s) => s.id === spreadId)?.items.find((i) => i.photoId === photoId);
 }
@@ -287,10 +293,11 @@ function Inspector({ doc, item, onChange, onToPile }: InspectorProps) {
   const photo = doc.photos[item.photoId];
   const aspect = item.w / item.h;
   const key = (f: string) => `inspect:${item.photoId}:${f}`;
-  const fit = (by: number) => {
-    const r = fitCentered({ id: '', name: '', pxW: item.w, pxH: item.h }, inset(page, by), page);
-    onChange(r);
-  };
+  const fit = (box: Rect) => onChange(fitCentered({ id: '', name: '', pxW: item.w, pxH: item.h }, box, page));
+  // Largest box first, as before per-edge guides: the outermost guide at the top.
+  const boxes = settings.borders
+    .map((g) => ({ g, box: borderBox(side, settings, g) }))
+    .sort((a, b) => b.box.w * b.box.h - a.box.w * a.box.h);
   const ppi = photo ? Math.round(photo.pxW / item.w) : null;
 
   return (
@@ -331,16 +338,14 @@ function Inspector({ doc, item, onChange, onToPile }: InspectorProps) {
         >
           Center on page
         </button>
-        <button className="btn" onClick={() => fit(0)}>
+        <button className="btn" onClick={() => fit(page)}>
           Fit page
         </button>
-        {[...settings.borders]
-          .sort((a, b) => a - b)
-          .map((b, i) => (
-            <button key={i} className="btn" onClick={() => fit(b)}>
-              Fit {fmt(b)} in guide
-            </button>
-          ))}
+        {boxes.map(({ g, box }, i) => (
+          <button key={i} className="btn" onClick={() => fit(box)} title={isUniform(g) ? undefined : guideSummary(g)}>
+            {isUniform(g) ? `Fit ${fmt(g.top)} in guide` : `Fit border guide ${i + 1}`}
+          </button>
+        ))}
         <button className="btn" onClick={onToPile}>
           Return to desk
         </button>

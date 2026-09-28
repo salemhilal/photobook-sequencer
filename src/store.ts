@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { produce, type Draft } from 'immer';
+import { uniformBorder } from './geometry';
 import { CURRENT_SCHEMA, type Doc } from './types';
 
 const HISTORY_LIMIT = 200;
@@ -187,7 +188,15 @@ export function emptyDoc(): Doc {
       { id: newId(), kind: 'middle', items: [] },
       { id: newId(), kind: 'last', items: [] },
     ],
-    settings: { pageW: 10, pageH: 8, centerV: true, centerH: true, keepRelative: true, borders: [0.5, 1.25] },
+    settings: {
+      pageW: 10,
+      pageH: 8,
+      centerV: true,
+      centerH: true,
+      keepRelative: true,
+      borders: [uniformBorder(0.5), uniformBorder(1.25)],
+      lines: [],
+    },
     nextZ: 1,
   };
 }

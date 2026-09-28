@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Ruler } from 'lucide-react';
 import { platform } from '#platform';
 import { Dialog } from './Dialog';
 import { formatBytes, readStorageStatus, requestPersistence, type StorageStatus } from '../storage';
 import { docStore, useDoc } from '../store';
 import type { ThemePref } from '../theme';
-import { setTheme, closeModal, ui } from '../ui';
+import { setTheme, closeModal, openModal, ui } from '../ui';
 import { DeskColorPicker } from './DeskColorPicker';
-import { NumberField } from './NumberField';
 import { PageSizeFields } from './PageSizeFields';
 
 const THEMES: { value: ThemePref; label: string }[] = [
@@ -77,9 +76,6 @@ export function SettingsDialog() {
   const { doc } = useDoc();
   const s = doc.settings;
 
-  const maxBorder = Math.min(s.pageW, s.pageH) / 2 - 0.1;
-  const dropGuide = Math.min(...s.borders);
-
   return (
     <Dialog title="Settings" onClose={closeModal} className="settings">
       <div className="settings-body">
@@ -104,74 +100,13 @@ export function SettingsDialog() {
         </section>
 
         <section className="setting">
-          <h3>Center lines</h3>
+          <h3>Guides</h3>
           <div className="setting-controls">
-            <div className="inline">
-              <label className="check">
-                <input
-                  type="checkbox"
-                  checked={s.centerV}
-                  onChange={(e) => docStore.apply((d) => void (d.settings.centerV = e.target.checked))}
-                />
-                Vertical
-              </label>
-              <label className="check">
-                <input
-                  type="checkbox"
-                  checked={s.centerH}
-                  onChange={(e) => docStore.apply((d) => void (d.settings.centerH = e.target.checked))}
-                />
-                Horizontal
-              </label>
-            </div>
-          </div>
-        </section>
-
-        <section className="setting">
-          <h3>Border guides</h3>
-          <div className="setting-controls">
-            {s.borders.map((b, i) => (
-              <div className="inline guide-row" key={i}>
-                <NumberField
-                  value={b}
-                  min={0}
-                  onCommit={(n) =>
-                    docStore.apply((d) => void (d.settings.borders[i] = Math.min(n, maxBorder)), {
-                      coalesce: `border:${i}`,
-                    })
-                  }
-                />
-                <button
-                  className="btn ghost icon small"
-                  aria-label={`Remove ${b} in guide`}
-                  onClick={() => docStore.apply((d) => void d.settings.borders.splice(i, 1))}
-                >
-                  <X />
-                </button>
-                {b === dropGuide && (
-                  <span
-                    className="tag"
-                    tabIndex={0}
-                    data-tip="When you drop a photo onto a page, it's sized to fit inside this guide and centered."
-                  >
-                    on drop
-                  </span>
-                )}
-              </div>
-            ))}
-            <button
-              className="btn ghost add-guide"
-              onClick={() =>
-                docStore.apply((d) => {
-                  const last = d.settings.borders.at(-1) ?? 0.25;
-                  d.settings.borders.push(Math.min(maxBorder, last + 0.25));
-                })
-              }
-            >
-              <Plus />
-              Add guide
+            <button className="btn" onClick={() => openModal('guides')}>
+              <Ruler />
+              Edit guides…
             </button>
-            <p className="help">Measured in from each page's outside edges.</p>
+            <p className="help">Border guides, center lines, and guides from the rulers.</p>
           </div>
         </section>
 
