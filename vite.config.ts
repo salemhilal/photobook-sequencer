@@ -38,7 +38,8 @@ export default defineConfig(({ mode }) => {
         includeManifestIcons: false,
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,png,jpg,woff,woff2}'],
-          globIgnores: ['index.html', 'privacy/**'],
+          // Not the landing page's (index.html, assets/landing-*) or the privacy policy's.
+          globIgnores: ['index.html', 'assets/landing-*', 'privacy/**', 'og.jpg'],
           // Its files are listed from the site's root, not from /app/ where it lives.
           modifyURLPrefix: { '': '/' },
           navigateFallback: '/app/index.html',

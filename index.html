@@ -3,17 +3,102 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sequence</title>
-    <meta name="description" content="A tool for playing with photo sequences." />
+    <title>Sequence · A tool for playing with photo sequences</title>
+    <meta
+      name="description"
+      content="Put your photos on a desk, arrange them across spreads, and page through the book. Free, with no account, on the web and for Mac."
+    />
+    <meta name="theme-color" content="#0f0f0e" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta property="og:url" content="https://%VITE_SITE_DOMAIN%/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Sequence" />
+    <meta property="og:title" content="Sequence" />
+    <meta property="og:description" content="A tool for playing with photo sequences." />
+    <!-- The thumbnail when a link is shared (Messages, Slack, social sites): public/og.jpg. -->
+    <meta property="og:image" content="https://%VITE_SITE_DOMAIN%/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Photos spread out on Sequence's desk, with the book's spreads beside them" />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
-    <!-- The landing page, to come. -->
-    <main>
-      <h1>Sequence</h1>
-      <p>A tool for playing with photo sequences.</p>
-      <p><a href="/app/">Open Sequence</a> · <a href="/privacy/">Privacy policy</a></p>
-    </main>
+    <section class="top">
+      <div>
+        <div class="title-row">
+          <span class="wordmark">SEQUENCE</span>
+          <span class="caps muted">A tool for playing with photo sequences</span>
+        </div>
+        <h1>See the book <em>before</em> you make it.</h1>
+        <p class="lede">
+          Put your photos on a desk, arrange them across spreads, and page through the result. When it's right, export a
+          PDF or an InDesign file.
+        </p>
+      </div>
+      <div class="side">
+        <div class="ctas">
+          <a class="cta" href="/app/">Try it online</a>
+          <!-- Stand-in: the real page uses Apple's badge artwork and the app's App Store link. -->
+          <a class="store-badge" href="%VITE_APP_STORE_URL%"
+            ><small>Download on the</small><span>Mac App Store</span></a
+          >
+        </div>
+        <span class="muted">Free. No account. Your photos stay on your computer.</span>
+      </div>
+    </section>
+
+    <!-- The screenshots, one at a time, like the app's Preview. -->
+    <section class="viewer" aria-label="Screenshots">
+      <button class="turn prev" aria-label="Previous screenshot">‹</button>
+      <img
+        src="/src/landing/landing-desk.jpg"
+        width="2000"
+        height="1250"
+        fetchpriority="high"
+        alt="The desk: photos spread out, with the book's spreads in the sidebar"
+      />
+      <img
+        src="/src/landing/landing-spreads.jpg"
+        width="2000"
+        height="1250"
+        hidden
+        alt="A spread: two photos placed on facing pages, with guides"
+      />
+      <img
+        src="/src/landing/landing-preview.jpg"
+        width="2000"
+        height="1250"
+        hidden
+        alt="Preview: turning the book's pages"
+      />
+      <img
+        src="/src/landing/landing-quick-look.jpg"
+        width="2000"
+        height="1250"
+        hidden
+        alt="Quick Look: a photo full size"
+      />
+      <button class="turn next" aria-label="Next screenshot">›</button>
+    </section>
+
+    <!-- Numbered like the book's spreads. -->
+    <nav class="contents" aria-label="Screenshots">
+      <button aria-current="true"><span class="folio">01</span>Desk<small>Spread out every photo</small></button>
+      <button><span class="folio">02–03</span>Spreads<small>Place them, with guides</small></button>
+      <button><span class="folio">04–05</span>Preview<small>Turn the pages</small></button>
+      <button><span class="folio">06</span>Quick Look<small>See any photo full size</small></button>
+    </nav>
+
+    <footer class="muted">
+      <span>© <span id="year">2026</span> Salem Hilal</span>
+      <nav class="footer-links">
+        <a href="mailto:hi@sequence.photos">hi@sequence.photos</a>
+        <a href="https://github.com/salemhilal/sequence.photos">GitHub</a>
+        <a href="/privacy/">Privacy</a>
+      </nav>
+    </footer>
+
+    <script type="module" src="/src/landing/main.ts"></script>
   </body>
 </html>
