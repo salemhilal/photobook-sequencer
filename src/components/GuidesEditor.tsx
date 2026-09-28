@@ -162,7 +162,7 @@ export function GuidesEditor() {
       axis === 'horizontal'
         ? { top: oY + at * scale, left: oX + page.x * scale, width: page.w * scale }
         : { left: oX + at * scale, top: oY, height: s.pageH * scale };
-    const kind = sel.kind === 'line' ? 'movable' : 'fixed';
+    const kind = sel.kind === 'line' ? 'movable' : sel.kind === 'center' ? 'fixed center' : 'fixed';
     guides.push(
       <div
         key={key}
