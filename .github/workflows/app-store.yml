@@ -1,7 +1,8 @@
 # Builds the Mac app, tests it end to end, and uploads it to App Store Connect (where
-# it shows up in TestFlight, ready to submit). Runs when a GitHub release is published
-# (its tag must be v + package.json's version, e.g. v0.2.0), or by hand: Actions → App
-# Store → Run workflow.
+# it shows up in TestFlight, ready to submit). The Release workflow runs it for the
+# release it makes (see release.yml). It also runs when a GitHub release is published by
+# hand (its tag must be v + package.json's version, e.g. v0.2.0), or by itself from
+# Actions → App Store → Run workflow, to upload main as it is.
 #
 # Secrets it needs (Settings → Secrets and variables → Actions):
 #   APP_STORE_CERTIFICATES      base64 of a .p12 holding the "Apple Distribution" and
@@ -20,6 +21,12 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      tag:
+        description: The release's tag, e.g. v0.2.0
+        type: string
+        required: true
 
 jobs:
   upload:
@@ -27,12 +34,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          # The release's commit (or, run by hand, main's).
+          ref: ${{ inputs.tag || github.ref }}
           # The build number counts commits (see scripts/app-store.mjs).
           fetch-depth: 0
       - name: Check the release matches the app's version
-        if: github.event_name == 'release'
+        if: inputs.tag != '' || github.event_name == 'release'
         env:
-          TAG: ${{ github.event.release.tag_name }}
+          TAG: ${{ inputs.tag || github.event.release.tag_name }}
         run: |
           VERSION="v$(node -p "require('./package.json').version")"
           if [ "$TAG" != "$VERSION" ]; then
