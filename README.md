@@ -105,13 +105,17 @@ keychain, and the app's Mac App Store provisioning profile at
 does the same in CI, after the tests, when a GitHub release is published (tagged `v` +
 `package.json`'s version) or when run by hand; its header lists the secrets it needs.
 
-To release a new version:
+To release a new version: **Actions → Release → Run workflow**, with the version (e.g.
+`0.1.2`) and, optionally, release notes. It sets the version everywhere, commits and tags
+it on `main`, publishes the GitHub release, and runs the App Store workflow for it (tick
+_Dry run_ to try it without releasing). From the command line:
 
 ```bash
-npm run bump 0.1.2   # sets it in package.json, tauri.conf.json, and Cargo.toml (and their lockfiles)
-git commit -am "Version 0.1.2" && git push
-gh release create v0.1.2 --title "Sequence 0.1.2" --notes "…"   # → the App Store workflow
+gh workflow run release.yml -f version=0.1.2
 ```
+
+`npm run bump 0.1.2` sets the version locally (in `package.json`, `tauri.conf.json`, and
+`Cargo.toml`, and their lockfiles), for releasing by hand.
 
 ## Offline and install
 

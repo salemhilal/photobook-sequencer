@@ -1,6 +1,7 @@
 // Sets the app's version everywhere it's recorded (npm run bump 0.1.2): package.json and
 // package-lock.json, the Mac app's tauri.conf.json, and its Cargo.toml and Cargo.lock.
-// It doesn't commit or tag; a GitHub release tagged v<version> ships it (see docs/setup.md).
+// It doesn't commit or tag. The Release workflow runs it, then commits, tags, and ships
+// the version (see .github/workflows/release.yml).
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -36,4 +37,4 @@ const edits = [
 execFileSync('npm', ['version', version, '--no-git-tag-version', '--allow-same-version'], { stdio: 'ignore' });
 for (const [file, text] of edits) writeFileSync(file, text);
 
-console.log(`${current} → ${version}. Commit, push to main, then publish a GitHub release tagged v${version}.`);
+console.log(`${current} → ${version}.`);

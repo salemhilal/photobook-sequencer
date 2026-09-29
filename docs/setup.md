@@ -56,17 +56,17 @@ Nothing to set up. Releases come from GitHub:
 
 - **Website:** every push to `main` deploys to sequence.photos (Netlify). Pull requests get
   a preview deploy.
-- **Mac app:** set the new version, commit and push it, and publish a GitHub release tagged
-  `v` + that version:
+- **Mac app:** run the **Release** workflow (Actions → Release → Run workflow) with the
+  new version, or from the command line:
 
   ```bash
-  npm run bump 0.1.2   # package.json, package-lock.json, tauri.conf.json, Cargo.toml, Cargo.lock
-  git commit -am "Version 0.1.2" && git push
-  gh release create v0.1.2 --title "Sequence 0.1.2" --notes "…"
+  gh workflow run release.yml -f version=0.1.2
   ```
 
-  The **App Store** workflow tests the app, builds it, signs it, and uploads it to App Store
-  Connect, where you pick the build and submit it for review.
+  It sets the version everywhere, commits and tags it on `main`, and publishes the GitHub
+  release. Then the **App Store** workflow tests the app, builds it, signs it, and uploads
+  it to App Store Connect, where you pick the build and submit it for review. Tick _Dry
+  run_ to check a version without releasing.
 
 The signing certificates, provisioning profile, and App Store Connect API key live in the
 repo's Actions secrets (the workflow's header lists them), not on any machine.

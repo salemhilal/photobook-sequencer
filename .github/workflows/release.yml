@@ -1,0 +1,108 @@
+# Releases a new version in one step: Actions → Release → Run workflow, with the version
+# (e.g. 0.2.0). It sets the version everywhere (npm run bump), commits that to main, tags
+# it v + the version, publishes the GitHub release, then builds and uploads the Mac app
+# to App Store Connect (the App Store workflow, run from here). Pushing to main also
+# deploys the website, as any push does.
+#
+# A dry run does the bump and the tests, and stops: nothing is pushed, tagged, or uploaded.
+#
+# (A release published here doesn't start the App Store workflow on its own: GitHub
+# doesn't let one workflow's events start another. So this one calls it directly.)
+
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version, like 0.2.0 (higher than the current one)
+        required: true
+        type: string
+      notes:
+        description: Release notes (optional; left empty, GitHub lists the merged pull requests)
+        required: false
+        type: string
+      dry_run:
+        description: Dry run (bump and test only; nothing is pushed, tagged, or uploaded)
+        type: boolean
+        default: false
+
+# One release at a time.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+
+      - name: Check the version
+        id: version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          VERSION="${VERSION#v}"
+          CURRENT="$(node -p "require('./package.json').version")"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "“$VERSION” isn't a version like 0.2.0."; exit 1
+          fi
+          # Sorted as versions, the new one must come last (and not equal the current one).
+          if [ "$VERSION" = "$CURRENT" ] || [ "$(printf '%s\n' "$CURRENT" "$VERSION" | sort -V | tail -1)" != "$VERSION" ]; then
+            echo "$VERSION isn't higher than the current version, $CURRENT."; exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null; then
+            echo "v$VERSION is already tagged."; exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Set the version
+        run: npm run bump ${{ steps.version.outputs.version }}
+      - run: npm test
+      - run: npm run build
+
+      - name: Commit, tag, and publish the release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+          NOTES: ${{ inputs.notes }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Version $VERSION"
+          git tag "$TAG"
+          git push origin HEAD:main "$TAG"
+          if [ -n "$NOTES" ]; then
+            gh release create "$TAG" --title "Sequence $VERSION" --notes "$NOTES" --verify-tag
+          else
+            gh release create "$TAG" --title "Sequence $VERSION" --generate-notes --verify-tag
+          fi
+
+      - name: Show what a real run would do
+        if: ${{ inputs.dry_run }}
+        run: |
+          git --no-pager diff --stat
+          echo "Dry run: would commit “Version ${{ steps.version.outputs.version }}” to main, tag ${{ steps.version.outputs.tag }}, publish the release, and upload the Mac app."
+
+  app-store:
+    needs: release
+    if: ${{ !inputs.dry_run }}
+    uses: ./.github/workflows/app-store.yml
+    with:
+      tag: ${{ needs.release.outputs.tag }}
+    secrets: inherit
