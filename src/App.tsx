@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Download,
   FilePlus,
@@ -43,8 +43,19 @@ import { allSpreads } from './spreads';
 
 const NOTICE_MS = 6000;
 
+/**
+ * A phone or tablet: a touch screen with no mouse or trackpad. The app is built for
+ * dragging with a pointer on a larger screen, so these get a warning first.
+ */
+function onTouchDevice(): boolean {
+  if (platform.kind !== 'browser' || typeof matchMedia !== 'function') return false;
+  return matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+}
+
 export default function App() {
   const { project, canUndo, canRedo } = useProject();
+  // Dismissed for this visit only: a reload shows it again.
+  const [mobileNotice, setMobileNotice] = useState(onTouchDevice);
   const editing = ui.use((s) => s.editingSpreadId);
   const modal = ui.use((s) => s.modal);
   const importing = ui.use((s) => s.importing);
@@ -74,6 +85,7 @@ export default function App() {
 
   if (blocked === 'elsewhere') return <ElsewhereScreen />;
   if (blocked === 'outdated') return <OutdatedScreen />;
+  if (mobileNotice) return <MobileNotice onContinue={() => setMobileNotice(false)} />;
   if (!loaded) return <div className="loading">Opening your book…</div>;
 
   const working = importing !== null || busy !== null;
@@ -229,7 +241,6 @@ function ShortcutHint({ label, below }: { label: string; below?: boolean }) {
   );
 }
 
-/** Shown instead of the app when the saved project is from a newer version of the app. */
 /** Shown instead of the app while another tab or window is editing the project. */
 function ElsewhereScreen() {
   return (
@@ -244,6 +255,7 @@ function ElsewhereScreen() {
   );
 }
 
+/** Shown instead of the app when the saved project is from a newer version of the app. */
 function OutdatedScreen() {
   // The newer version may not have downloaded yet; look for it now.
   useEffect(checkForUpdate, []);
@@ -254,6 +266,23 @@ function OutdatedScreen() {
       <p>Reload to update. Your saved project hasn't been changed.</p>
       <button className="btn primary" onClick={reloadToUpdate}>
         Reload
+      </button>
+    </div>
+  );
+}
+
+/** Shown first on a phone or tablet, until dismissed (see onTouchDevice). */
+function MobileNotice({ onContinue }: { onContinue: () => void }) {
+  return (
+    <div className="screen-message" role="alertdialog" aria-labelledby="mobile-notice-title">
+      <span className="wordmark">SEQUENCE</span>
+      <h1 id="mobile-notice-title">Sequence is made for a computer.</h1>
+      <p>
+        It's built around a mouse or trackpad and a larger screen. On a phone or tablet, dragging photos, arranging
+        spreads, and other parts of it won't work well.
+      </p>
+      <button className="btn primary" autoFocus onClick={onContinue}>
+        Continue anyway
       </button>
     </div>
   );

@@ -159,8 +159,10 @@ button {
   line-height: 1.4;
 }
 .screen-message p {
+  max-width: 420px;
   margin: 0 0 8px;
   color: var(--muted);
+  line-height: 1.5;
 }
 .loading {
   display: grid;
